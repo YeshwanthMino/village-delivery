@@ -18,7 +18,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     checkExistingAuth().finally(() => setReady(true));
-  }, []);
+  }, [checkExistingAuth]);
 
   useEffect(() => {
     if (!fontsLoaded || !ready) return;
