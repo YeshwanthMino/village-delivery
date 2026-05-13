@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { Bell, ChevronDown, MapPin, Search } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CategoryTile,
   FloatingCartPill,
@@ -16,6 +17,7 @@ import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
 export const HomeScreen = () => {
   const router = useRouter();
   const vm = useHomeViewModel();
+  const insets = useSafeAreaInsets();
 
   const goToCategories = (catId?: string) => {
     if (catId) vm.setSelectedCat(catId);
@@ -26,10 +28,10 @@ export const HomeScreen = () => {
   const goToCart = () => router.push('/(dashboard)/cart');
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
 
       {/* ── Top Bar ── */}
-      <View className="bg-white px-4 pt-1 pb-3 border-b border-slate-100">
+      <View className="bg-white px-4 pb-3 border-b border-slate-100" style={{ paddingTop: insets.top + 4 }}>
         {/* Row 1: location + bell */}
         <View className="flex-row items-center justify-between mb-3">
           <TouchableOpacity className="flex-row items-center gap-1.5 flex-1 mr-3">
@@ -55,6 +57,7 @@ export const HomeScreen = () => {
         <TouchableOpacity
           activeOpacity={0.7}
           className="flex-row items-center bg-slate-100 rounded-xl px-3 h-10 gap-2"
+          onPress={() => router.push('/search')}
         >
           <Search size={16} color="#94a3b8" />
           <Text className="text-slate-400 text-sm flex-1">Search groceries, brands…</Text>
@@ -62,9 +65,14 @@ export const HomeScreen = () => {
       </View>
 
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 250 }}
+        decelerationRate="normal"
+        scrollEventThrottle={16}
+        bounces={true}
+        alwaysBounceVertical={true}
+        overScrollMode="always"
       >
         {/* Hero Carousel */}
         <HeroCarousel
@@ -91,7 +99,7 @@ export const HomeScreen = () => {
               />
             ))}
           </View>
-          <View className="flex-row justify-between">
+          <View className="flex-row justify-between pb-4">
             {vm.categories.slice(5, 10).map(cat => (
               <CategoryTile
                 key={cat.id}
@@ -117,7 +125,7 @@ export const HomeScreen = () => {
           </View>
 
           {/* 2-col product grid */}
-          <View className="flex-row flex-wrap gap-3">
+          <View className="flex-row flex-wrap gap-3 pb-4">
             {vm.topPicks.map(product => (
               <View key={product.id} style={{ width: '47.5%' }}>
                 <ProductCard
