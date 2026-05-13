@@ -1,6 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Heart, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { gradientColor } from '@/src/core/utils/gradientColors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CategoryBigCard,
@@ -87,11 +89,16 @@ export const CategoriesScreen = () => {
         <ScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 180 }}
           stickyHeaderIndices={[1]}
         >
           {/* Full-bleed hero */}
-          <View className={`bg-gradient-to-br ${grad.from} ${grad.to} pt-12 pb-8 px-4 relative`} style={{ minHeight: 220 }}>
+          <LinearGradient
+            colors={[gradientColor(grad.from), gradientColor(grad.to)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ minHeight: 220, paddingTop: 48, paddingBottom: 32, paddingHorizontal: 16, position: 'relative' }}
+          >
             {/* Chrome buttons */}
             <View className="flex-row gap-2 absolute top-10 left-4 right-4 justify-between">
               <TouchableOpacity
@@ -121,7 +128,7 @@ export const CategoriesScreen = () => {
               </Text>
               <Text style={{ fontSize: 64, marginTop: 8 }}>{cat.emoji}</Text>
             </View>
-          </View>
+          </LinearGradient>
 
           {/* White card body */}
           <View className="bg-white rounded-t-3xl -mt-4 flex-1">

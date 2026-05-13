@@ -19,6 +19,17 @@ const GRADIENT_COLORS: Record<string, string> = {
   'from-stone-100': '#f5f5f4',
   'from-yellow-100':'#fef9c3',
   'from-yellow-50': '#fefce8',
+  // from- vivid (hero gradients)
+  'from-red-400':    '#f87171',
+  'from-rose-400':   '#fb7185',
+  'from-green-500':  '#22c55e',
+  'from-sky-400':    '#38bdf8',
+  'from-amber-400':  '#fbbf24',
+  'from-orange-400': '#fb923c',
+  'from-yellow-400': '#facc15',
+  'from-cyan-400':   '#22d3ee',
+  'from-lime-400':   '#a3e635',
+  'from-stone-400':  '#a8a29e',
   // to- classes
   'to-amber-50':    '#fffbeb',
   'to-blue-50':     '#eff6ff',
@@ -41,6 +52,16 @@ const GRADIENT_COLORS: Record<string, string> = {
   'to-teal-700':    '#0f766e',
   'to-violet-50':   '#f5f3ff',
   'to-yellow-50':   '#fefce8',
+  // to- vivid (hero gradients)
+  'to-rose-500':    '#f43f5e',
+  'to-red-500':     '#ef4444',
+  'to-emerald-600': '#059669',
+  'to-blue-500':    '#3b82f6',
+  'to-orange-500':  '#f97316',
+  'to-amber-500':   '#f59e0b',
+  'to-amber-600':   '#d97706',
+  'to-sky-500':     '#0ea5e9',
+  'to-green-500':   '#22c55e',
 };
 
 /** Convert a Tailwind gradient class name to its hex color value. */

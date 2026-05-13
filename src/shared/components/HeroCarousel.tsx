@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { HeroSlide } from '@/src/features/home/data/static/villageData';
 
@@ -10,66 +10,79 @@ interface HeroCarouselProps {
 }
 
 export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = screenWidth - 32; // 16px padding on each side (px-4)
   const [current, setCurrent] = useState(0);
-  const opacities = useRef(slides.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const currentRef = useRef(0);
 
+  // Auto-rotate every 4.5s
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrent(prev => {
-        const next = (prev + 1) % slides.length;
-        Animated.parallel([
-          Animated.timing(opacities[prev], { toValue: 0, duration: 400, useNativeDriver: true }),
-          Animated.timing(opacities[next], { toValue: 1, duration: 400, useNativeDriver: true }),
-        ]).start();
-        return next;
-      });
+      const next = (currentRef.current + 1) % slides.length;
+      scrollRef.current?.scrollTo({ x: next * cardWidth, animated: true });
+      currentRef.current = next;
+      setCurrent(next);
     }, 4500);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, cardWidth]);
 
   return (
     <View className="px-4 pt-4">
-      <View className="relative overflow-hidden rounded-2xl" style={{ height: 180 }}>
-        {slides.map((slide, i) => (
-          <Animated.View
-            key={i}
-            style={{ opacity: opacities[i], position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
+      {/* Carousel */}
+      <View style={{ borderRadius: 16, overflow: 'hidden', height: 180 }}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / cardWidth);
+            currentRef.current = idx;
+            setCurrent(idx);
+          }}
+        >
+          {slides.map((slide, i) => (
             <LinearGradient
+              key={i}
               colors={[gradientColor(slide.gradientFrom), gradientColor(slide.gradientTo)]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ flex: 1, padding: 20, justifyContent: 'space-between' }}
+              style={{ width: cardWidth, height: 180, padding: 20, justifyContent: 'space-between' }}
             >
-              <View className="flex-row justify-between items-start">
-                <View className="flex-1">
-                  <View className="self-start bg-white/20 rounded-full px-3 py-1 mb-3">
-                    <Text className="text-white text-[10px] font-bold tracking-widest">{slide.tag}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 12 }}>
+                    <Text style={{ color: 'white', fontSize: 10, fontFamily: 'EuclidCircularA-Bold', letterSpacing: 2 }}>{slide.tag}</Text>
                   </View>
-                  <Text className="text-white text-[22px] font-black leading-tight">{slide.title}</Text>
-                  <Text className="text-white/80 text-xs mt-1">{slide.subtitle}</Text>
+                  <Text style={{ color: 'white', fontSize: 22, fontFamily: 'EuclidCircularA-Bold', lineHeight: 28 }}>{slide.title}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4 }}>{slide.subtitle}</Text>
                 </View>
-                <Text style={{ fontSize: 64 }} className="ml-2">{slide.emoji}</Text>
+                <Text style={{ fontSize: 64, marginLeft: 8 }}>{slide.emoji}</Text>
               </View>
               <Pressable
                 onPress={onShopNow}
-                className="self-start bg-white/25 border border-white/40 rounded-xl px-4 py-2"
+                style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 }}
               >
-                <Text className="text-white font-bold text-sm">Shop Now</Text>
+                <Text style={{ color: 'white', fontFamily: 'EuclidCircularA-Bold', fontSize: 14 }}>Shop Now</Text>
               </Pressable>
             </LinearGradient>
-          </Animated.View>
-        ))}
+          ))}
+        </ScrollView>
       </View>
 
       {/* Dot indicators */}
-      <View className="flex-row justify-center gap-1.5 mt-3">
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 }}>
         {slides.map((_, i) => (
           <View
             key={i}
-            className={i === current
-              ? 'w-6 h-1.5 bg-green-600 rounded-full'
-              : 'w-1.5 h-1.5 bg-slate-300 rounded-full'}
+            style={{
+              width: i === current ? 24 : 6,
+              height: 6,
+              borderRadius: 999,
+              backgroundColor: i === current ? '#16a34a' : '#cbd5e1',
+            }}
           />
         ))}
       </View>
