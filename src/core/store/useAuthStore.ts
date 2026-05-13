@@ -8,7 +8,7 @@ import { create } from 'zustand';
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: any | null;
+  user: { id: string; phoneNumber: string } | null;
   accessToken: string | null;
   refreshToken: string | null;
   error: string | null;
