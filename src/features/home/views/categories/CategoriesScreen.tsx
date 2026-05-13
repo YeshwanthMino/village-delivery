@@ -162,7 +162,7 @@ export const CategoriesScreen = () => {
             <TouchableOpacity
               className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
               onPress={() =>
-                router.navigate(
+                router.push(
                   `/search?categoryId=${cat.id}&categoryName=${encodeURIComponent(cat.name)}`
                 )
               }

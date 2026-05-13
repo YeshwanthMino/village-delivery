@@ -1,8 +1,9 @@
 import { MapPin, ShieldCheck } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BillSummaryCard,
   CartItemRow,
@@ -19,6 +20,7 @@ import { useCartViewModel } from '../viewmodel/useCartViewModel';
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
+  const insets = useSafeAreaInsets();
 
   const goToHome = () => router.push('/(dashboard)/home');
 
@@ -31,20 +33,25 @@ export const CartScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
+      {/* Sticky Header */}
+      <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
+        <Text className="text-slate-900 font-black text-xl">My Cart</Text>
+        <Text className="text-slate-500 text-sm mt-0.5">
+          {vm.cartCount} {vm.cartCount === 1 ? 'item' : 'items'}
+        </Text>
+      </View>
+
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
+        decelerationRate="normal"
+        scrollEventThrottle={16}
+        bounces={true}
+        alwaysBounceVertical={true}
+        overScrollMode="always"
       >
-        {/* Header */}
-        <View className="px-4 pt-4 pb-3 bg-white border-b border-slate-100">
-          <Text className="text-slate-900 font-black text-xl">My Cart</Text>
-          <Text className="text-slate-500 text-sm mt-0.5">
-            {vm.cartCount} {vm.cartCount === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
-
         <View className="px-4 py-3 gap-3">
           {/* Delivery ETA */}
           <DeliveryETACard />
