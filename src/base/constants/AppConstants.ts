@@ -54,6 +54,7 @@ export const StorageKeys = {
   REFRESH_TOKEN: 'refresh_token',
   TOKEN_TYPE: 'token_type',
   USERNAME: 'username',
+  USER_ID: 'user_id',
 
   // User data
   USER_PREFERENCES: 'userPreferences',

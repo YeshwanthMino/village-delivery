@@ -29,9 +29,6 @@ export interface UserPreferences {
  * like tokens, and AsyncStorage for non-sensitive preferences
  */
 export class StoredPrefs {
-  static shared() {
-    throw new Error('Method not implemented.');
-  }
   private static storageService: IStorageService | null = null;
   private static initPromise: Promise<IStorageService> | null = null;
 
@@ -317,7 +314,7 @@ export class StoredPrefs {
   }
 
   // User Profile storage methods
-  static async getUserProfile(): Promise<any | null> {
+  static async getUserProfile(): Promise<UserObject | null> {
     try {
       return await StoredPrefs.getCustomData('village_user_profile');
     } catch (error) {
@@ -326,7 +323,7 @@ export class StoredPrefs {
     }
   }
 
-  static async setUserProfile(profile: any | null): Promise<void> {
+  static async setUserProfile(profile: UserObject | null): Promise<void> {
     try {
       if (profile) {
         await StoredPrefs.setCustomData('village_user_profile', profile);

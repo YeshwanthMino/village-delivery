@@ -3,7 +3,6 @@ import { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { IStorageService, StorageServiceFactory } from '../../storage';
 
 const TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 const TOKEN_TYPE_KEY = 'token_type';
 
 // Lazy-loaded storage service (async initialization for mobile)
@@ -50,32 +49,4 @@ export const authInterceptor = {
   },
 
   response: (response: AxiosResponse) => response,
-
-  error: async (error: any) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const storage = await getStorageService();
-        const refreshToken = await storage.getItem(REFRESH_TOKEN_KEY);
-
-        if (refreshToken) {
-          // This will be handled by the refresh token logic in ApiClient
-          throw error;
-        }
-      } catch (refreshError) {
-        const storage = await getStorageService();
-        await Promise.all([
-          storage.removeItem(TOKEN_KEY),
-          storage.removeItem(REFRESH_TOKEN_KEY),
-          storage.removeItem(TOKEN_TYPE_KEY)
-        ]);
-        throw error;
-      }
-    }
-
-    return Promise.reject(error);
-  },
 };

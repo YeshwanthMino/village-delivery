@@ -6,15 +6,9 @@ import { errorInterceptor } from './interceptors/errorInterceptor';
 // Import app constants
 import { IS_WEB } from '@/src/core/utils/platform';
 import { AuthTokens } from './apiTypes';
-import { WebService, AppConfig } from '../../constants/AppConstants';
+import { WebService, AppConfig, StorageKeys } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
-
-// Storage keys
-const TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-const TOKEN_TYPE_KEY = 'token_type';
-const USER_ID_KEY = 'user_id';
 
 class ApiClient {
   private axiosInstance: AxiosInstance;
@@ -205,7 +199,7 @@ class ApiClient {
   private async performTokenRefresh(): Promise<AuthTokens> {
     try {
       const storage = await this.getStorageService();
-      const refreshToken = await storage.getItem(REFRESH_TOKEN_KEY);
+      const refreshToken = await storage.getItem(StorageKeys.REFRESH_TOKEN);
 
       if (!refreshToken) {
         throw new Error('No refresh token available');
@@ -238,14 +232,14 @@ class ApiClient {
     // Save tokens using storage service
     const storage = await this.getStorageService();
     await Promise.all([
-      storage.setItem(TOKEN_KEY, tokens.accessToken),
-      storage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken),
-      storage.setItem(TOKEN_TYPE_KEY, tokens.tokenType),
+      storage.setItem(StorageKeys.ACCESS_TOKEN, tokens.accessToken),
+      storage.setItem(StorageKeys.REFRESH_TOKEN, tokens.refreshToken),
+      storage.setItem(StorageKeys.TOKEN_TYPE, tokens.tokenType),
     ]);
 
     // Update user ID in headers
     if (tokens.userId) {
-      await storage.setItem(USER_ID_KEY, tokens.userId.toString());
+      await storage.setItem(StorageKeys.USER_ID, tokens.userId.toString());
       await this.updateUserId(tokens.userId);
     }
   }
@@ -254,10 +248,10 @@ class ApiClient {
     // Clear tokens using storage service
     const storage = await this.getStorageService();
     await Promise.all([
-      storage.removeItem(TOKEN_KEY),
-      storage.removeItem(REFRESH_TOKEN_KEY),
-      storage.removeItem(TOKEN_TYPE_KEY),
-      storage.removeItem(USER_ID_KEY),
+      storage.removeItem(StorageKeys.ACCESS_TOKEN),
+      storage.removeItem(StorageKeys.REFRESH_TOKEN),
+      storage.removeItem(StorageKeys.TOKEN_TYPE),
+      storage.removeItem(StorageKeys.USER_ID),
     ]);
     // Reset user id header to null
     this.axiosInstance.defaults.headers.common['Village-User-Id'] = 'null';
@@ -307,7 +301,7 @@ class ApiClient {
   async initializeUserId(): Promise<void> {
     try {
       const storage = await this.getStorageService();
-      const userId = await storage.getItem(USER_ID_KEY);
+      const userId = await storage.getItem(StorageKeys.USER_ID);
       if (userId) {
         await this.updateUserId(userId);
       }
@@ -322,17 +316,12 @@ class ApiClient {
     this.axiosInstanceWithoutAuth.defaults.baseURL = url;
   }
 
-  setBFFBaseURL(url: string) {
-    // This would be used for GraphQL requests
-    return url;
-  }
-
   // Get current headers for debugging
   async getHeaders(): Promise<Record<string, string>> {
     const headers = { ...this.axiosInstance.defaults.headers.common } as Record<string, string>;
     const storage = await this.getStorageService();
-    const accessToken = await storage.getItem(TOKEN_KEY);
-    const tokenType = await storage.getItem(TOKEN_TYPE_KEY);
+    const accessToken = await storage.getItem(StorageKeys.ACCESS_TOKEN);
+    const tokenType = await storage.getItem(StorageKeys.TOKEN_TYPE);
 
     if (accessToken && tokenType) {
       headers['Authorization'] = `${tokenType} ${accessToken}`;
