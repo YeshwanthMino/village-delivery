@@ -6,3 +6,6 @@ export { CategoryBigCard } from './CategoryBigCard';
 export { HeroCarousel } from './HeroCarousel';
 export { ProductCard } from './ProductCard';
 export { MiniProductCard } from './MiniProductCard';
+export { VillageBottomSheet } from './VillageBottomSheet';
+export { VariantBottomSheet } from './VariantBottomSheet';
+export { SortBottomSheet } from './SortBottomSheet';
