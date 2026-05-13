@@ -23,7 +23,9 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!fontsLoaded || !ready) return;
     const inDashboard = segments[0] === '(dashboard)';
-    if (!inDashboard) {
+    const inAuth = segments[0] === 'auth';
+    const inSearch = segments[0] === 'search';
+    if (!inDashboard && !inAuth && !inSearch) {
       router.replace('/(dashboard)/home');
     }
   }, [fontsLoaded, ready, segments]);
