@@ -79,8 +79,8 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
                   <View style={styles.tagPill}>
                     <Text style={styles.tagText}>{slide.tag}</Text>
                   </View>
-                  <Text style={styles.title}>{slide.title}</Text>
-                  <Text style={styles.subtitle}>{slide.subtitle}</Text>
+                  <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{slide.title}</Text>
+                  <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">{slide.subtitle}</Text>
                 </View>
                 <Text style={styles.emoji}>{slide.emoji}</Text>
               </View>
@@ -115,7 +115,7 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
 
 const styles = StyleSheet.create({
   card: {
-    height: 180,
+    height: 210,
     borderRadius: 20,
     overflow: 'hidden',
     // Shadow (iOS + Android elevation)
