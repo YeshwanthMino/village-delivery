@@ -1,5 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import { rupees } from '@/src/features/home/data/static/villageData';
@@ -25,9 +27,14 @@ export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps)
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width: 128 }}>
       {/* Gradient emoji area */}
-      <View className={`h-20 bg-gradient-to-br ${product.gradientFrom} ${product.gradientTo} items-center justify-center`}>
+      <LinearGradient
+        colors={[gradientColor(product.gradientFrom), gradientColor(product.gradientTo)]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ height: 80, alignItems: 'center', justifyContent: 'center' }}
+      >
         <Text style={{ fontSize: 44 }}>{product.emoji}</Text>
-      </View>
+      </LinearGradient>
 
       {/* Body */}
       <View className="p-2 gap-1">

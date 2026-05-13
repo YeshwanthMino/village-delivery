@@ -1,5 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
+import { gradientColor } from '@/src/core/utils/gradientColors';
 import { HeroSlide } from '@/src/features/home/data/static/villageData';
 
 interface HeroCarouselProps {
@@ -31,25 +33,31 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
         {slides.map((slide, i) => (
           <Animated.View
             key={i}
-            style={{ opacity: opacities[i] }}
-            className={`absolute inset-0 bg-gradient-to-br ${slide.gradientFrom} ${slide.gradientTo} p-5 justify-between`}
+            style={{ opacity: opacities[i], position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <View className="self-start bg-white/20 rounded-full px-3 py-1 mb-3">
-                  <Text className="text-white text-[10px] font-bold tracking-widest">{slide.tag}</Text>
-                </View>
-                <Text className="text-white text-[22px] font-black leading-tight">{slide.title}</Text>
-                <Text className="text-white/80 text-xs mt-1">{slide.subtitle}</Text>
-              </View>
-              <Text style={{ fontSize: 64 }} className="ml-2">{slide.emoji}</Text>
-            </View>
-            <Pressable
-              onPress={onShopNow}
-              className="self-start bg-white/25 border border-white/40 rounded-xl px-4 py-2"
+            <LinearGradient
+              colors={[gradientColor(slide.gradientFrom), gradientColor(slide.gradientTo)]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1, padding: 20, justifyContent: 'space-between' }}
             >
-              <Text className="text-white font-bold text-sm">Shop Now</Text>
-            </Pressable>
+              <View className="flex-row justify-between items-start">
+                <View className="flex-1">
+                  <View className="self-start bg-white/20 rounded-full px-3 py-1 mb-3">
+                    <Text className="text-white text-[10px] font-bold tracking-widest">{slide.tag}</Text>
+                  </View>
+                  <Text className="text-white text-[22px] font-black leading-tight">{slide.title}</Text>
+                  <Text className="text-white/80 text-xs mt-1">{slide.subtitle}</Text>
+                </View>
+                <Text style={{ fontSize: 64 }} className="ml-2">{slide.emoji}</Text>
+              </View>
+              <Pressable
+                onPress={onShopNow}
+                className="self-start bg-white/25 border border-white/40 rounded-xl px-4 py-2"
+              >
+                <Text className="text-white font-bold text-sm">Shop Now</Text>
+              </Pressable>
+            </LinearGradient>
           </Animated.View>
         ))}
       </View>

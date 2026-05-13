@@ -1,6 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronDown, Heart, Star } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import { rupees } from '@/src/features/home/data/static/villageData';
@@ -35,7 +37,12 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden flex-1">
       {/* Image area */}
-      <View className={`aspect-square bg-gradient-to-br ${product.gradientFrom} ${product.gradientTo} relative items-center justify-center`}>
+      <LinearGradient
+        colors={[gradientColor(product.gradientFrom), gradientColor(product.gradientTo)]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ aspectRatio: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+      >
         <Text style={{ fontSize: 64 }}>{product.emoji}</Text>
 
         {/* Heart button */}
@@ -56,7 +63,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
             <Text className="text-white text-[10px] font-extrabold">{discount}% OFF</Text>
           </View>
         )}
-      </View>
+      </LinearGradient>
 
       {/* Body */}
       <View className="p-3 flex-1 flex-col gap-2">
