@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    font-family: 'EuclidCircularA-Regular';
+  }
+}
+
+@layer utilities {
+  /* Apply Euclid Circular A font to all text-typography classes */
+  [class*="text-typography"] {
+    font-family: 'EuclidCircularA-Regular';
+  }
+
+  /* Map standard font-weight classes to Euclid Circular A variants */
+  .font-medium,
+  [class*="text-typography"].font-medium {
+    font-family: 'EuclidCircularA-Medium';
+    font-weight: 500;
+  }
+
+  .font-semibold,
+  [class*="text-typography"].font-semibold {
+    font-family: 'EuclidCircularA-SemiBold';
+    font-weight: 600;
+  }
+
+  .font-bold,
+  [class*="text-typography"].font-bold {
+    font-family: 'EuclidCircularA-Bold';
+    font-weight: 700;
+  }
+
+  .font-normal,
+  [class*="text-typography"].font-normal {
+    font-family: 'EuclidCircularA-Regular';
+    font-weight: 400;
+  }
+}
