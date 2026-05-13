@@ -57,7 +57,7 @@ export const HomeScreen = () => {
         <TouchableOpacity
           activeOpacity={0.7}
           className="flex-row items-center bg-slate-100 rounded-xl px-3 h-10 gap-2"
-          onPress={() => router.push('/search')}
+          onPress={() => router.navigate('/search')}
         >
           <Search size={16} color="#94a3b8" />
           <Text className="text-slate-400 text-sm flex-1">Search groceries, brands…</Text>

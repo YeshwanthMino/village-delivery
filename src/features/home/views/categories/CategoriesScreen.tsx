@@ -3,8 +3,6 @@ import { ArrowLeft, Heart, Search, SlidersHorizontal, X } from 'lucide-react-nat
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -16,6 +14,8 @@ import {
 } from '@/src/shared/components';
 import { useCategoriesViewModel } from '../../viewmodel/categories/useCategoriesViewModel';
 import { useRouter } from 'expo-router';
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 const SORT_LABELS: Record<string, string> = {
   popular:    'Most Popular',
@@ -162,7 +162,7 @@ export const CategoriesScreen = () => {
             <TouchableOpacity
               className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
               onPress={() =>
-                router.push(
+                router.navigate(
                   `/search?categoryId=${cat.id}&categoryName=${encodeURIComponent(cat.name)}`
                 )
               }
