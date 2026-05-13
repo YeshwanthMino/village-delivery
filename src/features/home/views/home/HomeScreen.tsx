@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { Bell, ChevronDown, MapPin, Search } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,40 @@ export const HomeScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
+
+      {/* ── Top Bar ── */}
+      <View className="bg-white px-4 pt-1 pb-3 border-b border-slate-100">
+        {/* Row 1: location + bell */}
+        <View className="flex-row items-center justify-between mb-3">
+          <TouchableOpacity className="flex-row items-center gap-1.5 flex-1 mr-3">
+            <MapPin size={16} color="#16a34a" />
+            <View className="flex-1">
+              <View className="flex-row items-center gap-1">
+                <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
+                  Home
+                </Text>
+                <ChevronDown size={14} color="#64748b" />
+              </View>
+              <Text className="text-slate-500 text-xs" numberOfLines={1}>
+                221B Baker St, Mumbai · Delivery in 12 min
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
+            <Bell size={18} color="#475569" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Row 2: search bar */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          className="flex-row items-center bg-slate-100 rounded-xl px-3 h-10 gap-2"
+        >
+          <Search size={16} color="#94a3b8" />
+          <Text className="text-slate-400 text-sm flex-1">Search groceries, brands…</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
