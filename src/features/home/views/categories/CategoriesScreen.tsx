@@ -84,7 +84,7 @@ export const CategoriesScreen = () => {
   const grad = vm.heroGradient!;
 
   return (
-    <View className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-50">
       <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }] }}>
         <ScrollView
           className="flex-1"
@@ -97,10 +97,10 @@ export const CategoriesScreen = () => {
             colors={[gradientColor(grad.from), gradientColor(grad.to)]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ minHeight: 220, paddingTop: 48, paddingBottom: 32, paddingHorizontal: 16, position: 'relative' }}
+            style={{ minHeight: 200, paddingTop: 16, paddingBottom: 32, paddingHorizontal: 16, position: 'relative' }}
           >
             {/* Chrome buttons */}
-            <View className="flex-row gap-2 absolute top-10 left-4 right-4 justify-between">
+            <View className="flex-row gap-2 absolute top-2 left-4 right-4 justify-between">
               <TouchableOpacity
                 onPress={() => vm.setSelectedCat(null)}
                 className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
@@ -118,7 +118,7 @@ export const CategoriesScreen = () => {
             </View>
 
             {/* Hero content */}
-            <View className="mt-12">
+            <View className="mt-14">
               <Text className="text-white/70 text-xs font-semibold tracking-wider uppercase">
                 Category · {vm.products.length} products
               </Text>
@@ -219,6 +219,6 @@ export const CategoriesScreen = () => {
       )}
       <SortBottomSheet visible={vm.sortSheetVisible} onClose={vm.closeSortSheet} />
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
-    </View>
+    </SafeAreaView>
   );
 };
