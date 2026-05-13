@@ -1,11 +1,16 @@
 import { LayoutGrid, Home, ShoppingCart, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TAB_BAR_HEIGHT = 64;
+// The visual content height of the tab bar (icons + labels)
+const TAB_BAR_CONTENT_HEIGHT = 64;
 
 export default function DashboardLayout() {
+  const { bottom } = useSafeAreaInsets();
+  // Add the system navigation bar inset so the tab bar clears the gesture bar / button bar
+  const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -17,8 +22,8 @@ export default function DashboardLayout() {
           borderTopWidth: 0,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          height: TAB_BAR_HEIGHT + (Platform.OS === 'ios' ? 16 : 0),
-          paddingBottom: Platform.OS === 'ios' ? 16 : 8,
+          height: tabBarHeight,
+          paddingBottom: bottom > 0 ? bottom : 8,
           paddingTop: 8,
           position: 'absolute',
           left: 0,

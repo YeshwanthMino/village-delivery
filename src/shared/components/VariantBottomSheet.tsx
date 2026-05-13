@@ -1,6 +1,6 @@
 import { X } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import { rupees } from '@/src/features/home/data/static/villageData';
@@ -35,8 +35,8 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
             </TouchableOpacity>
           </View>
 
-          {/* Variant rows */}
-          <ScrollView className="px-4 mt-3" showsVerticalScrollIndicator={false}>
+          {/* Variant rows — no ScrollView here; VillageBottomSheet owns scrolling */}
+          <View className="px-4 mt-3">
             {product.variants?.map((variant, i) => {
               const key = `${product.id}-v${i}`;
               const count = cart[key] ?? 0;
@@ -77,7 +77,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                 </View>
               );
             })}
-          </ScrollView>
+          </View>
         </View>
       )}
     </VillageBottomSheet>
