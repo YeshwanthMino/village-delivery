@@ -4,8 +4,11 @@ import { Category, Product, SortKey, CartRecord, CartLineItem, Bill } from '@/sr
 
 export interface HeroSlide {
   tag: string;
+  tagTE: string;
   title: string;
+  titleTE: string;
   subtitle: string;
+  subtitleTE: string;
   emoji: string;
   gradientFrom: string;
   gradientTo: string;
@@ -952,24 +955,33 @@ export const ALL_PRODUCTS: Product[] = [
 export const HERO_SLIDES: HeroSlide[] = [
   {
     tag: 'FRESH PICKS',
+    tagTE: 'తాజా ఎంపికలు',
     title: 'Farm-fresh produce, daily',
+    titleTE: 'ప్రతిరోజూ తాజా పంట ఉత్పత్తులు',
     subtitle: 'Hand-picked fruits & vegetables delivered in 12 min',
+    subtitleTE: '12 నిమిషాల్లో పండ్లు & కూరగాయలు డెలివరీ',
     emoji: '🥗',
     gradientFrom: 'from-green-600',
     gradientTo: 'to-emerald-700',
   },
   {
     tag: 'WEEKLY DEAL',
+    tagTE: 'వారపు డీల్',
     title: 'Save up to 40% on essentials',
+    titleTE: 'అవసరమైన వస్తువులపై 40% వరకు ఆదా చేయండి',
     subtitle: 'Dairy, bakery & pantry staples at unbeatable prices',
+    subtitleTE: 'పాల ఉత్పత్తులు, బేకరీ & రోజువారీ వస్తువులు తక్కువ ధరకు',
     emoji: '🛍️',
     gradientFrom: 'from-emerald-600',
     gradientTo: 'to-teal-700',
   },
   {
     tag: 'FAST DELIVERY',
+    tagTE: 'వేగవంతమైన డెలివరీ',
     title: 'Groceries in under 30 min',
+    titleTE: '30 నిమిషాల్లో కిరాణా వస్తువులు',
     subtitle: 'From our village stores to your doorstep, always fresh',
+    subtitleTE: 'మా గ్రామ కొట్టుల నుండి మీ ఇంటికి, ఎప్పుడూ తాజాగా',
     emoji: '🚚',
     gradientFrom: 'from-lime-600',
     gradientTo: 'to-green-700',

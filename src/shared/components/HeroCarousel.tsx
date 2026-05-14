@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { HeroSlide } from '@/src/features/home/data/static/villageData';
+import { useTranslation } from '@/src/core/utils/useTranslation';
 
 interface HeroCarouselProps {
   slides: HeroSlide[];
@@ -15,6 +16,7 @@ const RIGHT_PEEK = 28; // px of next card visible on right
 const CARD_GAP = 12;   // gap between cards
 
 export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
+  const { t, locale } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   // Card width leaves RIGHT_PEEK + CARD_GAP px of space for adjacent card peek
   const cardWidth = screenWidth - LEFT_PAD - RIGHT_PEEK - CARD_GAP;
@@ -77,17 +79,17 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
               <View style={styles.topRow}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <View style={styles.tagPill}>
-                    <Text style={styles.tagText}>{slide.tag}</Text>
+                    <Text style={styles.tagText}>{locale === 'te' ? slide.tagTE : slide.tag}</Text>
                   </View>
-                  <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{slide.title}</Text>
-                  <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">{slide.subtitle}</Text>
+                  <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{locale === 'te' ? slide.titleTE : slide.title}</Text>
+                  <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">{locale === 'te' ? slide.subtitleTE : slide.subtitle}</Text>
                 </View>
                 <Text style={styles.emoji}>{slide.emoji}</Text>
               </View>
 
               {/* CTA button */}
               <Pressable onPress={onShopNow} style={styles.ctaButton}>
-                <Text style={styles.ctaText}>Shop Now</Text>
+                <Text style={styles.ctaText}>{t('shop_now')}</Text>
               </Pressable>
             </LinearGradient>
           </View>
