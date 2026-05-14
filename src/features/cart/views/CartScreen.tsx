@@ -1,4 +1,4 @@
-import { MapPin, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, MapPin, ShieldCheck } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -42,10 +42,17 @@ export const CartScreen = () => {
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
       {/* Sticky Header */}
       <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
-        <Text className="text-slate-900 font-black text-xl">{t('my_cart')}</Text>
-        <Text className="text-slate-500 text-sm mt-0.5">
-          {vm.cartCount === 1 ? t('item_count').replace('{n}', '1') : interpolate(t('n_items_cart'), vm.cartCount)}
-        </Text>
+        <View className="flex-row items-center gap-3">
+          <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+            <ArrowLeft size={22} color="#0f172a" />
+          </TouchableOpacity>
+          <View>
+            <Text className="text-slate-900 font-black text-xl">{t('my_cart')}</Text>
+            <Text className="text-slate-500 text-sm mt-0.5">
+              {vm.cartCount === 1 ? t('item_count').replace('{n}', '1') : interpolate(t('n_items_cart'), vm.cartCount)}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
