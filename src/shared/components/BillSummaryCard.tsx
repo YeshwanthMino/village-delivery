@@ -3,6 +3,8 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { Bill } from '@/src/base/types/village.types';
 import { rupees } from '@/src/features/home/data/static/villageData';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 interface BillRowProps {
   label: string;
@@ -25,38 +27,39 @@ interface BillSummaryCardProps {
   couponApplied: boolean;
 }
 
-export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => (
-  <View className="bg-white border border-slate-200 rounded-2xl p-4">
-    {/* Header */}
-    <View className="flex-row items-center gap-2 mb-3">
-      <Receipt size={16} color="#64748b" />
-      <Text className="text-slate-500 text-xs font-bold tracking-wider">BILL SUMMARY</Text>
-    </View>
+export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => {
+  const { t } = useTranslation();
 
-    <BillRow label="Item total (MRP)" value={rupees(bill.mrpTotal)} />
-    <BillRow label="Discount on MRP" value={`-${rupees(bill.itemDiscount)}`} isGreen />
-    <BillRow
-      label="Delivery fee"
-      value={bill.deliveryFee === 0 ? 'FREE' : rupees(bill.deliveryFee)}
-      isGreen={bill.deliveryFee === 0}
-    />
-    <BillRow label="Platform fee" value={rupees(bill.platformFee)} />
-    {couponApplied && bill.couponDiscount > 0 && (
-      <BillRow label="Coupon (VILLAGE10)" value={`-${rupees(bill.couponDiscount)}`} isGreen />
-    )}
-
-    {/* Dashed divider */}
-    <View className="border-t border-dashed border-slate-300 my-2" />
-
-    <BillRow label="To Pay" value={rupees(bill.grandTotal)} isBold />
-
-    {/* Savings callout */}
-    {bill.totalSavings > 0 && (
-      <View className="bg-green-50 rounded-xl px-3 py-2 mt-2">
-        <Text className="text-green-700 text-xs font-medium text-center">
-          🎉 You saved {rupees(bill.totalSavings)} on this order
-        </Text>
+  return (
+    <View className="bg-white border border-slate-200 rounded-2xl p-4">
+      <View className="flex-row items-center gap-2 mb-3">
+        <Receipt size={16} color="#64748b" />
+        <Text className="text-slate-500 text-xs font-bold tracking-wider">{t('bill_summary')}</Text>
       </View>
-    )}
-  </View>
-);
+
+      <BillRow label={t('item_total_mrp')} value={rupees(bill.mrpTotal)} />
+      <BillRow label={t('discount_on_mrp')} value={`-${rupees(bill.itemDiscount)}`} isGreen />
+      <BillRow
+        label={t('delivery_fee')}
+        value={bill.deliveryFee === 0 ? t('free') : rupees(bill.deliveryFee)}
+        isGreen={bill.deliveryFee === 0}
+      />
+      <BillRow label={t('platform_fee')} value={rupees(bill.platformFee)} />
+      {couponApplied && bill.couponDiscount > 0 && (
+        <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
+      )}
+
+      <View className="border-t border-dashed border-slate-300 my-2" />
+
+      <BillRow label={t('to_pay')} value={rupees(bill.grandTotal)} isBold />
+
+      {bill.totalSavings > 0 && (
+        <View className="bg-green-50 rounded-xl px-3 py-2 mt-2">
+          <Text className="text-green-700 text-xs font-medium text-center">
+            {interpolate(t('you_saved_order'), rupees(bill.totalSavings))}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+};
