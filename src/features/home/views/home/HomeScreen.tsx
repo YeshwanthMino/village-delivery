@@ -28,9 +28,11 @@ export const HomeScreen = () => {
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
   const goToCategories = (catId?: string) => {
-    if (catId) vm.setSelectedCat(catId);
-    else vm.setSelectedCat(null);
-    router.push('/(dashboard)/categories');
+    if (catId) {
+      router.push(`/category-details?categoryId=${catId}` as any);
+    } else {
+      router.push('/(dashboard)/categories');
+    }
   };
 
   const goToCart = () => router.push('/(dashboard)/cart');

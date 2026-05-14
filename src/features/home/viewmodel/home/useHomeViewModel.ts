@@ -10,7 +10,6 @@ export const useHomeViewModel = () => {
   const decFromCart = useVillageStore(state => state.decFromCart);
   const toggleFav = useVillageStore(state => state.toggleFav);
   const cartCount = useVillageStore(state => state.cartCount());
-  const setSelectedCat = useVillageStore(state => state.setSelectedCat);
 
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
@@ -35,7 +34,6 @@ export const useHomeViewModel = () => {
     addToCart,
     decFromCart,
     toggleFav,
-    setSelectedCat,
     openVariants,
     closeVariants,
   };
