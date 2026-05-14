@@ -2,7 +2,6 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Category } from '@/src/base/types/village.types';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { useVillageStore } from '@/src/core/store/useVillageStore';
 
 interface CategoryTileProps {
   category: Category;
@@ -10,8 +9,7 @@ interface CategoryTileProps {
 }
 
 export const CategoryTile = ({ category, onPress }: CategoryTileProps) => {
-  const { t } = useTranslation();
-  const locale = useVillageStore((s) => s.locale);
+  const { t, locale } = useTranslation();
   const label = t(`cat_${category.id}`);
 
   return (
