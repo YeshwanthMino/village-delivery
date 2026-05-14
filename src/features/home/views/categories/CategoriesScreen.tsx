@@ -17,7 +17,7 @@ export const CategoriesScreen = () => {
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
-  const goToCart = () => router.push('/(dashboard)/cart');
+  const goToCart = () => router.push('/cart');
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>

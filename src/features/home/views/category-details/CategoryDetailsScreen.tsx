@@ -52,7 +52,7 @@ export const CategoryDetailsScreen = () => {
     }).start();
   }, []);
 
-  const goToCart = () => router.push('/(dashboard)/cart');
+  const goToCart = () => router.push('/cart');
 
   if (!vm.currentCategory || !vm.heroGradient) {
     return null;

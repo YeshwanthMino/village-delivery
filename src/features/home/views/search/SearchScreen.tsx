@@ -23,7 +23,7 @@ export const SearchScreen = () => {
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
-  const goToCart = () => router.push('/(dashboard)/cart');
+  const goToCart = () => router.push('/cart');
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['bottom', 'left', 'right']}>
