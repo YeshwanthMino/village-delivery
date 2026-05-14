@@ -9,7 +9,7 @@ import { Locale, interpolate, translate } from '@/src/base/constants/translation
  * automatically re-render when the locale changes.
  */
 export function useTranslation() {
-  const locale = useVillageStore((s) => (s as any).locale as Locale ?? 'te');
+  const locale = useVillageStore((s) => s.locale);
 
   function t(key: string): string {
     return translate(key, locale);

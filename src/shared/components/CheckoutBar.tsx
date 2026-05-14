@@ -26,7 +26,7 @@ export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPaymen
       <View>
         <Text style={[styles.paymentTitle, teFont]}>{t('payment_title')}</Text>
         <View style={styles.paymentRow}>
-          {(['cod', 'upi'] as NonNullable<PaymentMethod>[]).map((method) => {
+          {(['cod', 'upi'] as ('cod' | 'upi')[]).map((method) => {
             const isSelected = paymentMethod === method;
             return (
               <TouchableOpacity
