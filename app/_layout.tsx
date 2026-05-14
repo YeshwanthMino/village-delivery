@@ -19,7 +19,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadLocale();
-  }, []);
+  }, [loadLocale]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
