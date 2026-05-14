@@ -86,6 +86,10 @@ export const TRANSLATIONS: TranslationMap = {
   remove:              { te: 'తొలగించు',                                           en: 'REMOVE' },
   apply:               { te: 'వర్తించు',                                           en: 'APPLY' },
 
+  // Bottom sheets
+  choose_variant:      { te: 'బరువు / ప్యాక్ సైజ్ ఎంచుకోండి', en: 'Choose a weight / pack size' },
+  sort_by:             { te: 'క్రమబద్ధం చేయండి',              en: 'Sort by' },
+
   // Categories screen
   groceries_title:     { te: 'కిరాణా వస్తువులు',                                   en: 'Groceries' },
   sort:                { te: 'క్రమబద్ధం',                                          en: 'Sort' },
