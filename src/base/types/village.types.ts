@@ -8,6 +8,7 @@ export interface Product {
   id: string;
   categoryId: string;
   name: string;
+  nameTE: string;
   weight: string;
   price: number;
   mrp: number;
@@ -22,6 +23,7 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  nameTE: string;
   emoji: string;
   bgClass: string;
   textClass: string;
