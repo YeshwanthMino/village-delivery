@@ -58,3 +58,31 @@ export interface Bill {
 }
 
 export type SortKey = 'popular' | 'price_asc' | 'price_desc' | 'rating';
+
+export type OrderStatus =
+  | 'placed'
+  | 'confirmed'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  nameTE: string;
+  emoji: string;
+  weight: string;
+  price: number;
+  mrp: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  placedAt: string;        // ISO 8601 timestamp
+  status: OrderStatus;
+  items: OrderItem[];
+  bill: Bill;
+  deliveryAddress: string;
+  paymentMethod: 'cod' | 'upi';
+}
