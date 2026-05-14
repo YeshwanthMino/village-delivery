@@ -1,5 +1,5 @@
 import { LayoutGrid, Home, ShoppingCart, User } from 'lucide-react-native';
-import { Tabs, useRouter } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
@@ -10,21 +10,17 @@ const TAB_BAR_CONTENT_HEIGHT = 64;
 export default function DashboardLayout() {
   const { bottom } = useSafeAreaInsets();
   const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + bottom;
-  const router = useRouter();
   const { t } = useTranslation();
-  const [checked, setChecked] = useState(false);
+  const [firstLaunch, setFirstLaunch] = useState<boolean | null>(null);
 
   useEffect(() => {
     StoredPrefs.getIsFirstLaunch().then((isFirst) => {
-      if (isFirst) {
-        router.replace('/onboarding/language');
-      } else {
-        setChecked(true);
-      }
+      setFirstLaunch(isFirst);
     });
   }, []);
 
-  if (!checked) return null;
+  if (firstLaunch === null) return null;
+  if (firstLaunch) return <Redirect href="/onboarding/language" />;
 
   return (
     <Tabs
