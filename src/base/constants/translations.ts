@@ -8,6 +8,7 @@ export const TRANSLATIONS: TranslationMap = {
   add:              { te: 'జోడించు +', en: 'ADD' },
   added:            { te: 'జోడించారు', en: 'ADDED' },
   see_all:          { te: 'అన్నీ చూడు', en: 'See all' },
+  shop_now:         { te: 'ఇప్పుడు కొనండి', en: 'Shop Now' },
   search_placeholder: { te: 'వస్తువులు వెతకండి…', en: 'Search groceries…' },
   home_label:       { te: 'ఇల్లు', en: 'Home' },
   delivery_eta:     { te: '{n} నిమిషాల్లో డెలివరీ', en: 'Delivery in {n} min' },
