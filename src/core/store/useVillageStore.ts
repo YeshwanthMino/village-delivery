@@ -5,12 +5,16 @@
 import { CartRecord, SortKey } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { create } from 'zustand';
+import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { StorageKeys } from '@/src/base/constants/AppConstants';
+import { Locale } from '@/src/base/constants/translations';
 
 interface VillageState {
   cart: CartRecord;
   favs: Record<string, boolean>;
   selectedCat: string | null;
   sortKey: SortKey;
+  locale: Locale;
 }
 
 interface VillageActions {
@@ -20,6 +24,8 @@ interface VillageActions {
   setSelectedCat: (id: string | null) => void;
   setSortKey: (key: SortKey) => void;
   clearCart: () => void;
+  setLocale: (locale: Locale) => Promise<void>;
+  loadLocale: () => Promise<void>;
 }
 
 // Computed selector types (returned as derived values, not stored state)
@@ -35,6 +41,7 @@ const initialState: VillageState = {
   favs: {},
   selectedCat: null,
   sortKey: 'popular',
+  locale: 'te',
 };
 
 /**
@@ -84,6 +91,18 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   setSortKey: (key) => set({ sortKey: key }),
 
   clearCart: () => set({ cart: {} }),
+
+  setLocale: async (locale) => {
+    set({ locale });
+    await StoredPrefs.setCustomData(StorageKeys.LOCALE, locale);
+  },
+
+  loadLocale: async () => {
+    const saved = await StoredPrefs.getCustomData<Locale>(StorageKeys.LOCALE);
+    if (saved === 'te' || saved === 'en') {
+      set({ locale: saved });
+    }
+  },
 
   // Computed selectors
   cartCount: () => {
