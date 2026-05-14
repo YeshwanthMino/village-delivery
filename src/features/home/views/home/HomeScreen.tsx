@@ -180,7 +180,7 @@ export const HomeScreen = () => {
             >
               {t('top_picks')}
             </Text>
-            <TouchableOpacity onPress={() => goToCategories()}>
+            <TouchableOpacity onPress={() => router.push('/top-picks')}>
               <Text
                 className="text-green-600 font-semibold text-sm"
                 style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
