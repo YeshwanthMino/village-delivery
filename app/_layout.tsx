@@ -33,6 +33,7 @@ export default function RootLayout() {
               <Stack.Screen name="(dashboard)" />
               <Stack.Screen name="onboarding/language" />
               <Stack.Screen name="search" />
+              <Stack.Screen name="category-details" />
               <Stack.Screen name="index" />
               <Stack.Screen name="auth" />
             </Stack>
