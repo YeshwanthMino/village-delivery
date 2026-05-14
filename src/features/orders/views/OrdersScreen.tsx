@@ -147,8 +147,8 @@ function FilterChips({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0 }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
+      style={{ flexGrow: 0, height: 48 }}
+      contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center', height: 48 }}
     >
       {FILTER_CHIPS.map((chip, index) => {
         const active = selected === chip.value;
