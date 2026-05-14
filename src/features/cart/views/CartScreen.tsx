@@ -26,8 +26,7 @@ export const CartScreen = () => {
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(null);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const TAB_BAR_CONTENT_HEIGHT = 64;
-  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+  const scrollPadding = insets.bottom + 16;
 
   const goToHome = () => router.push('/(dashboard)/home');
 
