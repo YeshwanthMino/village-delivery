@@ -22,8 +22,7 @@ export const HomeScreen = () => {
   const vm = useHomeViewModel();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const locale = useVillageStore((s) => s.locale);
-  const setLocale = useVillageStore((s) => s.setLocale);
+  const { locale, setLocale } = useVillageStore((s) => ({ locale: s.locale, setLocale: s.setLocale }));
 
   const goToCategories = (catId?: string) => {
     if (catId) vm.setSelectedCat(catId);
