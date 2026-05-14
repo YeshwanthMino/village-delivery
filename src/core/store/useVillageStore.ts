@@ -1,5 +1,6 @@
-import { CartRecord } from '@/src/base/types/village.types';
+import { CartRecord, Order } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
+import { MOCK_ORDERS } from '@/src/features/orders/data/mockOrders';
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
@@ -9,6 +10,7 @@ interface VillageState {
   cart: CartRecord;
   favs: Record<string, boolean>;
   locale: Locale;
+  orders: Order[];
 }
 
 interface VillageActions {
@@ -31,6 +33,7 @@ const initialState: VillageState = {
   cart: {},
   favs: {},
   locale: 'te',
+  orders: MOCK_ORDERS,
 };
 
 function parseCartKey(key: string): { productId: string; variantIndex: number | null } {
