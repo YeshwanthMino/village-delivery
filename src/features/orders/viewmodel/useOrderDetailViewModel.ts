@@ -19,5 +19,5 @@ export const useOrderDetailViewModel = () => {
     }
   };
 
-  return { order, handleReorder };
+  return { orderId, order, handleReorder };
 };
