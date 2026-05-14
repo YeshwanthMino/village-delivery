@@ -17,12 +17,17 @@ import {
 } from '@/src/shared/components';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { PaymentMethod } from '@/src/shared/components/CheckoutBar';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(null);
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
   const goToHome = () => router.push('/(dashboard)/home');
 
@@ -38,16 +43,16 @@ export const CartScreen = () => {
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
       {/* Sticky Header */}
       <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
-        <Text className="text-slate-900 font-black text-xl">My Cart</Text>
+        <Text className="text-slate-900 font-black text-xl">{t('my_cart')}</Text>
         <Text className="text-slate-500 text-sm mt-0.5">
-          {vm.cartCount} {vm.cartCount === 1 ? 'item' : 'items'}
+          {vm.cartCount === 1 ? t('item_count').replace('{n}', '1') : interpolate(t('n_items_cart'), vm.cartCount)}
         </Text>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: scrollPadding }}
         decelerationRate="normal"
         scrollEventThrottle={16}
         bounces={true}
@@ -64,7 +69,7 @@ export const CartScreen = () => {
           {/* Items */}
           <View>
             <Text className="text-slate-500 text-[10px] font-bold tracking-widest mb-2 uppercase">
-              Your Items
+              {t('your_items')}
             </Text>
             <View className="gap-2">
               {vm.cartItems.map(item => (
@@ -84,7 +89,7 @@ export const CartScreen = () => {
           {vm.fbtProducts.length > 0 && (
             <View>
               <Text className="text-slate-500 text-[10px] font-bold tracking-widest mb-2 uppercase">
-                Frequently Bought Together
+                {t('fbt')}
               </Text>
               <ScrollView
                 horizontal
@@ -109,20 +114,20 @@ export const CartScreen = () => {
           <View className="bg-white border border-slate-200 rounded-2xl p-4 flex-row items-start gap-3">
             <MapPin size={18} color="#16a34a" className="mt-0.5" />
             <View className="flex-1">
-              <Text className="text-slate-900 font-bold text-sm">Delivering to Home</Text>
+              <Text className="text-slate-900 font-bold text-sm">{t('delivering_to_home')}</Text>
               <Text className="text-slate-500 text-xs mt-0.5">
                 221B Baker Street, Apartment 4B, Mumbai 400001
               </Text>
             </View>
             <TouchableOpacity>
-              <Text className="text-green-600 font-bold text-sm">CHANGE</Text>
+              <Text className="text-green-600 font-bold text-sm">{t('change')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">
             <ShieldCheck size={16} color="#22c55e" />
-            <Text className="text-slate-500 text-xs">Safe & secure payments · 100% genuine products</Text>
+            <Text className="text-slate-500 text-xs">{t('secure_payments')}</Text>
           </View>
         </View>
       </ScrollView>
