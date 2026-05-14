@@ -1,22 +1,23 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 interface FloatingCartPillProps {
   count: number;
   onPress: () => void;
 }
 
-// Visual content height of the tab bar — must stay in sync with _layout.tsx
 const TAB_BAR_CONTENT_HEIGHT = 64;
 
 export const FloatingCartPill = ({ count, onPress }: FloatingCartPillProps) => {
   const { bottom } = useSafeAreaInsets();
+  const { t } = useTranslation();
   if (count === 0) return null;
 
-  // SafeAreaView already applies bottom inset as padding on the wrapping screen.
-  // We only need to clear the tab bar content height plus a small visual gap.
   const pillBottom = TAB_BAR_CONTENT_HEIGHT + 8;
+  const label = count === 1 ? t('one_item_cart') : interpolate(t('n_items_cart'), count);
 
   return (
     <TouchableOpacity
@@ -27,10 +28,8 @@ export const FloatingCartPill = ({ count, onPress }: FloatingCartPillProps) => {
       <View style={styles.badge}>
         <Text style={styles.badgeText}>{count}</Text>
       </View>
-      <Text style={styles.label}>
-        {count === 1 ? '1 item in cart' : `${count} items in cart`}
-      </Text>
-      <Text style={styles.action}>View cart →</Text>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.action}>{t('view_cart_arrow')}</Text>
     </TouchableOpacity>
   );
 };
@@ -60,20 +59,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
   },
-  badgeText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  label: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-    flex: 1,
-  },
-  action: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  badgeText: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
+  label:     { color: '#ffffff', fontWeight: '600', fontSize: 14, flex: 1 },
+  action:    { color: '#ffffff', fontWeight: '700', fontSize: 14 },
 });
