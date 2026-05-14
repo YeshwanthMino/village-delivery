@@ -122,6 +122,7 @@ export const TRANSLATIONS: TranslationMap = {
 
   // Order list & detail
   orders_filter_all:          { te: 'అన్నీ',                       en: 'All' },
+  orders_no_results:          { te: 'ఆర్డర్లు లేవు',              en: 'No orders' },
   orders_active:              { te: 'చురుకైన ఆర్డర్లు',           en: 'Active Orders' },
   orders_past:                { te: 'గత ఆర్డర్లు',                en: 'Past Orders' },
   order_id:                   { te: 'ఆర్డర్ {n}',                 en: 'Order {n}' },
