@@ -11,8 +11,11 @@ export default function LanguageScreen() {
   const router = useRouter();
   const setLocale = useVillageStore((s) => s.setLocale);
   const [selected, setSelected] = useState<Locale>('te');
+  const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
+    if (loading) return;
+    setLoading(true);
     await setLocale(selected);
     await StoredPrefs.setIsFirstLaunch(false);
     router.replace('/(dashboard)/home');
@@ -86,10 +89,11 @@ export default function LanguageScreen() {
         {/* CTA */}
         <TouchableOpacity
           onPress={handleContinue}
+          disabled={loading}
           style={{
             width: '100%',
             height: 54,
-            backgroundColor: '#fbbf24',
+            backgroundColor: loading ? '#d97706' : '#fbbf24',
             borderRadius: 16,
             alignItems: 'center',
             justifyContent: 'center',
