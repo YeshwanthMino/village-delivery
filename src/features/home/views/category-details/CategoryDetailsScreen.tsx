@@ -54,12 +54,12 @@ export const CategoryDetailsScreen = () => {
 
   const goToCart = () => router.push('/(dashboard)/cart');
 
-  if (!vm.currentCategory) {
+  if (!vm.currentCategory || !vm.heroGradient) {
     return null;
   }
 
   const cat = vm.currentCategory;
-  const grad = vm.heroGradient!;
+  const grad = vm.heroGradient;
   const catName = locale === 'te' ? cat.nameTE : cat.name;
 
   return (
@@ -164,7 +164,7 @@ export const CategoryDetailsScreen = () => {
           >
             {FILTER_CHIPS.map((chip, i) => (
               <View
-                key={chip}
+                key={i}
                 className={`rounded-full px-4 py-1.5 border ${
                   i === 0 ? 'bg-green-600 border-green-600' : 'bg-white border-slate-200'
                 }`}
