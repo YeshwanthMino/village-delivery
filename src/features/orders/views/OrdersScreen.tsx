@@ -147,14 +147,15 @@ function FilterChips({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
     >
-      {FILTER_CHIPS.map(chip => {
+      {FILTER_CHIPS.map((chip, index) => {
         const active = selected === chip.value;
         return (
           <Pressable
             key={chip.value}
             onPress={() => onChange(chip.value)}
+            style={{ marginRight: index < FILTER_CHIPS.length - 1 ? 8 : 0, flexShrink: 0 }}
             className={`px-3 py-1.5 rounded-full border ${
               active
                 ? 'bg-green-600 border-green-600'
@@ -162,6 +163,7 @@ function FilterChips({
             }`}
           >
             <Text
+              numberOfLines={1}
               className={`text-xs font-semibold ${
                 active ? 'text-white' : 'text-slate-600'
               }`}

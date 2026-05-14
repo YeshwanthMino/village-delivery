@@ -7,7 +7,7 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -99,13 +99,19 @@ export const OrderDetailScreen = () => {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { order, handleReorder } = useOrderDetailViewModel();
+  const { orderId, order, handleReorder } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
-  if (!order) {
-    router.back();
-    return null;
-  }
+  // Navigate back only when orderId is known but order not found (unknown ID).
+  // Guard prevents calling router during render; also avoids premature back
+  // on first render before params are hydrated.
+  useEffect(() => {
+    if (orderId && !order) {
+      router.back();
+    }
+  }, [orderId, order, router]);
+
+  if (!order) return null;
 
   const banner = STATUS_BANNER[order.status];
   const isCancelled = order.status === 'cancelled';
