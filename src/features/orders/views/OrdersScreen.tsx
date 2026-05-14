@@ -147,7 +147,8 @@ function FilterChips({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+      style={{ flexGrow: 0 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' }}
     >
       {FILTER_CHIPS.map((chip, index) => {
         const active = selected === chip.value;
@@ -243,7 +244,7 @@ export const OrdersScreen = () => {
         <EmptyOrders />
       ) : listData.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-slate-400 text-sm">{t('orders_filter_all')}</Text>
+          <Text className="text-slate-400 text-sm">{t('orders_no_results')}</Text>
         </View>
       ) : (
         <FlatList
