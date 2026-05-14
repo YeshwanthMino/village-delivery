@@ -119,6 +119,20 @@ export const TRANSLATIONS: TranslationMap = {
   // Orders screen
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
   orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
+
+  // Order list & detail
+  orders_active:              { te: 'చురుకైన ఆర్డర్లు',           en: 'Active Orders' },
+  orders_past:                { te: 'గత ఆర్డర్లు',                en: 'Past Orders' },
+  order_id:                   { te: 'ఆర్డర్ {n}',                 en: 'Order {n}' },
+  status_placed:              { te: 'ఆర్డర్ చేయబడింది',           en: 'Order Placed' },
+  status_confirmed:           { te: 'నిర్ధారించబడింది',            en: 'Confirmed' },
+  status_out_for_delivery:    { te: 'డెలివరీకి బయలుదేరింది',       en: 'Out for Delivery' },
+  status_delivered:           { te: 'డెలివరీ అయింది',              en: 'Delivered' },
+  status_cancelled:           { te: 'రద్దు చేయబడింది',             en: 'Cancelled' },
+  reorder_btn:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Reorder' },
+  delivery_address_label:     { te: 'డెలివరీ చిరునామా',            en: 'Delivery Address' },
+  payment_method_used:        { te: 'చెల్లింపు',                   en: 'Payment' },
+  view_details:               { te: 'వివరాలు చూడండి →',           en: 'View Details →' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
