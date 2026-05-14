@@ -31,7 +31,7 @@ export default function RootLayout() {
           <AppScreen>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(dashboard)" />
-              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="onboarding/language" />
               <Stack.Screen name="search" />
               <Stack.Screen name="index" />
               <Stack.Screen name="auth" />
