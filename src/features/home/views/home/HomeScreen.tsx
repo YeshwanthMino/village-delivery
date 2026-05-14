@@ -22,7 +22,10 @@ export const HomeScreen = () => {
   const vm = useHomeViewModel();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { locale, setLocale } = useVillageStore((s) => ({ locale: s.locale, setLocale: s.setLocale }));
+  const locale = useVillageStore((s) => s.locale);
+  const setLocale = useVillageStore((s) => s.setLocale);
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
   const goToCategories = (catId?: string) => {
     if (catId) vm.setSelectedCat(catId);
@@ -108,7 +111,7 @@ export const HomeScreen = () => {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 250 }}
+        contentContainerStyle={{ paddingBottom: scrollPadding }}
         decelerationRate="normal"
         scrollEventThrottle={16}
         bounces={true}
