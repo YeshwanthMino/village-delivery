@@ -20,7 +20,7 @@ export const TRANSLATIONS: TranslationMap = {
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },
   nav_profile:      { te: 'ప్రొఫైల్', en: 'Profile' },
-  nav_orders:            { te: 'ఆర్డర్లు',                                            en: 'Orders' },
+  nav_orders:       { te: 'ఆర్డర్లు', en: 'Orders' },
   choose_language:  { te: 'మీ భాష ఎంచుకోండి', en: 'Choose your language' },
   welcome:          { te: 'మీకు స్వాగతం!', en: 'Welcome!' },
   whatsapp_help:    { te: 'సహాయం', en: 'Help' },
@@ -113,8 +113,8 @@ export const TRANSLATIONS: TranslationMap = {
   sign_in_btn:         { te: 'సైన్ ఇన్',                                          en: 'Sign In' },
 
   // Orders screen
-  orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',                                en: 'No orders yet' },
-  orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది',               en: 'Your first order will appear here' },
+  orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
+  orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
