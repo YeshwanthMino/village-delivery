@@ -14,21 +14,35 @@ import {
 } from '@/src/shared/components';
 import { useCategoriesViewModel } from '../../viewmodel/categories/useCategoriesViewModel';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
-
-const SORT_LABELS: Record<string, string> = {
-  popular:    'Most Popular',
-  price_asc:  'Price: Low to High',
-  price_desc: 'Price: High to Low',
-  rating:     'Top Rated',
-};
 
 export const CategoriesScreen = () => {
   const router = useRouter();
   const vm = useCategoriesViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
+  const { t, locale } = useTranslation();
+  const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+
+  const SORT_LABELS: Record<string, string> = {
+    popular:    t('sort_popular'),
+    price_asc:  t('sort_price_asc'),
+    price_desc: t('sort_price_desc'),
+    rating:     t('sort_rating'),
+  };
+
+  const FILTER_CHIPS = [
+    t('filter_all'),
+    t('filter_best_sellers'),
+    t('filter_new'),
+    t('filter_on_sale'),
+    t('filter_top_rated'),
+  ];
 
   // Slide-in animation when category selected
   useEffect(() => {
@@ -51,7 +65,7 @@ export const CategoriesScreen = () => {
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 250 }}
+          contentContainerStyle={{ paddingBottom: scrollPadding }}
           decelerationRate="normal"
           scrollEventThrottle={16}
           bounces={true}
@@ -60,9 +74,9 @@ export const CategoriesScreen = () => {
         >
           {/* Header */}
           <View className="px-4 pb-2" style={{ paddingTop: insets.top + 16 }}>
-            <Text className="text-slate-900 font-black text-2xl">Groceries</Text>
+            <Text className="text-slate-900 font-black text-2xl" style={teFont}>{t('groceries_title')}</Text>
             <Text className="text-slate-500 text-sm mt-1">
-              {vm.categories.length * 6} products across {vm.categories.length} categories
+              {interpolate(t('items_label'), vm.categories.length * 6)} · {interpolate(t('cat_count'), vm.categories.length)}
             </Text>
           </View>
 
@@ -91,6 +105,7 @@ export const CategoriesScreen = () => {
   // Detail state (category selected)
   const cat = vm.currentCategory!;
   const grad = vm.heroGradient!;
+  const catName = locale === 'te' ? cat.nameTE : cat.name;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -112,8 +127,8 @@ export const CategoriesScreen = () => {
                 <Text style={{ fontSize: 18 }}>{cat.emoji}</Text>
               </View>
               <View>
-                <Text className="text-slate-900 font-bold text-sm">{cat.name}</Text>
-                <Text className="text-slate-400 text-[10px]">{vm.products.length} products</Text>
+                <Text className="text-slate-900 font-bold text-sm">{catName}</Text>
+                <Text className="text-slate-400 text-[10px]">{interpolate(t('items_label'), vm.products.length)}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -121,7 +136,7 @@ export const CategoriesScreen = () => {
               className="flex-row items-center gap-1.5 bg-slate-100 rounded-full px-3 py-1.5"
             >
               <SlidersHorizontal size={14} color="#64748b" />
-              <Text className="text-slate-600 text-xs font-medium">Sort</Text>
+              <Text className="text-slate-600 text-xs font-medium">{t('sort')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -142,7 +157,7 @@ export const CategoriesScreen = () => {
       <AnimatedScrollView
         style={{ flex: 1, transform: [{ translateX: slideAnim }] }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 250 }}
+        contentContainerStyle={{ paddingBottom: scrollPadding }}
         stickyHeaderIndices={[1]}
         decelerationRate="normal"
         scrollEventThrottle={16}
@@ -174,10 +189,10 @@ export const CategoriesScreen = () => {
             </TouchableOpacity>
           </View>
           <Text className="text-white/70 text-xs font-semibold tracking-wider uppercase">
-            Category · {vm.products.length} products
+            Category · {interpolate(t('items_label'), vm.products.length)}
           </Text>
-          <Text className="text-white font-black mt-1" style={{ fontSize: 28 }}>{cat.name}</Text>
-          <Text className="text-white/70 text-sm mt-1">Fresh · Quality · Delivered in 12 min</Text>
+          <Text className="text-white font-black mt-1" style={{ fontSize: 28 }}>{catName}</Text>
+          <Text className="text-white/70 text-sm mt-1">{t('cat_tagline')}</Text>
           <Text style={{ fontSize: 64, marginTop: 8 }}>{cat.emoji}</Text>
         </LinearGradient>
 
@@ -192,7 +207,7 @@ export const CategoriesScreen = () => {
             nestedScrollEnabled={true}
             decelerationRate="normal"
           >
-            {['All', 'Best sellers', 'New', 'On sale', 'Top rated'].map((chip, i) => (
+            {FILTER_CHIPS.map((chip, i) => (
               <View
                 key={chip}
                 className={`rounded-full px-4 py-1.5 border ${
@@ -211,7 +226,7 @@ export const CategoriesScreen = () => {
         <View className="bg-white">
           <View className="px-4 pt-3 pb-2">
             <Text className="text-slate-500 text-xs">
-              Showing {vm.products.length} · {SORT_LABELS[vm.sortKey]}
+              {interpolate(t('items_label'), vm.products.length)} · {SORT_LABELS[vm.sortKey]}
             </Text>
           </View>
           <View className="px-4 pb-8">
