@@ -16,10 +16,12 @@ import {
   VariantBottomSheet,
 } from '@/src/shared/components';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
+import { PaymentMethod } from '@/src/shared/components/CheckoutBar';
 
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(null);
   const insets = useSafeAreaInsets();
 
   const goToHome = () => router.push('/(dashboard)/home');
@@ -126,7 +128,12 @@ export const CartScreen = () => {
       </ScrollView>
 
       {/* Checkout bar */}
-      <CheckoutBar grandTotal={vm.bill.grandTotal} savings={vm.bill.totalSavings} />
+      <CheckoutBar
+        grandTotal={vm.bill.grandTotal}
+        savings={vm.bill.totalSavings}
+        paymentMethod={paymentMethod}
+        onSelectPayment={setPaymentMethod}
+      />
 
       {/* Variant sheet */}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
