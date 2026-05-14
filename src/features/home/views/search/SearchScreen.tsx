@@ -11,12 +11,17 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import { FloatingCartPill, ProductCard, VariantBottomSheet } from '@/src/shared/components';
 import { useSearchViewModel } from '../../viewmodel/search/useSearchViewModel';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 export const SearchScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const vm = useSearchViewModel();
   const inputRef = useRef<TextInput>(null);
+  const { t } = useTranslation();
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
   const goToCart = () => router.push('/(dashboard)/cart');
 
@@ -43,7 +48,7 @@ export const SearchScreen = () => {
               autoFocus
               value={vm.query}
               onChangeText={vm.setQuery}
-              placeholder="Search groceries, brands…"
+              placeholder={t('search_brands_ph')}
               placeholderTextColor="#94a3b8"
               className="flex-1 text-slate-900 text-sm"
               returnKeyType="search"
@@ -79,16 +84,16 @@ export const SearchScreen = () => {
       {vm.results.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           {vm.query.trim().length > 0 ? (
-            <Text className="text-slate-400 text-sm">No results for "{vm.query.trim()}"</Text>
+            <Text className="text-slate-400 text-sm">{interpolate(t('no_results'), vm.query.trim())}</Text>
           ) : (
-            <Text className="text-slate-400 text-sm">Start typing to search</Text>
+            <Text className="text-slate-400 text-sm">{t('start_typing')}</Text>
           )}
         </View>
       ) : (
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: scrollPadding }}
           keyboardShouldPersistTaps="handled"
         >
           <View className="flex-row flex-wrap gap-3">

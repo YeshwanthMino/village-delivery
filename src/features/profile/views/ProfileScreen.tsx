@@ -1,7 +1,7 @@
 import { MessageCircle, User } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Linking, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Support } from '@/src/base/constants/AppConstants';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
@@ -9,6 +9,9 @@ export const ProfileScreen = () => {
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
+  const { bottom } = useSafeAreaInsets();
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const bottomPad = TAB_BAR_CONTENT_HEIGHT + bottom + 8;
 
   const openWhatsApp = async () => {
     const message = encodeURIComponent('నమస్కారం, నాకు సహాయం కావాలి.');
@@ -30,19 +33,19 @@ export const ProfileScreen = () => {
         <View className="w-20 h-20 bg-green-50 rounded-full items-center justify-center mb-6">
           <User size={40} color="#16a34a" />
         </View>
-        <Text className="text-slate-900 font-black text-xl mb-2 text-center">
-          Sign in to Village Delivery
+        <Text className="text-slate-900 font-black text-xl mb-2 text-center" style={teFont}>
+          {t('sign_in_title')}
         </Text>
-        <Text className="text-slate-500 text-sm text-center mb-8">
-          Track orders, save favourites and unlock member-only deals.
+        <Text className="text-slate-500 text-sm text-center mb-8" style={teRegular}>
+          {t('sign_in_subtitle')}
         </Text>
         <TouchableOpacity className="bg-green-600 rounded-2xl px-10 py-3">
-          <Text className="text-white font-bold text-base">Sign In</Text>
+          <Text className="text-white font-bold text-base" style={teFont}>{t('sign_in_btn')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Help / WhatsApp section */}
-      <View className="px-4 pb-8 border-t border-slate-100 pt-4">
+      <View className="px-4 border-t border-slate-100 pt-4" style={{ paddingBottom: bottomPad }}>
         <Text
           className="text-slate-500 text-xs font-bold tracking-widest uppercase mb-3"
           style={teFont}
