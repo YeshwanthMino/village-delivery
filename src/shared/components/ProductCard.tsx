@@ -77,7 +77,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
           style={teFont}
           numberOfLines={2}
         >
-          {product.name}
+          {locale === 'te' ? product.nameTE : product.name}
         </Text>
 
         {/* Weight pill — ratings row removed */}
