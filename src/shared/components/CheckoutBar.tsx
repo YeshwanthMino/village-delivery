@@ -1,9 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rupees } from '@/src/features/home/data/static/villageData';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-
-const TAB_BAR_CONTENT_HEIGHT = 64;
 
 export type PaymentMethod = 'cod' | 'upi' | null;
 
@@ -15,13 +14,13 @@ interface CheckoutBarProps {
 }
 
 export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPayment }: CheckoutBarProps) => {
-  const bottomPad = TAB_BAR_CONTENT_HEIGHT + 8;
+  const { bottom } = useSafeAreaInsets();
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
 
   return (
-    <View style={{ marginBottom: bottomPad, marginHorizontal: 12, gap: 10 }}>
+    <View style={{ marginBottom: bottom + 8, marginHorizontal: 12, gap: 10 }}>
       {/* Payment method selector */}
       <View>
         <Text style={[styles.paymentTitle, teFont]}>{t('payment_title')}</Text>
