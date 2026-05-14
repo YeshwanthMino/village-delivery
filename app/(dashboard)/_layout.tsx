@@ -1,15 +1,30 @@
 import { LayoutGrid, Home, ShoppingCart, User } from 'lucide-react-native';
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { useTranslation } from '@/src/core/utils/useTranslation';
 
-// The visual content height of the tab bar (icons + labels)
 const TAB_BAR_CONTENT_HEIGHT = 64;
 
 export default function DashboardLayout() {
   const { bottom } = useSafeAreaInsets();
-  // Add the system navigation bar inset so the tab bar clears the gesture bar / button bar
   const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + bottom;
+  const router = useRouter();
+  const { t } = useTranslation();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    StoredPrefs.getIsFirstLaunch().then((isFirst) => {
+      if (isFirst) {
+        router.replace('/onboarding/language');
+      } else {
+        setChecked(true);
+      }
+    });
+  }, []);
+
+  if (!checked) return null;
 
   return (
     <Tabs
@@ -45,28 +60,28 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
+          title: t('nav_home'),
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Categories',
+          title: t('nav_categories'),
           tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: t('nav_cart'),
           tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('nav_profile'),
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
