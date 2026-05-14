@@ -29,7 +29,7 @@ export const HomeScreen = () => {
 
   const goToCategories = (catId?: string) => {
     if (catId) {
-      router.push(`/category-details?categoryId=${catId}` as any);
+      router.push({ pathname: '/category-details', params: { categoryId: catId } } as any);
     } else {
       router.push('/(dashboard)/categories');
     }

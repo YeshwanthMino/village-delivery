@@ -48,7 +48,7 @@ export const CategoriesScreen = () => {
                   <CategoryBigCard
                     category={cat}
                     itemCount={vm.productCountInCat(cat.id)}
-                    onPress={() => router.push(`/category-details?categoryId=${cat.id}`)}
+                    onPress={() => router.push({ pathname: '/category-details', params: { categoryId: cat.id } } as any)}
                   />
                 </View>
               ))}
