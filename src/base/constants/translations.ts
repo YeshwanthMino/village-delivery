@@ -49,5 +49,5 @@ export function translate(key: string, locale: Locale): string {
 
 /** Replace `{n}` in a template string. */
 export function interpolate(template: string, n: number | string): string {
-  return template.replace('{n}', String(n));
+  return template.replaceAll('{n}', String(n));
 }
