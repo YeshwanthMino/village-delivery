@@ -1,6 +1,6 @@
 import { ClipboardList } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
-import { Animated, FlatList, Pressable, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Order, OrderStatus } from '@/src/base/types/village.types';
@@ -122,6 +122,59 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+// ── Filter chips ──────────────────────────────────────────────────────────────
+
+type FilterValue = 'all' | OrderStatus;
+
+const FILTER_CHIPS: { value: FilterValue; labelKey: string }[] = [
+  { value: 'all',             labelKey: 'orders_filter_all'        },
+  { value: 'out_for_delivery',labelKey: 'status_out_for_delivery'  },
+  { value: 'confirmed',       labelKey: 'status_confirmed'         },
+  { value: 'placed',          labelKey: 'status_placed'            },
+  { value: 'delivered',       labelKey: 'status_delivered'         },
+  { value: 'cancelled',       labelKey: 'status_cancelled'         },
+];
+
+function FilterChips({
+  selected,
+  onChange,
+}: {
+  selected: FilterValue;
+  onChange: (v: FilterValue) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+    >
+      {FILTER_CHIPS.map(chip => {
+        const active = selected === chip.value;
+        return (
+          <Pressable
+            key={chip.value}
+            onPress={() => onChange(chip.value)}
+            className={`px-3 py-1.5 rounded-full border ${
+              active
+                ? 'bg-green-600 border-green-600'
+                : 'bg-white border-slate-200'
+            }`}
+          >
+            <Text
+              className={`text-xs font-semibold ${
+                active ? 'text-white' : 'text-slate-600'
+              }`}
+            >
+              {t(chip.labelKey)}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 function EmptyOrders() {
@@ -143,23 +196,34 @@ export const OrdersScreen = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { activeOrders, pastOrders } = useOrdersViewModel();
+  const { allOrders, activeOrders, pastOrders } = useOrdersViewModel();
+  const [filter, setFilter] = useState<FilterValue>('all');
 
-  const hasOrders = activeOrders.length > 0 || pastOrders.length > 0;
+  const hasOrders = allOrders.length > 0;
 
   type ListItem =
     | { type: 'header'; label: string }
     | { type: 'order'; order: Order };
 
   const listData: ListItem[] = [];
-  if (activeOrders.length > 0) {
-    listData.push({ type: 'header', label: t('orders_active') });
-    activeOrders.forEach(o => listData.push({ type: 'order', order: o }));
+
+  if (filter === 'all') {
+    if (activeOrders.length > 0) {
+      listData.push({ type: 'header', label: t('orders_active') });
+      activeOrders.forEach(o => listData.push({ type: 'order', order: o }));
+    }
+    if (pastOrders.length > 0) {
+      listData.push({ type: 'header', label: t('orders_past') });
+      pastOrders.forEach(o => listData.push({ type: 'order', order: o }));
+    }
+  } else {
+    allOrders
+      .filter(o => o.status === filter)
+      .forEach(o => listData.push({ type: 'order', order: o }));
   }
-  if (pastOrders.length > 0) {
-    listData.push({ type: 'header', label: t('orders_past') });
-    pastOrders.forEach(o => listData.push({ type: 'order', order: o }));
-  }
+
+  const navigate = (orderId: string) =>
+    router.push({ pathname: '/order-detail', params: { orderId } } as any);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -168,8 +232,17 @@ export const OrdersScreen = () => {
         <Text className="text-slate-900 font-black text-2xl">{t('nav_orders')}</Text>
       </View>
 
+      {/* Filter chips — always visible when there are orders */}
+      {hasOrders && (
+        <FilterChips selected={filter} onChange={setFilter} />
+      )}
+
       {!hasOrders ? (
         <EmptyOrders />
+      ) : listData.length === 0 ? (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-slate-400 text-sm">{t('orders_filter_all')}</Text>
+        </View>
       ) : (
         <FlatList
           data={listData}
@@ -180,7 +253,7 @@ export const OrdersScreen = () => {
             return (
               <OrderCard
                 order={item.order}
-                onPress={() => router.push({ pathname: '/order-detail', params: { orderId: item.order.id } } as any)}
+                onPress={() => navigate(item.order.id)}
               />
             );
           }}
