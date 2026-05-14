@@ -121,6 +121,7 @@ export const TRANSLATIONS: TranslationMap = {
   orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
 
   // Order list & detail
+  orders_filter_all:          { te: 'అన్నీ',                       en: 'All' },
   orders_active:              { te: 'చురుకైన ఆర్డర్లు',           en: 'Active Orders' },
   orders_past:                { te: 'గత ఆర్డర్లు',                en: 'Past Orders' },
   order_id:                   { te: 'ఆర్డర్ {n}',                 en: 'Order {n}' },

@@ -17,5 +17,5 @@ export const useOrdersViewModel = () => {
     [orders]
   );
 
-  return { activeOrders, pastOrders };
+  return { allOrders: orders, activeOrders, pastOrders };
 };
