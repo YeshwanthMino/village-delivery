@@ -65,6 +65,15 @@ export const StorageKeys = {
 
   // Deep linking
   DEFERRED_DEEP_LINK: 'deferredDeepLink',
+
+  // Locale
+  LOCALE: 'app_locale',
+};
+
+export const Support = {
+  // Set this to your real WhatsApp support number before release.
+  // Format: country code + number, no '+' or spaces. Example: '919876543210'
+  WHATSAPP_NUMBER: '91XXXXXXXXXX',
 };
 
 // Error codes and messages
