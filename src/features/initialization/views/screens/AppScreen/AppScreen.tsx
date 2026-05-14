@@ -27,7 +27,8 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
     const inSearch = segments[0] === 'search';
     const inOnboarding = segments[0] === 'onboarding';
     const inCategoryDetails = segments[0] === 'category-details';
-    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails) {
+    const inCart = segments[0] === 'cart';
+    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart) {
       router.replace('/(dashboard)/home');
     }
   }, [fontsLoaded, ready, segments]);
