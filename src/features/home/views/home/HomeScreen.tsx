@@ -35,7 +35,7 @@ export const HomeScreen = () => {
     }
   };
 
-  const goToCart = () => router.push('/(dashboard)/cart');
+  const goToCart = () => router.push('/cart');
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
