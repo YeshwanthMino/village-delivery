@@ -3,7 +3,9 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
+import { interpolate } from '@/src/base/constants/translations';
 import { rupees } from '@/src/features/home/data/static/villageData';
+import { useTranslation } from '@/src/core/utils/useTranslation';
 import { CompactStepper } from './CompactStepper';
 import { VillageBottomSheet } from './VillageBottomSheet';
 
@@ -13,6 +15,7 @@ interface VariantBottomSheetProps {
 }
 
 export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps) => {
+  const { t } = useTranslation();
   const cart = useVillageStore(state => state.cart);
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
@@ -28,7 +31,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
             </View>
             <View className="flex-1">
               <Text className="text-slate-900 font-bold text-base" numberOfLines={1}>{product.name}</Text>
-              <Text className="text-slate-500 text-xs mt-0.5">Choose a weight / pack size</Text>
+              <Text className="text-slate-500 text-xs mt-0.5">{t('choose_variant')}</Text>
             </View>
             <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center">
               <X size={20} color="#64748b" />
@@ -54,7 +57,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                         <Text className="text-slate-400 text-xs line-through">{rupees(variant.mrp)}</Text>
                       )}
                       {discount > 0 && (
-                        <Text className="text-green-600 text-xs font-semibold">{discount}% off</Text>
+                        <Text className="text-green-600 text-xs font-semibold">{interpolate(t('discount_badge'), discount)}</Text>
                       )}
                     </View>
                   </View>
@@ -64,7 +67,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                         onPress={() => addToCart(key)}
                         className="border-2 border-green-600 rounded-lg h-9 px-4 items-center justify-center"
                       >
-                        <Text className="text-green-700 font-bold text-sm">ADD</Text>
+                        <Text className="text-green-700 font-bold text-sm">{t('add')}</Text>
                       </TouchableOpacity>
                     ) : (
                       <CompactStepper
