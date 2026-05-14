@@ -9,8 +9,8 @@ interface CategoryTileProps {
 }
 
 export const CategoryTile = ({ category, onPress }: CategoryTileProps) => {
-  const { t, locale } = useTranslation();
-  const label = t(`cat_${category.id}`);
+  const { locale } = useTranslation();
+  const label = locale === 'te' ? category.nameTE : category.name;
 
   return (
     <TouchableOpacity
