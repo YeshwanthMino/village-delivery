@@ -1,4 +1,4 @@
-import { LayoutGrid, Home, ShoppingCart, User } from 'lucide-react-native';
+import { LayoutGrid, Home, ClipboardList, User } from 'lucide-react-native';
 import { Redirect, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,10 +68,10 @@ export default function DashboardLayout() {
         }}
       />
       <Tabs.Screen
-        name="cart"
+        name="orders"
         options={{
-          title: t('nav_cart'),
-          tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} />,
+          title: t('nav_orders'),
+          tabBarIcon: ({ color, size }) => <ClipboardList color={color} size={size} />,
         }}
       />
       <Tabs.Screen
