@@ -28,7 +28,8 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
     const inOnboarding = segments[0] === 'onboarding';
     const inCategoryDetails = segments[0] === 'category-details';
     const inCart = segments[0] === 'cart';
-    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart) {
+    const inTopPicks = segments[0] === 'top-picks';
+    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks) {
       router.replace('/(dashboard)/home');
     }
   }, [fontsLoaded, ready, segments]);
