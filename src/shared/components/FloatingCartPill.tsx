@@ -7,16 +7,17 @@ import { interpolate } from '@/src/base/constants/translations';
 interface FloatingCartPillProps {
   count: number;
   onPress: () => void;
+  bottomOffset?: number;
 }
 
 const TAB_BAR_CONTENT_HEIGHT = 64;
 
-export const FloatingCartPill = ({ count, onPress }: FloatingCartPillProps) => {
+export const FloatingCartPill = ({ count, onPress, bottomOffset }: FloatingCartPillProps) => {
   const { bottom } = useSafeAreaInsets();
   const { t } = useTranslation();
   if (count === 0) return null;
 
-  const pillBottom = TAB_BAR_CONTENT_HEIGHT + 8;
+  const pillBottom = (bottomOffset ?? TAB_BAR_CONTENT_HEIGHT) + 8;
   const label = count === 1 ? t('one_item_cart') : interpolate(t('n_items_cart'), count);
 
   return (

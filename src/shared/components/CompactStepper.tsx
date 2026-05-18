@@ -9,10 +9,10 @@ interface CompactStepperProps {
 }
 
 export const CompactStepper = ({ count, onAdd, onDec }: CompactStepperProps) => (
-  <View className="flex-row items-center border-2 border-green-600 rounded-lg h-10">
+  <View className="flex-row items-center border-2 border-green-600 rounded-lg h-11">
     <TouchableOpacity
       onPress={onDec}
-      className="w-10 h-10 items-center justify-center active:bg-green-50"
+      className="w-12 h-full items-center justify-center active:bg-green-50"
     >
       <Minus size={14} color="#15803d" />
     </TouchableOpacity>
@@ -21,7 +21,7 @@ export const CompactStepper = ({ count, onAdd, onDec }: CompactStepperProps) => 
     </Text>
     <TouchableOpacity
       onPress={onAdd}
-      className="w-10 h-10 items-center justify-center active:bg-green-50"
+      className="w-12 h-full items-center justify-center active:bg-green-50"
     >
       <Plus size={14} color="#15803d" />
     </TouchableOpacity>

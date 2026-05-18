@@ -1,6 +1,6 @@
-import { ClipboardList } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, FlatList, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Order, OrderStatus } from '@/src/base/types/village.types';
@@ -178,17 +178,89 @@ function FilterChips({
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+// ── Empty state illustration ──────────────────────────────────────────────────
+
+function OrderIllustration() {
+  return (
+    <Svg width={220} height={180} viewBox="0 0 220 180">
+      {/* Ground shadow */}
+      <Ellipse cx={110} cy={168} rx={72} ry={9} fill="#e2e8f0" />
+
+      {/* Scooter body */}
+      <Ellipse cx={75} cy={152} rx={14} ry={14} fill="#cbd5e1" />
+      <Ellipse cx={75} cy={152} rx={8}  ry={8}  fill="#94a3b8" />
+      <Ellipse cx={155} cy={152} rx={14} ry={14} fill="#cbd5e1" />
+      <Ellipse cx={155} cy={152} rx={8}  ry={8}  fill="#94a3b8" />
+
+      {/* Scooter frame */}
+      <Path d="M88 148 L100 120 L140 120 L152 148" stroke="#64748b" strokeWidth={4} strokeLinecap="round" fill="none" />
+      <Path d="M100 120 L88 120 L80 148" stroke="#64748b" strokeWidth={3.5} strokeLinecap="round" fill="none" />
+      <Path d="M140 120 L148 130 L155 148" stroke="#64748b" strokeWidth={3.5} strokeLinecap="round" fill="none" />
+      {/* Handlebar */}
+      <Path d="M144 120 L155 112 L165 114" stroke="#64748b" strokeWidth={3} strokeLinecap="round" fill="none" />
+      {/* Seat */}
+      <Rect x={105} y={116} width={32} height={7} rx={3.5} fill="#475569" />
+
+      {/* Delivery box on scooter */}
+      {/* Box body */}
+      <Rect x={96} y={72} width={48} height={46} rx={5} fill="#fef9c3" />
+      <Rect x={96} y={72} width={48} height={46} rx={5} stroke="#fbbf24" strokeWidth={1.5} fill="none" />
+      {/* Box flap left */}
+      <Path d="M96 72 L96 56 L120 62 L120 72" fill="#fef08a" stroke="#fbbf24" strokeWidth={1.5} />
+      {/* Box flap right */}
+      <Path d="M144 72 L144 56 L120 62 L120 72" fill="#fde047" stroke="#fbbf24" strokeWidth={1.5} />
+      {/* Green tape stripe */}
+      <Rect x={115} y={72} width={10} height={46} fill="#bbf7d0" opacity={0.7} />
+      {/* Check badge */}
+      <Circle cx={120} cy={97} r={12} fill="#dcfce7" />
+      <Path d="M114 97 L118 102 L127 92" stroke="#16a34a" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+
+      {/* Floating grocery items */}
+      {/* Tomato */}
+      <Circle cx={58} cy={80} r={10} fill="#fca5a5" />
+      <Path d="M58 70 Q60 64 64 66" stroke="#4ade80" strokeWidth={2} strokeLinecap="round" fill="none" />
+      {/* Leaf */}
+      <Path d="M58 70 Q55 64 59 62" stroke="#4ade80" strokeWidth={1.5} strokeLinecap="round" fill="none" />
+
+      {/* Carrot */}
+      <Path d="M168 68 L175 90" stroke="#fb923c" strokeWidth={7} strokeLinecap="round" />
+      <Path d="M168 68 Q165 62 169 60" stroke="#4ade80" strokeWidth={2} strokeLinecap="round" fill="none" />
+      <Path d="M168 68 Q163 65 164 61" stroke="#4ade80" strokeWidth={1.5} strokeLinecap="round" fill="none" />
+
+      {/* Sparkles */}
+      <G>
+        <Path d="M48 48 L50 42 L52 48 L58 50 L52 52 L50 58 L48 52 L42 50 Z" fill="#fbbf24" opacity={0.8} />
+        <Path d="M172 40 L173.5 36 L175 40 L179 41.5 L175 43 L173.5 47 L172 43 L168 41.5 Z" fill="#34d399" opacity={0.8} />
+        <Circle cx={40} cy={110} r={3} fill="#fbbf24" opacity={0.6} />
+        <Circle cx={182} cy={105} r={2.5} fill="#86efac" opacity={0.7} />
+        <Circle cx={60} cy={130} r={2} fill="#fbbf24" opacity={0.5} />
+      </G>
+    </Svg>
+  );
+}
 
 function EmptyOrders() {
   const { t } = useTranslation();
+  const router = useRouter();
+
   return (
-    <View className="flex-1 items-center justify-center px-6">
-      <View className="w-28 h-28 bg-green-50 rounded-full items-center justify-center mb-5">
-        <ClipboardList size={52} color="#16a34a" />
-      </View>
-      <Text className="text-slate-900 font-bold text-xl mb-2">{t('orders_empty_title')}</Text>
-      <Text className="text-slate-500 text-sm text-center">{t('orders_empty_subtitle')}</Text>
+    <View className="flex-1 items-center justify-center px-8">
+      <OrderIllustration />
+
+      <Text className="text-slate-900 font-black text-2xl mt-4 mb-2 text-center">
+        {t('orders_empty_title')}
+      </Text>
+      <Text className="text-slate-500 text-sm text-center mb-8 leading-5">
+        {t('orders_empty_subtitle')}
+      </Text>
+
+      <TouchableOpacity
+        onPress={() => router.push('/(dashboard)/home' as any)}
+        className="bg-green-600 rounded-2xl px-8 py-3"
+        activeOpacity={0.85}
+      >
+        <Text className="text-white font-bold text-sm">{t('shop_now')}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -231,8 +303,11 @@ export const OrdersScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
       {/* Header */}
-      <View className="px-4 pb-2" style={{ paddingTop: insets.top + 16 }}>
-        <Text className="text-slate-900 font-black text-2xl">{t('nav_orders')}</Text>
+      <View
+        className="px-4 pb-3 border-b border-slate-100"
+        style={{ paddingTop: insets.top + 14 }}
+      >
+        <Text className="text-slate-900 font-black text-xl text-center">{t('nav_orders')}</Text>
       </View>
 
       {/* Filter chips — always visible when there are orders */}

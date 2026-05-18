@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -22,47 +24,57 @@ interface VillageBottomSheetProps {
   children: React.ReactNode;
 }
 
-// Sheet slides up with a light spring; dismisses with a quick timing curve
 const OPEN_SPRING = { damping: 26, stiffness: 320, mass: 0.7 };
-const DISMISS_THRESHOLD_PX = 80;  // drag distance that triggers dismiss
-const DISMISS_VELOCITY = 600;     // px/s velocity that triggers dismiss
-const MAX_HEIGHT_RATIO = 0.75;    // sheet never exceeds 75% of screen height
+const DISMISS_THRESHOLD_PX = 80;
+const DISMISS_VELOCITY = 600;
+const MAX_HEIGHT_RATIO = 0.75;
 
 export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottomSheetProps) => {
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const maxSheetHeight = screenHeight * MAX_HEIGHT_RATIO;
 
-  // translateY = 0 → fully visible; positive → shifted down (hidden)
-  // Start off-screen so the first open always animates in.
   const translateY = useSharedValue(screenHeight);
   const backdropOpacity = useSharedValue(0);
   const dragStartY = useSharedValue(0);
 
-  // Drive open / close animations whenever `visible` flips
-  useEffect(() => {
-    if (visible) {
-      translateY.value = withSpring(0, OPEN_SPRING);
-      backdropOpacity.value = withTiming(1, { duration: 280 });
-    } else {
-      translateY.value = withTiming(screenHeight, { duration: 260 });
-      backdropOpacity.value = withTiming(0, { duration: 260 });
-    }
-  }, [visible, screenHeight]);
+  // Track whether the Modal's native layer is ready (iOS fires onShow after present)
+  const modalReady = useRef(false);
 
-  // Stable dismiss callback — safe to call from the worklet via runOnJS
+  const openSheet = useCallback(() => {
+    translateY.value = screenHeight;
+    translateY.value = withSpring(0, OPEN_SPRING);
+    backdropOpacity.value = withTiming(1, { duration: 280 });
+  }, [screenHeight]);
+
   const dismiss = useCallback(() => onClose(), [onClose]);
 
-  // Pan gesture attached only to the drag handle, so it never fights the
-  // inner ScrollView for touch ownership.
+  // On iOS, onShow fires after the modal is presented — start animation there.
+  // On Android, onShow may fire inconsistently, so we fall back to useEffect.
+  const handleShow = useCallback(() => {
+    modalReady.current = true;
+    openSheet();
+  }, [openSheet]);
+
+  useEffect(() => {
+    if (!visible) {
+      modalReady.current = false;
+      translateY.value = withTiming(screenHeight, { duration: 260 });
+      backdropOpacity.value = withTiming(0, { duration: 260 });
+    } else if (Platform.OS === 'android') {
+      // Android: animate on visible change (onShow timing is unreliable)
+      openSheet();
+    }
+    // iOS open animation is driven by onShow to avoid pre-mount animation
+  }, [visible, screenHeight]);
+
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       dragStartY.value = translateY.value;
     })
     .onUpdate((e) => {
-      // Only allow dragging downward (positive Y)
       const next = dragStartY.value + e.translationY;
       translateY.value = Math.max(0, next);
-      // Fade the backdrop in proportion to how far the sheet is dragged
       backdropOpacity.value = 1 - Math.min(1, Math.max(0, translateY.value / maxSheetHeight));
     })
     .onEnd((e) => {
@@ -75,7 +87,6 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
           runOnJS(dismiss)();
         });
       } else {
-        // Snap back to fully open
         backdropOpacity.value = withTiming(1, { duration: 200 });
         translateY.value = withSpring(0, OPEN_SPRING);
       }
@@ -89,6 +100,12 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
     opacity: backdropOpacity.value,
   }));
 
+  // Android Modals create a separate native view hierarchy that doesn't
+  // inherit the root gesture context — GHRV is required there.
+  // iOS shares the same gesture context as the app root (which already has GHRV),
+  // so a nested GHRV on iOS causes conflicts and breaks the open animation.
+  const Wrapper = Platform.OS === 'android' ? GestureHandlerRootView : View;
+
   return (
     <Modal
       visible={visible}
@@ -96,47 +113,36 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
+      onShow={handleShow}
     >
-      {/*
-        GestureHandlerRootView is required inside Modal on Android —
-        Modals create a separate native view hierarchy that doesn't
-        inherit the root gesture context.
-      */}
-      <GestureHandlerRootView style={StyleSheet.absoluteFillObject}>
+      <Wrapper style={StyleSheet.absoluteFillObject}>
 
-        {/* ── Backdrop ── */}
         <Animated.View
           style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropStyle]}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
 
-        {/* ── Sheet panel ── */}
         <Animated.View style={[styles.sheet, { maxHeight: maxSheetHeight }, sheetStyle]}>
 
-          {/* Drag handle — the ONLY area that drives the pan gesture */}
           <GestureDetector gesture={panGesture}>
             <View style={styles.handleArea}>
               <View style={styles.handleBar} />
             </View>
           </GestureDetector>
 
-          {/*
-            ScrollView provides scrollability when children exceed the
-            available space (sheet height − handle height).
-            bounces={false} avoids elastic overscroll on both platforms.
-          */}
           <ScrollView
             bounces={false}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             overScrollMode="never"
+            contentContainerStyle={{ paddingBottom: insets.bottom }}
           >
             {children}
           </ScrollView>
         </Animated.View>
 
-      </GestureHandlerRootView>
+      </Wrapper>
     </Modal>
   );
 };
