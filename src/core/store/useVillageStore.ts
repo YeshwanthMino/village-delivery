@@ -33,7 +33,7 @@ const initialState: VillageState = {
   cart: {},
   favs: {},
   locale: 'te',
-  orders: MOCK_ORDERS,
+  orders: [], // TEMP: empty for UI testing
 };
 
 function parseCartKey(key: string): { productId: string; variantIndex: number | null } {

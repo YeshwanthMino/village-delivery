@@ -24,7 +24,7 @@ export const TRANSLATIONS: TranslationMap = {
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },
   nav_profile:      { te: 'ప్రొఫైల్', en: 'Profile' },
-  nav_orders:       { te: 'ఆర్డర్లు', en: 'Orders' },
+  nav_orders:       { te: 'నా ఆర్డర్లు', en: 'My Orders' },
   choose_language:  { te: 'మీ భాష ఎంచుకోండి', en: 'Choose your language' },
   welcome:          { te: 'మీకు స్వాగతం!', en: 'Welcome!' },
   whatsapp_help:    { te: 'సహాయం', en: 'Help' },

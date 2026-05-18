@@ -25,8 +25,7 @@ export const CategoryDetailsScreen = () => {
   const slideAnim = useRef(new Animated.Value(390)).current;
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
-  const TAB_BAR_CONTENT_HEIGHT = 64;
-  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+  const scrollPadding = 16;
 
   const SORT_LABELS: Record<string, string> = {
     popular:    t('sort_popular'),
@@ -184,7 +183,7 @@ export const CategoryDetailsScreen = () => {
               {interpolate(t('items_label'), vm.products.length)} · {SORT_LABELS[vm.sortKey]}
             </Text>
           </View>
-          <View className="px-4 pb-8">
+          <View className="px-4">
             <View className="flex-row flex-wrap gap-3">
               {vm.products.map(product => (
                 <View key={product.id} style={{ width: '47.5%' }}>
@@ -197,7 +196,7 @@ export const CategoryDetailsScreen = () => {
       </AnimatedScrollView>
 
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} />
+        <FloatingCartPill count={vm.cartCount} onPress={goToCart} bottomOffset={0} />
       )}
       <SortBottomSheet
         visible={vm.sortSheetVisible}

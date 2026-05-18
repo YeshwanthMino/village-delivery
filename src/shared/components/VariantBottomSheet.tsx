@@ -61,7 +61,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                       )}
                     </View>
                   </View>
-                  <View style={{ minWidth: 80 }}>
+                  <View style={{ minWidth: 104 }}>
                     {count === 0 ? (
                       <TouchableOpacity
                         onPress={() => addToCart(key)}

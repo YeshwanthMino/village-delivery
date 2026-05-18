@@ -152,7 +152,7 @@ New file: `src/features/orders/views/OrderDetailScreen.tsx`.
 **Structure (top to bottom):**
 
 1. **Status banner** — full-width colored card, large icon, status label in Telugu + English
-2. **Status timeline** — vertical 5-step stepper (Placed → Confirmed → Out for delivery → Delivered). Filled up to current step. Cancelled shows red X at `confirmed` step.
+2. **Status timeline** — vertical 4-step stepper (Placed → Confirmed → Out for delivery → Delivered). Filled up to current step. Hidden entirely for cancelled orders (status banner is sufficient).
 3. **Items list** — each row: `emoji  name (weight)  qty × ₹price`
 4. **Bill summary** — reuse existing `BillSummaryCard` component
 5. **Delivery address** — address string with map-pin icon
@@ -189,7 +189,7 @@ New keys added to `src/base/constants/translations.ts`:
 
 - Unknown `orderId` in detail screen → navigate back (no crash)
 - Empty orders list → show existing empty state (clipboard icon)
-- Cancelled order → hide "Reorder" button; timeline shows red X
+- Cancelled order → hide "Reorder" button; hide timeline; show red status banner only
 - Items with variants → show variant name in weight field (already stored in `OrderItem.weight`)
 
 ---
