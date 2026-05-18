@@ -10,9 +10,10 @@ interface CheckoutBarProps {
   savings: number;
   paymentMethod: PaymentMethod;
   onSelectPayment: (method: PaymentMethod) => void;
+  onCheckout?: () => void;
 }
 
-export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPayment }: CheckoutBarProps) => {
+export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPayment, onCheckout }: CheckoutBarProps) => {
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
@@ -52,6 +53,7 @@ export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPaymen
         style={[styles.button, !paymentMethod && styles.buttonDisabled]}
         activeOpacity={paymentMethod ? 0.9 : 1}
         disabled={!paymentMethod}
+        onPress={paymentMethod ? onCheckout : undefined}
       >
         <View>
           <Text style={styles.total}>{rupees(grandTotal)}</Text>

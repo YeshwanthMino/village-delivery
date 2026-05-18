@@ -19,16 +19,30 @@ import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { PaymentMethod } from '@/src/shared/components/CheckoutBar';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
+import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
+import { useAuthStore } from '@/src/core/store/useAuthStore';
 
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(null);
+  const [loginSheetVisible, setLoginSheetVisible] = React.useState(false);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const scrollPadding = insets.bottom + 16;
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   const goToHome = () => router.push('/(dashboard)/home');
+
+  const handleCheckout = () => {
+    setLoginSheetVisible(true);
+  };
+
+  const handleLoginComplete = () => {
+    setLoginSheetVisible(false);
+    vm.clearCart();
+    router.replace('/(dashboard)/orders');
+  };
 
   if (vm.cartCount === 0) {
     return (
@@ -144,10 +158,21 @@ export const CartScreen = () => {
         savings={vm.bill.totalSavings}
         paymentMethod={paymentMethod}
         onSelectPayment={setPaymentMethod}
+        onCheckout={handleCheckout}
       />
 
       {/* Variant sheet */}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
+
+      {/* Deferred login / checkout sheet */}
+      <LoginBottomSheet
+        visible={loginSheetVisible}
+        onClose={() => setLoginSheetVisible(false)}
+        onComplete={handleLoginComplete}
+        initialStep={isAuthenticated ? 'placing' : 'phone'}
+        itemCount={vm.bill.totalCount}
+        grandTotal={Math.round(vm.bill.grandTotal)}
+      />
     </SafeAreaView>
   );
 };
