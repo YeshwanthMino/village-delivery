@@ -10,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '(^|\\s)(rm\\b|rmdir\\b|git rm|find .+-delete|trash\\s)'; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Delete operations are not allowed\"}}'; fi"
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '(^|\\s)(rm\\b|rmdir\\b|git rm|find .+-delete|trash\\s|git push)'; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Delete and push operations are not allowed\"}}'; fi"
           }
         ]
       }
