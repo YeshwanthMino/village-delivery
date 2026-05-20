@@ -1,13 +1,13 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useVillageStore } from '@/src/core/store';
+import { useOrderDetailQuery } from '@/src/features/orders/data/queries/useOrderDetailQuery';
 
 export const useOrderDetailViewModel = () => {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
-  const orders = useVillageStore(state => state.orders);
   const addToCart = useVillageStore(state => state.addToCart);
   const clearCart = useVillageStore(state => state.clearCart);
 
-  const order = orders.find(o => o.id === orderId);
+  const { data: order, isLoading } = useOrderDetailQuery(orderId);
 
   const handleReorder = () => {
     clearCart();
@@ -19,5 +19,5 @@ export const useOrderDetailViewModel = () => {
     }
   };
 
-  return { orderId, order, handleReorder };
+  return { orderId, order, isLoading, handleReorder };
 };

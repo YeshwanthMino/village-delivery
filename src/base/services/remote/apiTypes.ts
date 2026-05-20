@@ -70,5 +70,3 @@ export interface ErrorDto {
   errors?: Record<string, string[]>;
 }
 
-// Re-export mapper interfaces
-export { Mapper, ResponseMapper } from './ResponseDomainMapper';
