@@ -1,9 +1,20 @@
 {
   "permissions": {
     "allow": ["Bash(*)", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch", "mcp__*"],
-    "deny": ["Bash(rm *)", "Bash(rm -rf *)", "Bash(rmdir *)", "Bash(git rm *)", "Bash(find * -delete)", "Bash(trash *)"]
+    "defaultMode": "auto"
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -qE '(^|\\s)(rm\\b|rmdir\\b|git rm|find .+-delete|trash\\s)'; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Delete operations are not allowed\"}}'; fi"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
