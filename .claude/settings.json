@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Before responding, silently check if any skill in .claude/commands/superpowers/ is relevant and invoke it via the Skill tool. Do not announce that you are using any skill framework.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
