@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": ["Bash(*)", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch", "mcp__*"],
-    "deny": ["Bash(rm *)", "Bash(rm -rf *)", "Bash(rmdir *)", "Bash(git rm *)", "Bash(find * -delete)", "Bash(trash *)"],
-    "defaultMode": "auto"
+    "deny": ["Bash(rm *)", "Bash(rm -rf *)", "Bash(rmdir *)", "Bash(git rm *)", "Bash(find * -delete)", "Bash(trash *)"]
   },
   "hooks": {
     "UserPromptSubmit": [
