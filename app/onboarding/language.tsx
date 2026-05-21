@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,12 +13,34 @@ export default function LanguageScreen() {
   const [selected, setSelected] = useState<Locale>('te');
   const [loading, setLoading] = useState(false);
 
+  const DEEPLINK_ROUTE_MAP: Record<string, string> = {
+    home:               '/(dashboard)/home',
+    categories:         '/(dashboard)/categories',
+    orders:             '/(dashboard)/orders',
+    profile:            '/(dashboard)/profile',
+    search:             '/search',
+    'category-details': '/category-details',
+    cart:               '/cart',
+    'top-picks':        '/top-picks',
+    'order-detail':     '/order-detail',
+  };
+
   const handleContinue = async () => {
     if (loading) return;
     setLoading(true);
     await setLocale(selected);
     await StoredPrefs.setIsFirstLaunch(false);
-    router.replace('/(dashboard)/home');
+
+    const deferred = await StoredPrefs.getDeferredDeepLink();
+    if (deferred) {
+      await StoredPrefs.setDeferredDeepLink(null);
+      const parsed = Linking.parse(deferred);
+      const pathname = DEEPLINK_ROUTE_MAP[parsed.hostname ?? ''] ?? '/(dashboard)/home';
+      const params = (parsed.queryParams as Record<string, string>) ?? {};
+      router.replace({ pathname: pathname as any, params });
+    } else {
+      router.replace('/(dashboard)/home');
+    }
   };
 
   const isTe = selected === 'te';
