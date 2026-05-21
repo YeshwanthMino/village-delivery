@@ -7,23 +7,23 @@ import { Locale } from '@/src/base/constants/translations';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 
+const DEEPLINK_ROUTE_MAP: Record<string, string> = {
+  home:               '/(dashboard)/home',
+  categories:         '/(dashboard)/categories',
+  orders:             '/(dashboard)/orders',
+  profile:            '/(dashboard)/profile',
+  search:             '/search',
+  'category-details': '/category-details',
+  cart:               '/cart',
+  'top-picks':        '/top-picks',
+  'order-detail':     '/order-detail',
+};
+
 export default function LanguageScreen() {
   const router = useRouter();
   const setLocale = useVillageStore((s) => s.setLocale);
   const [selected, setSelected] = useState<Locale>('te');
   const [loading, setLoading] = useState(false);
-
-  const DEEPLINK_ROUTE_MAP: Record<string, string> = {
-    home:               '/(dashboard)/home',
-    categories:         '/(dashboard)/categories',
-    orders:             '/(dashboard)/orders',
-    profile:            '/(dashboard)/profile',
-    search:             '/search',
-    'category-details': '/category-details',
-    cart:               '/cart',
-    'top-picks':        '/top-picks',
-    'order-detail':     '/order-detail',
-  };
 
   const handleContinue = async () => {
     if (loading) return;
