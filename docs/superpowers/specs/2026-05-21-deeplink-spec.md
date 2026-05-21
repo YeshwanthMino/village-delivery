@@ -252,6 +252,88 @@ adb shell am start -W -a android.intent.action.VIEW -d "villagedelivery://order-
 
 ---
 
+## Known Edge Cases
+
+These are gaps identified by codebase analysis. They are documented here for implementers; fixes are tracked separately.
+
+### Critical
+
+#### 1. First-launch deeplink is silently lost
+
+**Trigger:** User taps a deeplink on fresh install before completing onboarding.
+
+**Flow:**
+1. App launches → `(dashboard)/_layout.tsx` checks `StoredPrefs.getIsFirstLaunch()`
+2. Returns `true` → redirects to `/onboarding/language`
+3. Expo Router discards the original deeplink URL
+4. After language selection, user lands on `/(dashboard)/home` — deeplink is gone
+
+**Note:** `StoredPrefs.getDeferredDeepLink()` and `setDeferredDeepLink()` exist in `StoredPrefs.ts` but are never called anywhere. The deferred deeplink infrastructure is partially built but unwired.
+
+**Fix needed:** On cold launch, capture `Linking.getInitialURL()` before onboarding redirect. Store it via `StoredPrefs.setDeferredDeepLink()`. After onboarding completes, read and navigate to it.
+
+---
+
+#### 2. `order-detail` with missing or invalid `orderId`
+
+**Trigger:** `villagedelivery://order-detail` (no param) or `villagedelivery://order-detail?orderId=nonexistent`
+
+**Behaviour:** `useOrderDetailViewModel` reads `orderId` from params; if absent or unmatched, `order` is `undefined`. The screen renders blank, then a `useEffect` fires `router.back()` — user sees a flash and bounce with no error message.
+
+**Fix needed:** Guard in `OrderDetailScreen` — if `order` is null after hydration, show an error state ("Order not found") with a button to go home rather than silently bouncing.
+
+---
+
+#### 3. `category-details` with missing or invalid `categoryId`
+
+**Trigger:** `villagedelivery://category-details` (no param) or `villagedelivery://category-details?categoryId=invalid`
+
+**Behaviour:** `CategoryDetailsScreen` returns `null` when `currentCategory` or `heroGradient` is null. This produces a **blank screen with no back button** — user is stranded.
+
+**Fix needed:** Replace the `return null` guard with an error state that includes a back button.
+
+---
+
+### Medium
+
+#### 4. Valid `categoryId` missing from `HERO_GRADIENTS`
+
+**Trigger:** A `categoryId` that exists in `CATEGORIES` but has no entry in `HERO_GRADIENTS`.
+
+**Behaviour:** `heroGradient` resolves to `null`, `CategoryDetailsScreen` returns `null` even though the category is valid. This is a data-consistency issue today but could surface if categories are added without updating `HERO_GRADIENTS`.
+
+**Fix needed:** Either derive the gradient from `Category.bgClass`/`textClass` (removing the separate lookup), or assert at app start that every category has a gradient entry.
+
+---
+
+#### 5. Stack routes bypass first-launch onboarding
+
+**Trigger:** `villagedelivery://cart` or `villagedelivery://top-picks` on first install.
+
+**Behaviour:** `/cart` and `/top-picks` are stack routes outside `(dashboard)`. The first-launch redirect in `(dashboard)/_layout.tsx` only fires when the app navigates into the dashboard group. These routes are accessible immediately, skipping onboarding entirely.
+
+**Fix needed:** Move the first-launch check to `AppScreen.tsx` (root guard level) so it applies to all routes, not just dashboard children.
+
+---
+
+#### 6. `search` with invalid `categoryId` produces silent empty results
+
+**Trigger:** `villagedelivery://search?categoryId=notreal&categoryName=Fake`
+
+**Behaviour:** `useSearchViewModel` accepts any string as `categoryId`. The filter finds no matching products and renders an empty list with no explanation.
+
+**Fix needed:** Validate `categoryId` against `CATEGORIES` on mount; if invalid, clear `activeCategoryId` and fall back to global search. Optionally show a toast: "Category not found — showing all results."
+
+---
+
+### Low
+
+#### 7. `villagedelivery://auth` immediately redirects to home
+
+`app/auth/index.tsx` contains only `<Redirect href="/(dashboard)/home" />`. A deeplink to this route silently redirects rather than surfacing any auth UI. Documented as excluded in the spec but the silent redirect may surprise users who follow a marketing link expecting a login screen.
+
+---
+
 ## Out of Scope (V2+)
 
 - Universal Links (HTTPS) — requires domain verification, `apple-app-site-association`, `assetlinks.json`
