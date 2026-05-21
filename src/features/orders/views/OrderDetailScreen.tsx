@@ -7,7 +7,7 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react-native';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -99,19 +99,37 @@ export const OrderDetailScreen = () => {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { orderId, order, handleReorder } = useOrderDetailViewModel();
+  const { order, handleReorder } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
-  // Navigate back only when orderId is known but order not found (unknown ID).
-  // Guard prevents calling router during render; also avoids premature back
-  // on first render before params are hydrated.
-  useEffect(() => {
-    if (orderId && !order) {
-      router.back();
-    }
-  }, [orderId, order, router]);
-
-  if (!order) return null;
+  if (!order) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
+        <View className="px-4" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
+          <Pressable
+            onPress={() => router.replace('/(dashboard)/orders' as any)}
+            className="p-1 self-start"
+          >
+            <ArrowLeft size={22} color="#0f172a" />
+          </Pressable>
+        </View>
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-4xl mb-4">📦</Text>
+          <Text className="text-slate-900 font-bold text-lg mb-2 text-center">Order not found</Text>
+          <Text className="text-slate-500 text-sm text-center mb-6">
+            This order doesn't exist or may have been removed.
+          </Text>
+          <Pressable
+            onPress={() => router.replace('/(dashboard)/orders' as any)}
+            className="bg-green-500 rounded-2xl px-8 py-3"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            <Text className="text-white font-bold text-base">View all orders</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const banner = STATUS_BANNER[order.status];
   const isCancelled = order.status === 'cancelled';
