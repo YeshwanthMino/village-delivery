@@ -117,7 +117,7 @@ export const OrderDetailScreen = () => {
           <Text className="text-4xl mb-4">📦</Text>
           <Text className="text-slate-900 font-bold text-lg mb-2 text-center">Order not found</Text>
           <Text className="text-slate-500 text-sm text-center mb-6">
-            This order doesn't exist or may have been removed.
+            This order does not exist or may have been removed.
           </Text>
           <Pressable
             onPress={() => router.replace('/(dashboard)/orders' as any)}

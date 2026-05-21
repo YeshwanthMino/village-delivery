@@ -68,7 +68,7 @@ export const CategoryDetailsScreen = () => {
           <Text className="text-4xl mb-4">🔍</Text>
           <Text className="text-slate-900 font-bold text-lg mb-2 text-center">Category not found</Text>
           <Text className="text-slate-500 text-sm text-center mb-6">
-            This category doesn't exist or may have been removed.
+            This category does not exist or may have been removed.
           </Text>
           <TouchableOpacity
             onPress={() => router.replace('/(dashboard)/categories' as any)}
