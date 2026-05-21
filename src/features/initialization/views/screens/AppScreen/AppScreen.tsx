@@ -29,7 +29,8 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
     const inCategoryDetails = segments[0] === 'category-details';
     const inCart = segments[0] === 'cart';
     const inTopPicks = segments[0] === 'top-picks';
-    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks) {
+    const inOrderDetail = segments[0] === 'order-detail';
+    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks && !inOrderDetail) {
       router.replace('/(dashboard)/home');
     }
   }, [fontsLoaded, ready, segments]);
