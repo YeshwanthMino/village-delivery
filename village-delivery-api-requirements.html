@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Village Delivery — Backend API Requirements</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #1e293b;
+      background: #f8fafc;
+      padding: 32px;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      color: white;
+      padding: 32px 40px 28px;
+    }
+    .header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+    .badge { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; padding: 6px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; margin-top: 4px; }
+    .meta-tags { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .meta-tag { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 500; }
+
+    .body { padding: 32px 40px 40px; }
+
+    .notice { background: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #713f12; margin-bottom: 28px; line-height: 1.6; }
+    .notice strong { color: #92400e; }
+
+    .section { margin-bottom: 32px; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #f1f5f9; }
+    .section-number { background: #16a34a; color: white; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+    .section-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .section-subtitle { font-size: 11px; color: #64748b; margin-left: auto; font-weight: 500; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    thead tr { background: #f8fafc; }
+    th { text-align: left; padding: 9px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: top; line-height: 1.5; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    .api-num { display: inline-block; background: #e0f2fe; color: #0369a1; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+    .action { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .action-read  { background: #dcfce7; color: #15803d; }
+    .action-write { background: #fef9c3; color: #854d0e; }
+    .action-auth  { background: #ede9fe; color: #6d28d9; }
+    .action-list  { background: #e0f2fe; color: #0369a1; }
+
+    .code-block { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 14px 18px; font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: 11px; line-height: 1.7; margin-top: 10px; white-space: pre; overflow-x: auto; }
+    .code-comment { color: #64748b; }
+    .code-key     { color: #93c5fd; }
+    .code-val     { color: #86efac; }
+    .code-type    { color: #fca5a5; }
+
+    .note { background: #f0fdf4; border-left: 3px solid #16a34a; padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 11px; color: #166534; margin-top: 10px; line-height: 1.6; }
+
+    .status-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .status-pill { border-radius: 20px; padding: 3px 12px; font-size: 10px; font-weight: 600; }
+    .pill-amber  { background:#fef9c3; color:#854d0e; }
+    .pill-blue   { background:#dbeafe; color:#1d4ed8; }
+    .pill-orange { background:#ffedd5; color:#c2410c; }
+    .pill-green  { background:#dcfce7; color:#15803d; }
+    .pill-red    { background:#fee2e2; color:#b91c1c; }
+    .pill-arrow  { color:#94a3b8; font-size:10px; align-self:center; }
+
+    .headers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .header-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; }
+    .header-name { font-size: 10px; font-weight: 700; color: #475569; font-family: monospace; }
+    .header-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 40px; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; }
+    .footer strong { color: #64748b; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .page { box-shadow: none; border-radius: 0; max-width: 100%; }
+      .section { page-break-inside: avoid; }
+      table { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1>🌿 Village Delivery</h1>
+        <p style="font-size:16px; font-weight:700; margin-top:4px;">Backend API Requirements</p>
+        <p>Prepared for the Backend Engineering Team</p>
+      </div>
+      <div class="badge">v1.0 · DRAFT</div>
+    </div>
+    <div class="meta-tags">
+      <span class="meta-tag">📅 May 2026</span>
+      <span class="meta-tag">🔢 7 Sections · 27 APIs</span>
+      <span class="meta-tag">📱 Mobile App (iOS &amp; Android)</span>
+      <span class="meta-tag">⚡ Endpoints to be defined by backend</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="notice">
+      <strong>Note to backend team:</strong> Endpoint URLs and HTTP methods are to be decided by the backend team.
+      This document describes <strong>what each API should do</strong>, the expected request inputs, and response shape.
+      Please confirm endpoints and share OpenAPI / Swagger spec once defined.
+    </div>
+
+    <!-- 1. AUTH -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <div class="section-title">Authentication</div>
+        <div class="section-subtitle">Phone OTP flow · Token lifecycle</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request body</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">1.1</span></td><td><span class="action action-auth">AUTH</span><br/>Send OTP to phone number</td><td><code>{ phoneNumber }</code></td><td><code>{ success, message }</code></td></tr>
+          <tr><td><span class="api-num">1.2</span></td><td><span class="action action-auth">AUTH</span><br/>Verify OTP &amp; issue tokens</td><td><code>{ phoneNumber, otp }</code></td><td><code>{ accessToken, refreshToken, tokenType, expiresIn, userId }</code></td></tr>
+          <tr><td><span class="api-num">1.3</span></td><td><span class="action action-auth">AUTH</span><br/>Resend OTP</td><td><code>{ phoneNumber }</code></td><td><code>{ success, message }</code></td></tr>
+          <tr><td><span class="api-num">1.4</span></td><td><span class="action action-auth">AUTH</span><br/>Logout &amp; invalidate session</td><td>—</td><td><code>{ success }</code></td></tr>
+          <tr><td><span class="api-num">1.5</span></td><td><span class="action action-auth">AUTH</span><br/>Refresh access token</td><td><code>{ refreshToken }</code></td><td><code>{ accessToken, refreshToken, tokenType, expiresIn }</code></td></tr>
+        </tbody>
+      </table>
+      <div class="note">OTP is 6-digit numeric. Expect rate limiting (429) on repeated requests. Tokens must include expiry time so the app can proactively refresh.</div>
+    </div>
+
+    <!-- 2. HOME -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <div class="section-title">Home Screen</div>
+        <div class="section-subtitle">Single API · On app launch / pull-to-refresh</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">2.1</span></td><td><span class="action action-read">READ</span><br/>Get home page data<br/><small style="color:#64748b">Banners, category list, top-picks/promoted products</small></td><td>—</td><td><code>{ banners: [Banner], categories: [Category], featuredProducts: [Product] }</code></td></tr>
+        </tbody>
+      </table>
+      <div class="code-block"><span class="code-comment">// Banner shape</span>
+<span class="code-key">Banner</span> { tag, tagTE, title, titleTE, subtitle, subtitleTE, emoji, gradientFrom, gradientTo }</div>
+    </div>
+
+    <!-- 3. CATEGORIES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <div class="section-title">Categories &amp; Category Page</div>
+        <div class="section-subtitle">Browse &amp; filter by category</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">3.1</span></td><td><span class="action action-list">LIST</span><br/>Get all categories</td><td>—</td><td><code>[{ id, name, nameTE, emoji, bgClass, textClass }]</code></td></tr>
+          <tr><td><span class="api-num">3.2</span></td><td><span class="action action-read">READ</span><br/>Get category details</td><td><code>{ categoryId }</code></td><td><code>{ id, name, nameTE, emoji, description? }</code></td></tr>
+          <tr><td><span class="api-num">3.3</span></td><td><span class="action action-list">LIST</span><br/>Get products in a category<br/><small style="color:#64748b">Supports sorting</small></td><td><code>{ categoryId, sort? }</code></td><td><code>[Product]</code></td></tr>
+        </tbody>
+      </table>
+      <div class="note"><strong>Sort options:</strong> <code>popular</code> (default) · <code>price_asc</code> · <code>price_desc</code> · <code>rating</code></div>
+    </div>
+
+    <!-- 4. PRODUCTS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <div class="section-title">Products</div>
+        <div class="section-subtitle">Product detail &amp; search</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">4.1</span></td><td><span class="action action-read">READ</span><br/>Get product details</td><td><code>{ productId }</code></td><td><code>Product</code></td></tr>
+          <tr><td><span class="api-num">4.2</span></td><td><span class="action action-list">LIST</span><br/>Search products</td><td><code>{ q, categoryId? }</code></td><td><code>[Product]</code></td></tr>
+        </tbody>
+      </table>
+      <div class="code-block"><span class="code-comment">// Product shape</span>
+<span class="code-key">Product</span> { id, categoryId, name, nameTE, weight, price, mrp, rating, reviews, emoji, variants?: Variant[] }
+<span class="code-key">Variant</span> { name: <span class="code-type">string</span>, price: <span class="code-type">number</span>, mrp: <span class="code-type">number</span> }</div>
+    </div>
+
+    <!-- 5. ORDERS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <div class="section-title">Orders</div>
+        <div class="section-subtitle">Place · Track · History · Cancel · Reorder</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">5.1</span></td><td><span class="action action-write">WRITE</span><br/>Place a new order</td><td><code>{ items: [{ productId, quantity, variantIndex? }], deliveryAddressId, paymentMethod }</code></td><td><code>Order</code></td></tr>
+          <tr><td><span class="api-num">5.2</span></td><td><span class="action action-list">LIST</span><br/>Get order history</td><td><code>{ status?, limit?, offset? }</code></td><td><code>[Order]</code></td></tr>
+          <tr><td><span class="api-num">5.3</span></td><td><span class="action action-read">READ</span><br/>Get order details</td><td><code>{ orderId }</code></td><td><code>Order</code></td></tr>
+          <tr><td><span class="api-num">5.4</span></td><td><span class="action action-write">WRITE</span><br/>Cancel an order</td><td><code>{ orderId, reason? }</code></td><td><code>{ success, status }</code></td></tr>
+          <tr><td><span class="api-num">5.5</span></td><td><span class="action action-write">WRITE</span><br/>Reorder from a previous order</td><td><code>{ orderId }</code></td><td><code>{ items }</code></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;">
+        <p style="font-size:11px; color:#475569; font-weight:600; margin-bottom:6px;">Order Status Flow</p>
+        <div class="status-row">
+          <span class="status-pill pill-amber">placed</span><span class="pill-arrow">→</span>
+          <span class="status-pill pill-blue">confirmed</span><span class="pill-arrow">→</span>
+          <span class="status-pill pill-orange">out_for_delivery</span><span class="pill-arrow">→</span>
+          <span class="status-pill pill-green">delivered</span><span class="pill-arrow">&nbsp;/&nbsp;</span>
+          <span class="status-pill pill-red">cancelled</span>
+        </div>
+      </div>
+      <div class="code-block"><span class="code-comment">// Order shape</span>
+<span class="code-key">Order</span> { id, placedAt, status, items: OrderItem[], bill: Bill, deliveryAddress, paymentMethod: 'cod'|'upi' }
+<span class="code-key">Bill</span>  { itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, grandTotal, totalSavings, totalCount }</div>
+    </div>
+
+    <!-- 6. USER PROFILE -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">6</div>
+        <div class="section-title">User Profile &amp; Addresses</div>
+        <div class="section-subtitle">Profile management · Saved delivery addresses</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">6.1</span></td><td><span class="action action-read">READ</span><br/>Get user profile</td><td>—</td><td><code>{ id, phoneNumber, name? }</code></td></tr>
+          <tr><td><span class="api-num">6.2</span></td><td><span class="action action-write">WRITE</span><br/>Update user profile</td><td><code>{ name?, email? }</code></td><td><code>User</code></td></tr>
+          <tr><td><span class="api-num">6.3</span></td><td><span class="action action-list">LIST</span><br/>List saved delivery addresses</td><td>—</td><td><code>[Address]</code></td></tr>
+          <tr><td><span class="api-num">6.4</span></td><td><span class="action action-write">WRITE</span><br/>Add new delivery address</td><td><code>{ address, label?, isDefault? }</code></td><td><code>Address</code></td></tr>
+          <tr><td><span class="api-num">6.5</span></td><td><span class="action action-write">WRITE</span><br/>Update a delivery address</td><td><code>{ addressId, address?, label?, isDefault? }</code></td><td><code>Address</code></td></tr>
+          <tr><td><span class="api-num">6.6</span></td><td><span class="action action-write">WRITE</span><br/>Delete a delivery address</td><td><code>{ addressId }</code></td><td><code>{ success }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 7. CART -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">7</div>
+        <div class="section-title">Cart — Server-side Bill Calculation</div>
+        <div class="section-subtitle">Called at checkout to confirm pricing</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>What it does</th><th>Request</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td><span class="api-num">7.1</span></td><td><span class="action action-write">WRITE</span><br/>Compute cart totals<br/><small style="color:#64748b">Server confirms prices before order is placed</small></td><td><code>{ items: [{ productId, variantIndex?, quantity }] }</code></td><td><code>{ itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, grandTotal, totalSavings }</code></td></tr>
+        </tbody>
+      </table>
+      <div class="note"><strong>Business rules (current):</strong> Free delivery on orders ≥ ₹500 · Platform fee ₹10 per order. Backend should be the source of truth for these values.</div>
+    </div>
+
+    <!-- STANDARD CONTRACT -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number" style="background:#475569">✦</div>
+        <div class="section-title">Standard API Contract</div>
+      </div>
+      <p style="font-size:12px; color:#475569; margin-bottom:10px;">All responses follow this envelope. Every authenticated endpoint requires the <code>Authorization</code> header.</p>
+      <div class="code-block"><span class="code-comment">// Success</span>
+{ <span class="code-key">"data"</span>: { ... }, <span class="code-key">"success"</span>: <span class="code-val">true</span> }
+
+<span class="code-comment">// Error</span>
+{ <span class="code-key">"error"</span>: { <span class="code-key">"message"</span>: <span class="code-val">"..."</span>, <span class="code-key">"code"</span>: <span class="code-val">"..."</span> }, <span class="code-key">"success"</span>: <span class="code-val">false</span> }
+
+<span class="code-comment">// HTTP status codes</span>
+<span class="code-val">200</span> OK  |  <span class="code-val">400</span> Bad Request  |  <span class="code-val">401</span> Unauthorized  |  <span class="code-val">403</span> Forbidden
+<span class="code-val">404</span> Not Found  |  <span class="code-val">422</span> Validation Error  |  <span class="code-val">429</span> Rate Limited  |  <span class="code-val">500</span> Server Error</div>
+      <p style="font-size:12px; color:#475569; margin:14px 0 8px;"><strong>Custom headers sent by the app on every request:</strong></p>
+      <div class="headers-grid">
+        <div class="header-item"><div class="header-name">Authorization</div><div class="header-desc">&lt;tokenType&gt; &lt;accessToken&gt;</div></div>
+        <div class="header-item"><div class="header-name">Village-App-Version</div><div class="header-desc">Village (v1.0.0)</div></div>
+        <div class="header-item"><div class="header-name">Village-Client</div><div class="header-desc">iOS | Android | Web</div></div>
+        <div class="header-item"><div class="header-name">Village-Client-Device</div><div class="header-desc">Device name &amp; OS version</div></div>
+        <div class="header-item"><div class="header-name">Village-User-Id</div><div class="header-desc">Authenticated user ID (or "null")</div></div>
+        <div class="header-item"><div class="header-name">Content-Type</div><div class="header-desc">application/json</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Village Delivery · Backend API Requirements · v1.0 Draft</span>
+    <span><strong>Out of scope:</strong> Coupon validation · Payments · App configuration</span>
+  </div>
+</div>
+</body>
+</html>

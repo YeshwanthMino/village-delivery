@@ -51,7 +51,6 @@ export interface Bill {
   itemDiscount: number;
   deliveryFee: number;
   platformFee: number;
-  couponDiscount: number;
   grandTotal: number;
   totalSavings: number;
   totalCount: number;

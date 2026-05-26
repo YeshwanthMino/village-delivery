@@ -24,10 +24,9 @@ const BillRow = ({ label, value, isGreen, isBold }: BillRowProps) => (
 
 interface BillSummaryCardProps {
   bill: Bill;
-  couponApplied: boolean;
 }
 
-export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => {
+export const BillSummaryCard = ({ bill }: BillSummaryCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -45,10 +44,6 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
         isGreen={bill.deliveryFee === 0}
       />
       <BillRow label={t('platform_fee')} value={rupees(bill.platformFee)} />
-      {couponApplied && bill.couponDiscount > 0 && (
-        <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
-      )}
-
       <View className="border-t border-dashed border-slate-300 my-2" />
 
       <BillRow label={t('to_pay')} value={rupees(bill.grandTotal)} isBold />

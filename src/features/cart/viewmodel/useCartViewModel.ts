@@ -14,15 +14,11 @@ export const useCartViewModel = () => {
   const clearCart = useVillageStore(state => state.clearCart);
   const cartCount = useVillageStore(state => state.cartCount());
 
-  const [couponApplied, setCouponApplied] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
   const cartItems = useMemo(() => getCartItems(cart), [cart]);
 
-  const bill = useMemo(() =>
-    computeBill(cartItems, { couponApplied }),
-    [cartItems, couponApplied]
-  );
+  const bill = useMemo(() => computeBill(cartItems), [cartItems]);
 
   // Top 8 products not in cart, sorted by rating × reviews
   const fbtProducts = useMemo(() => {
@@ -38,8 +34,6 @@ export const useCartViewModel = () => {
     bill,
     fbtProducts,
     cartCount,
-    couponApplied,
-    toggleCoupon: () => setCouponApplied(v => !v),
     variantProduct,
     openVariants: (product: Product) => setVariantProduct(product),
     closeVariants: () => setVariantProduct(null),

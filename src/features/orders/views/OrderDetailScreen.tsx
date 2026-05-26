@@ -102,9 +102,6 @@ export const OrderDetailScreen = () => {
   const { orderId, order, handleReorder } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
-  // Navigate back only when orderId is known but order not found (unknown ID).
-  // Guard prevents calling router during render; also avoids premature back
-  // on first render before params are hydrated.
   useEffect(() => {
     if (orderId && !order) {
       router.back();
@@ -174,7 +171,7 @@ export const OrderDetailScreen = () => {
 
         {/* Bill summary */}
         <View className="mx-4 mb-3">
-          <BillSummaryCard bill={order.bill} couponApplied={order.bill.couponDiscount > 0} />
+          <BillSummaryCard bill={order.bill} />
         </View>
 
         {/* Delivery address */}

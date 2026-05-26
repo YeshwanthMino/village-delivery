@@ -62,7 +62,6 @@ export const TRANSLATIONS: TranslationMap = {
   delivery_fee:        { te: 'డెలివరీ చార్జ్',                                     en: 'Delivery fee' },
   free:                { te: 'ఉచిత',                                               en: 'FREE' },
   platform_fee:        { te: 'ప్లాట్‌ఫారమ్ చార్జ్',                               en: 'Platform fee' },
-  coupon_label:        { te: 'కూపన్ (VILLAGE10)',                                   en: 'Coupon (VILLAGE10)' },
   to_pay:              { te: 'చెల్లించాల్సిన మొత్తం',                              en: 'To Pay' },
   you_saved_order:     { te: '🎉 మీరు {n} ఆదా చేశారు',                            en: '🎉 You saved {n} on this order' },
 
@@ -81,14 +80,6 @@ export const TRANSLATIONS: TranslationMap = {
   one_item_cart:       { te: '1 వస్తువు కార్ట్‌లో',                               en: '1 item in cart' },
   n_items_cart:        { te: '{n} వస్తువులు కార్ట్‌లో',                            en: '{n} items in cart' },
   view_cart_arrow:     { te: 'కార్ట్ చూడండి →',                                   en: 'View cart →' },
-
-  // Coupon row
-  coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
-  apply_coupon:        { te: 'కూపన్ వర్తించండి',                                   en: 'Apply coupon' },
-  coupon_savings:      { te: 'మీరు ₹{n} ఆదా చేశారు',                              en: 'You saved ₹{n}' },
-  coupon_hint:         { te: 'VILLAGE10 వర్తించడానికి నొక్కండి — 10% తగ్గింపు',   en: 'Tap to apply VILLAGE10 — 10% off, up to ₹40' },
-  remove:              { te: 'తొలగించు',                                           en: 'REMOVE' },
-  apply:               { te: 'వర్తించు',                                           en: 'APPLY' },
 
   // Bottom sheets
   choose_variant:      { te: 'బరువు / ప్యాక్ సైజ్ ఎంచుకోండి', en: 'Choose a weight / pack size' },

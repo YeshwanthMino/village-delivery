@@ -9,7 +9,6 @@ import {
   FloatingCartPill,
   HeroCarousel,
   ProductCard,
-  PromoStrip,
   VariantBottomSheet,
 } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
@@ -164,11 +163,6 @@ export const HomeScreen = () => {
               />
             ))}
           </View>
-        </View>
-
-        {/* Promo strip */}
-        <View className="px-4 mt-4">
-          <PromoStrip />
         </View>
 
         {/* Top picks */}

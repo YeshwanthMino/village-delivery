@@ -8,7 +8,6 @@ import {
   BillSummaryCard,
   CartItemRow,
   CheckoutBar,
-  CouponRow,
   DeliveryETACard,
   EmptyCart,
   MiniProductCard,
@@ -98,13 +97,6 @@ export const CartScreen = () => {
             </View>
           </View>
 
-          {/* Coupon */}
-          <CouponRow
-            applied={vm.couponApplied}
-            savings={vm.bill.couponDiscount}
-            onToggle={vm.toggleCoupon}
-          />
-
           {/* Frequently Bought Together */}
           {vm.fbtProducts.length > 0 && (
             <View>
@@ -128,7 +120,7 @@ export const CartScreen = () => {
           )}
 
           {/* Bill summary */}
-          <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
+          <BillSummaryCard bill={vm.bill} />
 
           {/* Delivery address */}
           <View className="bg-white border border-slate-200 rounded-2xl p-4 flex-row items-start gap-3">

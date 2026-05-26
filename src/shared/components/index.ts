@@ -1,6 +1,5 @@
 export { FullWidthStepper } from './FullWidthStepper';
 export { CompactStepper } from './CompactStepper';
-export { PromoStrip } from './PromoStrip';
 export { CategoryTile } from './CategoryTile';
 export { CategoryBigCard } from './CategoryBigCard';
 export { HeroCarousel } from './HeroCarousel';
@@ -12,7 +11,6 @@ export { SortBottomSheet } from './SortBottomSheet';
 export { CartItemRow } from './CartItemRow';
 export { DeliveryETACard } from './DeliveryETACard';
 export { SavingsStrip } from './SavingsStrip';
-export { CouponRow } from './CouponRow';
 export { BillSummaryCard } from './BillSummaryCard';
 export { CheckoutBar } from './CheckoutBar';
 export { FloatingCartPill } from './FloatingCartPill';
