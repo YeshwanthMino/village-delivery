@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/src/core/store';
+import { useAuthStore, useLocationStore } from '@/src/core/store';
 import { useFonts } from 'expo-font';
 import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -8,6 +8,9 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const segments = useSegments();
   const [ready, setReady] = useState(false);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
+  const hydrateLocation = useLocationStore((s) => s.hydrate);
+  const hydrated = useLocationStore((s) => s.hydrated);
+  const hasServiceableLocation = useLocationStore((s) => s.serviceableVillage !== null);
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -17,24 +20,32 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
-    checkExistingAuth().finally(() => setReady(true));
-  }, [checkExistingAuth]);
+    Promise.all([checkExistingAuth(), hydrateLocation()]).finally(() => setReady(true));
+  }, [checkExistingAuth, hydrateLocation]);
 
   useEffect(() => {
-    if (!fontsLoaded || !ready) return;
-    const inDashboard = segments[0] === '(dashboard)';
-    const inAuth = segments[0] === 'auth';
-    const inSearch = segments[0] === 'search';
-    const inOnboarding = segments[0] === 'onboarding';
-    const inCategoryDetails = segments[0] === 'category-details';
-    const inCart = segments[0] === 'cart';
-    const inTopPicks = segments[0] === 'top-picks';
-    if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks) {
+    if (!fontsLoaded || !ready || !hydrated) return;
+
+    const root = segments[0] as string | undefined;
+    const inLocation = root === 'location';
+
+    // Hard gate: no serviceable location → force the location screen.
+    if (!hasServiceableLocation) {
+      if (!inLocation) router.replace('/location' as any);
+      return;
+    }
+
+    // Serviceable: keep known routes; bounce unknown roots to home.
+    const allowed = [
+      '(dashboard)', 'auth', 'search', 'onboarding',
+      'category-details', 'cart', 'top-picks', 'order-detail', 'location', 'address',
+    ];
+    if (!root || !allowed.includes(root)) {
       router.replace('/(dashboard)/home');
     }
-  }, [fontsLoaded, ready, segments]);
+  }, [fontsLoaded, ready, hydrated, hasServiceableLocation, segments]);
 
-  if (!fontsLoaded || !ready) return null;
+  if (!fontsLoaded || !ready || !hydrated) return null;
 
   return <>{children}</>;
 };
