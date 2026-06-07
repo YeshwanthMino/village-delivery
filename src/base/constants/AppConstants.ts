@@ -12,6 +12,7 @@ export const ENV = env.isProduction ? Environment.PRODUCTION : Environment.STAGI
 export const WebService = {
   baseURL: env.apiBaseUrl,
   villageService: `${env.apiBaseUrl}/`,
+  villageBaseURL: env.villageApiBaseUrl,
 };
 
 // App configuration
@@ -62,6 +63,10 @@ export const StorageKeys = {
   // App state
   IS_FIRST_LAUNCH: 'isFirstLaunch',
   LAST_APP_VERSION: 'lastAppVersion',
+
+  // Location
+  SERVICEABLE_VILLAGE: 'serviceable_village',
+  SELECTED_ADDRESS_ID: 'selected_address_id',
 
   // Deep linking
   DEFERRED_DEEP_LINK: 'deferredDeepLink',
