@@ -39,6 +39,8 @@ export default function RootLayout() {
               <Stack.Screen name="top-picks" />
               <Stack.Screen name="index" />
               <Stack.Screen name="auth" />
+              <Stack.Screen name="location/index" />
+              <Stack.Screen name="address/add" />
             </Stack>
           </AppScreen>
         </GluestackUIProvider>
