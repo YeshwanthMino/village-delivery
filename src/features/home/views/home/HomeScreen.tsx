@@ -19,6 +19,8 @@ import { Locale } from '@/src/base/constants/translations';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { LocationHeader } from '@/src/features/location/views/components/LocationHeader';
 import { LocationEntrySheet } from '@/src/features/location/views/LocationEntrySheet';
+import { AddressBottomSheet } from '@/src/features/location/views/AddressBottomSheet';
+import { useAuthStore } from '@/src/core/store';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -29,6 +31,8 @@ export const HomeScreen = () => {
   const setLocale = useVillageStore((s) => s.setLocale);
   const village = useLocationStore((s) => s.serviceableVillage);
   const [locationSheetOpen, setLocationSheetOpen] = React.useState(false);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [addressSheetOpen, setAddressSheetOpen] = React.useState(false);
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
@@ -54,7 +58,7 @@ export const HomeScreen = () => {
             minutesLabel={t('minutes_label')}
             primaryLabel={village?.name ?? t('home_label')}
             secondaryLabel={village?.pincode ?? ''}
-            onPressLocation={() => setLocationSheetOpen(true)}
+            onPressLocation={() => (isAuthenticated ? setAddressSheetOpen(true) : setLocationSheetOpen(true))}
             onPressProfile={() => router.push('/(dashboard)/profile')}
           />
 
@@ -208,6 +212,7 @@ export const HomeScreen = () => {
         onClose={vm.closeVariants}
       />
       <LocationEntrySheet visible={locationSheetOpen} onClose={() => setLocationSheetOpen(false)} />
+      <AddressBottomSheet visible={addressSheetOpen} onClose={() => setAddressSheetOpen(false)} />
     </SafeAreaView>
   );
 };
