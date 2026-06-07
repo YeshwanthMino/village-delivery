@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Bell, ChevronDown, MapPin, Mic, Search } from 'lucide-react-native';
+import { Bell, Mic, Search } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -16,6 +16,9 @@ import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { Locale } from '@/src/base/constants/translations';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
+import { LocationHeader } from '@/src/features/location/views/components/LocationHeader';
+import { LocationEntrySheet } from '@/src/features/location/views/LocationEntrySheet';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -24,6 +27,8 @@ export const HomeScreen = () => {
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
   const setLocale = useVillageStore((s) => s.setLocale);
+  const village = useLocationStore((s) => s.serviceableVillage);
+  const [locationSheetOpen, setLocationSheetOpen] = React.useState(false);
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
@@ -44,24 +49,14 @@ export const HomeScreen = () => {
       <View className="bg-white px-4 pb-3 border-b border-slate-100" style={{ paddingTop: insets.top + 4 }}>
         {/* Row 1: location + locale toggle + bell */}
         <View className="flex-row items-center justify-between mb-3">
-          <TouchableOpacity className="flex-row items-center gap-1.5 flex-1 mr-3">
-            <MapPin size={16} color="#16a34a" />
-            <View className="flex-1">
-              <View className="flex-row items-center gap-1">
-                <Text
-                  className="text-slate-900 font-bold text-sm"
-                  style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-                  numberOfLines={1}
-                >
-                  {t('home_label')}
-                </Text>
-                <ChevronDown size={14} color="#64748b" />
-              </View>
-              <Text className="text-slate-500 text-sm" numberOfLines={1}>
-                రాజంపేట · 25 min
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <LocationHeader
+            etaMinutes={8}
+            minutesLabel={t('minutes_label')}
+            primaryLabel={village?.name ?? t('home_label')}
+            secondaryLabel={village?.pincode ?? ''}
+            onPressLocation={() => setLocationSheetOpen(true)}
+            onPressProfile={() => router.push('/(dashboard)/profile')}
+          />
 
           {/* Locale toggle pill */}
           <View className="flex-row bg-slate-100 rounded-full p-0.5 mr-2">
@@ -212,6 +207,7 @@ export const HomeScreen = () => {
         product={vm.variantProduct}
         onClose={vm.closeVariants}
       />
+      <LocationEntrySheet visible={locationSheetOpen} onClose={() => setLocationSheetOpen(false)} />
     </SafeAreaView>
   );
 };
