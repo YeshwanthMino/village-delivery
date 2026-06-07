@@ -143,9 +143,9 @@ interface Address {
 1. Read cached serviceable village (SecureStore). If present → status=serviceable, app proceeds.
 2. Else request location permission (expo-location).
    - granted → getCurrentPositionAsync → POST find-by-location {lat,lng}
-       → village returned  → cache + status=serviceable
-       → empty / 4xx "none" → status=not_serviceable
-       → network error      → status=error (retry CTA)
+       → **2xx success (200/201)** → serviceable: cache village + load home data
+       → 4xx / not-found / empty body → status=not_serviceable
+       → 5xx / network error      → status=error (retry CTA)
    - denied → status=idle with manual fallback:
        • choose from saved/recent villages (local), or
        • village text search (GET /villages) — auth-gated, disabled until real auth.
@@ -233,6 +233,6 @@ Add keys to `TRANSLATIONS` (te + en), e.g.: `loc_use_current`, `loc_locating`, `
 
 ## Risks / open items
 
-- **Village response shape** for `find-by-location` not fully documented; mapper coded defensively (probe `id/_id/name/villageName/pincode`), to confirm against a live call during implementation.
+- **Serviceability is HTTP-status driven**: any 2xx from `find-by-location` → serviceable → load home. Village body is parsed only for the header name; mapper coded defensively (probe `id/_id/name/villageName/pincode`) and degrades to a generic header label if shape differs. Confirm shape against a live call during implementation.
 - **Auth dependency**: address CRUD + village search inert until real login provides token + `customerId`. `RemoteAddressRepository` written but gated behind an `isAuthed` check; until then `LocalAddressRepository` is used.
 - **Manual path under denied permission** is limited without auth (search disabled) — relies on saved/recent villages.
