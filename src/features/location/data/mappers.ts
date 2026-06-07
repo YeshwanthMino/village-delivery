@@ -58,10 +58,14 @@ export function decodeTag(addressLine2?: string): { tag: AddressTag; addressLine
 export function mapAddress(raw: any): Address {
   const node = raw?.data ?? raw;
   const { tag, addressLine2 } = decodeTag(pick(node, ['addressLine2']));
+  // `village` may be a populated object, an id string, or absent.
+  const villageRaw = pick(node, ['village']);
+  const villageObj = villageRaw && typeof villageRaw === 'object' ? villageRaw : null;
+  const villageStr = typeof villageRaw === 'string' ? villageRaw : undefined;
   return {
     id: String(pick(node, ['_id', 'id']) ?? ''),
-    villageId: String(pick(node, ['villageId', 'village']) ?? ''),
-    villageName: String(pick(node, ['villageName', 'village', 'name']) ?? ''),
+    villageId: String(pick(node, ['villageId']) ?? villageObj?._id ?? villageStr ?? ''),
+    villageName: String(pick(node, ['villageName']) ?? villageObj?.name ?? villageStr ?? pick(node, ['name']) ?? ''),
     addressLine1: String(pick(node, ['addressLine1']) ?? ''),
     addressLine2,
     landmark: pick(node, ['landmark']),
