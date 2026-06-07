@@ -22,7 +22,7 @@ The single public backend endpoint `POST /villages/find-by-location` (no auth) d
 - Hard gate: dashboard blocked until a serviceable location is confirmed.
 - Select Location screen (Zepto-style): search bar, "Use my Current Location / Enable", "Request address from friend" (stub).
 - Location-off bottom sheet overlaying home (permission off state) with Enable + Search.
-- Not-serviceable screen with "Use another pincode" CTA (games/rewards card is a placeholder, out of scope).
+- Not-serviceable screen with "Use another pincode" CTA.
 - Header: `{eta} minutes` + `{tag} - {addressLine}` with chevron dropdown + profile icon; tap → address/location entry.
 - **Login-gated address book** (see below): when authenticated → list saved addresses, highlight default, Deliver Here / Edit / Delete / **Add New**. When NOT logged in → no Add New / no saved book; only current-location + search.
 - Add/Edit address form (authenticated only): current-location autofill, manual fields, tag (Home/Work/Other), validation.
@@ -39,7 +39,8 @@ The single public backend endpoint `POST /villages/find-by-location` (no auth) d
 **Out of scope**
 - Interactive Google Map / draggable pin (expo-location only, no maps lib).
 - Real login / token / `customerId` (separate auth work). Address book hidden until then.
-- "Request address from friend" (WhatsApp) and games/rewards card — rendered as static placeholders to match the reference UI, not wired.
+- "Request address from friend" (WhatsApp) — rendered as a static placeholder to match the reference UI, not wired.
+- Games / rewards card — excluded entirely.
 - `addressImage` upload, address verification, household/shared addresses.
 - Backend tag field (tag is local-only, authenticated users only).
 
@@ -105,7 +106,7 @@ src/features/location/
         ├── AddressRow.tsx
         ├── TagSelector.tsx           ← Home / Work / Other
         ├── LocationHeader.tsx        ← "{eta} minutes" + "{tag} - {line}" + chevron + profile
-        └── NotServiceableView.tsx    ← "Location Not Serviceable" + "Use another pincode" + games placeholder
+        └── NotServiceableView.tsx    ← "Location Not Serviceable" + "Use another pincode"
 
 src/core/store/useLocationStore.ts    ← serviceable village, selected location/address, saved addresses, status
 ```
@@ -196,7 +197,7 @@ Matches the supplied reference screenshots. (Reference uses a pink/red accent; w
 
 - **SelectLocationScreen**: title "Select Location"; top **Search Address** bar; card with `CurrentLocationRow` ("Use my Current Location" / "Enable your current location for better services" + **Enable** button); "**Request address from friend**" row (WhatsApp icon, chevron) — static stub. Used when no permission/location yet.
 - **LocationEntrySheet** (bottom sheet over home, permission-off state): large location-pin illustration, "**Location permission is off**", "Enabling location helps us reach you quickly with accurate delivery", `CurrentLocationRow` + Enable, "Request address from friend" (stub), "**Search your Location**" button. Wraps existing `VillageBottomSheet`.
-- **NotServiceableView**: shopping-bag pin, "**Location Not Serviceable**", "Our team is working tirelessly to bring 10-minute deliveries to your location", primary "**Use another pincode**" CTA. Below: "Fancy a Game While you Wait?" + rewards card — **static placeholder, not wired**.
+- **NotServiceableView**: shopping-bag pin, "**Location Not Serviceable**", "Our team is working tirelessly to bring 10-minute deliveries to your location", primary "**Use another pincode**" CTA. No games/rewards card.
 - **LocationHeader** (home): row 1 `⚡ {eta} minutes`; row 2 `{tag} - {addressLine}` (e.g. "Home - 1, sankar nilaya, ground floor…", truncated) + chevron-down; profile icon top-right. Tap → opens `LocationEntrySheet` (logged-out) or address book (logged-in). Logged-out with serviceable village shows the village name instead of a saved address.
 - **AddressBottomSheet** (authed only): header "Select delivery address". Saved rows with tag icon + address text; selected row highlighted (green-50 bg + green-600 check). Sticky "**+ Add New Address**". Row actions: tap=select, edit (pencil), delete (trash). Empty state: "No saved addresses" + Add CTA. **Hidden entirely when not logged in.**
 - **AddressFormScreen** (authed only): read-only village/pincode chip (from find-by-location), inputs for fields, `TagSelector` segmented Home/Work/Other, default toggle, sticky "Save address" CTA, inline errors.
