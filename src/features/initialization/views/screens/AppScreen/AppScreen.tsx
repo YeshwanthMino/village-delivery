@@ -35,10 +35,11 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Serviceable: keep known routes; bounce unknown roots to home.
+    // Serviceable: keep known routes; bounce unknown roots (and the now-stale
+    // /location gate) to home.
     const allowed = [
       '(dashboard)', 'auth', 'search', 'onboarding',
-      'category-details', 'cart', 'top-picks', 'order-detail', 'location', 'address',
+      'category-details', 'cart', 'top-picks', 'order-detail', 'address',
     ];
     if (!root || !allowed.includes(root)) {
       router.replace('/(dashboard)/home');

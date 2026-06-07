@@ -3,7 +3,6 @@
 import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { SelectLocationScreen } from './SelectLocationScreen';
@@ -12,14 +11,13 @@ import { useLocationGateViewModel } from '../viewmodel/useLocationGateViewModel'
 
 export const LocationGateScreen = () => {
   const { t } = useTranslation();
-  const router = useRouter();
   const status = useLocationStore((s) => s.status);
   const setStatus = useLocationStore((s) => s.setStatus);
   const gate = useLocationGateViewModel();
 
   if (status === 'serviceable') {
-    // Gate released — leave the location route.
-    router.replace('/(dashboard)/home');
+    // Gate released — AppScreen's guard redirects off /location to home.
+    // Render nothing here; do not navigate during render.
     return null;
   }
 
