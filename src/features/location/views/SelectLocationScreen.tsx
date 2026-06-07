@@ -39,7 +39,7 @@ export const SelectLocationScreen = () => {
           subtitle={t('current_location_sub')}
           cta={t('enable')}
           loading={loading}
-          onPress={vm.useCurrentLocation}
+          onPress={vm.detectLocation}
         />
 
         <TouchableOpacity
