@@ -27,4 +27,7 @@ export const env = {
 
   // API Configuration
   apiBaseUrl: (_importMetaEnv?.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || process.env.EXPO_PUBLIC_API_BASE_URL || '') as string,
+
+  // Village location/address API (separate backend)
+  villageApiBaseUrl: (_importMetaEnv?.VITE_VILLAGE_API_BASE_URL || process.env.VITE_VILLAGE_API_BASE_URL || process.env.EXPO_PUBLIC_VILLAGE_API_BASE_URL || '') as string,
 };

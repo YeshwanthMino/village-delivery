@@ -40,6 +40,12 @@
             "backgroundColor": "#E6F4FE"
           }
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Village Delivery uses your location to find your village and check if we deliver there."
+        }
       ]
     ],
     "experiments": {
