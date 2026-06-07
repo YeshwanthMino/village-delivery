@@ -16,7 +16,7 @@ export function useLocationGateViewModel() {
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
   /** Full flow: permission → GPS → find-by-location → status. */
-  const useCurrentLocation = useCallback(async () => {
+  const detectLocation = useCallback(async () => {
     setStatus('locating');
     try {
       const granted = await LocationService.requestPermission();
@@ -49,8 +49,8 @@ export function useLocationGateViewModel() {
 
   const retry = useCallback(() => {
     setStatus('idle');
-    void useCurrentLocation();
-  }, [setStatus, useCurrentLocation]);
+    void detectLocation();
+  }, [setStatus, detectLocation]);
 
-  return { status, village, permission, useCurrentLocation, openSettings, retry };
+  return { status, village, permission, detectLocation, openSettings, retry };
 }

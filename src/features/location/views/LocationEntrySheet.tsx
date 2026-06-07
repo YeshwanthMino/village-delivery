@@ -35,7 +35,7 @@ export const LocationEntrySheet = ({ visible, onClose }: Props) => {
             subtitle={t('current_location_sub')}
             cta={t('enable')}
             loading={loading}
-            onPress={vm.useCurrentLocation}
+            onPress={vm.detectLocation}
           />
           <View className="h-px bg-slate-100" />
           <TouchableOpacity onPress={vm.requestFromFriend} className="flex-row items-center bg-white px-4 py-4">
