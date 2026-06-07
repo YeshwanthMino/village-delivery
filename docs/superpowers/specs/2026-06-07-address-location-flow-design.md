@@ -253,5 +253,5 @@ Add keys to `TRANSLATIONS` (te + en), e.g.: `loc_use_current`, `loc_locating`, `
 
 - **Serviceability is HTTP-status driven**: any 2xx from `find-by-location` → serviceable → load home. Village body is parsed only for the header name; mapper coded defensively (probe `id/_id/name/villageName/pincode`) and degrades to a generic header label if shape differs. Confirm shape against a live call during implementation.
 - **Login gating**: address book + Add New only shown when `isAuthenticated`. Login is mocked today, so the book stays hidden until real auth provides a token; serviceability/location flow works regardless.
-- **Search under logged-out / denied permission** is limited: only public endpoint is `find-by-location` (lat/lng). Village/address text search needs auth, so logged-out search is disabled/empty — primary logged-out path is GPS. "Use another pincode" routes to search (authed) or re-triggers GPS.
-- **Accent color**: reference screenshots are pink/red; spec keeps green-600 brand. Flag if pink accent is wanted instead.
+- **Search is GPS-only when logged out** (decided): only public endpoint is `find-by-location` (lat/lng). Logged-out search is disabled/empty; primary path is GPS. "Use another pincode" re-triggers GPS (authed users get village search later). The search bar still renders for visual parity but is inert when logged out.
+- **Accent color: green-600** (decided) — keep Village Delivery brand, not the reference pink.
