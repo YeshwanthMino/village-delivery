@@ -18,7 +18,12 @@
  *   import { env } from '@/src/core/config/env';
  *   console.log(env.apiBaseUrl);
  */
-const _importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
+// NOTE: this Expo app bundles web with Metro, not Vite. A bare `import.meta`
+// literal cannot be parsed in Metro's web output ("Cannot use 'import.meta'
+// outside a module"), which throws at load and blanks the whole app. Expo
+// injects EXPO_PUBLIC_* into process.env on web, so we read from there and
+// keep the (unused under Expo) VITE_* fallbacks pointing at process.env only.
+const _importMetaEnv: any = undefined;
 
 export const env = {
   // Environment flags
