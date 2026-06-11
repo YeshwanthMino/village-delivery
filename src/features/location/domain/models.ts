@@ -21,6 +21,7 @@ export interface Village {
   pincode?: string;
   latitude?: number;
   longitude?: number;
+  storeId?: string; // x-store-id for the dynamic home page-layout API
 }
 
 export interface Address {
