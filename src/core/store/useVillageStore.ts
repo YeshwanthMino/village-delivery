@@ -1,6 +1,5 @@
 import { CartRecord, Order } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
-import { MOCK_ORDERS } from '@/src/features/orders/data/mockOrders';
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';

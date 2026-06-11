@@ -1,12 +1,15 @@
 import { useVillageStore } from '@/src/core/store';
-import { ALL_PRODUCTS, CATEGORIES } from '@/src/features/home/data/static/villageData';
+import { useCategoriesQuery } from '@/src/features/home/data/queries/useCategoriesQuery';
+import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
 
 export const useCategoriesViewModel = () => {
   const cartCount = useVillageStore(state => state.cartCount());
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: products = [] } = useProductsQuery();
 
   return {
-    categories: CATEGORIES,
+    categories,
     cartCount,
-    productCountInCat: (catId: string) => ALL_PRODUCTS.filter(p => p.categoryId === catId).length,
+    productCountInCat: (catId: string) => products.filter(p => p.categoryId === catId).length,
   };
 };

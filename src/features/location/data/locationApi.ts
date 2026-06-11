@@ -1,26 +1,11 @@
 // src/features/location/data/locationApi.ts
 
-import axios, { AxiosInstance } from 'axios';
+import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
-import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { LatLng, ServiceabilityResult, Address, AddressTag } from '../domain/models';
 import { mapVillage, mapAddressList, mapAddress, encodeTag } from './mappers';
 
-const client: AxiosInstance = axios.create({
-  baseURL: WebService.villageBaseURL,
-  timeout: 20000,
-  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-});
-
-// Attach bearer token for authed endpoints when available.
-client.interceptors.request.use(async (config) => {
-  const token = await StoredPrefs.getAccessToken();
-  const type = (await StoredPrefs.getTokenType()) || 'Bearer';
-  if (token && config.headers) {
-    config.headers.Authorization = `${type} ${token}`;
-  }
-  return config;
-});
+const BASE = WebService.villageBaseURL;
 
 export interface CreateAddressInput {
   villageId: string;
@@ -55,24 +40,25 @@ function hasTitle(raw: any): boolean {
 }
 
 /**
- * Serviceability check. Serviceable only when the response is 200 AND the body
- * contains a `title`. Any non-200, or a 200 without `title`, → not serviceable.
- * Network/5xx throws so the caller can surface a retryable error.
+ * Serviceability check. Serviceable only when find-by-location returns 2xx AND
+ * the body contains a `title`. A 2xx without `title` → not serviceable; a 4xx →
+ * not serviceable; network/5xx throws so the caller can surface a retryable error.
  */
 export async function findByLocation(coords: LatLng): Promise<ServiceabilityResult> {
   try {
-    const res = await client.post('/villages/find-by-location', {
+    // Public endpoint (lat/lng) — apiClient resolves only on 2xx.
+    const data = await apiClient.postWithoutAuth<any>(`${BASE}/villages/find-by-location`, {
       latitude: coords.latitude,
       longitude: coords.longitude,
     });
-    // Serviceable requires 200 + a `title` in the body.
-    if (res.status === 200 && hasTitle(res.data)) {
-      return { serviceable: true, village: mapVillage(res.data) };
+    // Serviceable requires a `title` in the body.
+    if (hasTitle(data)) {
+      return { serviceable: true, village: mapVillage(data) };
     }
-    // 2xx without title (or any other non-200 2xx) → not serviceable.
+    // 2xx without title → not serviceable.
     return { serviceable: false, village: null };
   } catch (err: any) {
-    const status = err?.response?.status;
+    const status = err?.statusCode;
     if (status && status >= 400 && status < 500) {
       // 4xx (incl. not-found) → genuinely not serviceable.
       return { serviceable: false, village: null };
@@ -83,25 +69,25 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
 }
 
 export async function listAddresses(): Promise<Address[]> {
-  const res = await client.get('/address', { params: { limit: 50, sort: '_id:desc' } });
-  return mapAddressList(res.data);
+  const data = await apiClient.get<any>(`${BASE}/address?limit=50&sort=_id:desc`);
+  return mapAddressList(data);
 }
 
 export async function createAddress(input: CreateAddressInput): Promise<Address> {
-  const res = await client.post('/address', toDto(input));
-  return mapAddress(res.data);
+  const data = await apiClient.post<any>(`${BASE}/address`, toDto(input));
+  return mapAddress(data);
 }
 
 export async function updateAddress(id: string, input: CreateAddressInput): Promise<Address> {
-  const res = await client.patch(`/address/${id}`, toDto(input));
-  return mapAddress(res.data);
+  const data = await apiClient.patch<any>(`${BASE}/address/${id}`, toDto(input));
+  return mapAddress(data);
 }
 
 export async function deleteAddress(id: string): Promise<void> {
-  await client.delete(`/address/${id}`);
+  await apiClient.delete(`${BASE}/address/${id}`);
 }
 
 export async function setDefaultAddress(id: string, input: CreateAddressInput): Promise<Address> {
-  const res = await client.patch(`/address/${id}`, { ...toDto(input), isDefault: true });
-  return mapAddress(res.data);
+  const data = await apiClient.patch<any>(`${BASE}/address/${id}`, { ...toDto(input), isDefault: true });
+  return mapAddress(data);
 }
