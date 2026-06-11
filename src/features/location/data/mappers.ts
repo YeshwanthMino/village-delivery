@@ -24,15 +24,20 @@ export function mapVillage(raw: any): Village | null {
   if (!node) return null;
 
   const id = pick(node, ['_id', 'id', 'villageId']);
-  const name = pick(node, ['name', 'villageName', 'village', 'title']);
+  // find-by-location returns the village name in `title`.
+  const name = pick(node, ['title', 'name', 'villageName', 'village']);
   if (!id && !name) return null;
+
+  // Coordinates may be top-level or nested under `defaultLocation`.
+  const def =
+    node.defaultLocation && typeof node.defaultLocation === 'object' ? node.defaultLocation : null;
 
   return {
     id: id ? String(id) : 'unknown',
     name: name ? String(name) : 'Your location',
     pincode: pick(node, ['pincode', 'pinCode', 'postalCode']),
-    latitude: pick(node, ['latitude', 'lat']),
-    longitude: pick(node, ['longitude', 'lng', 'long']),
+    latitude: pick(node, ['latitude', 'lat']) ?? def?.latitude,
+    longitude: pick(node, ['longitude', 'lng', 'long']) ?? def?.longitude,
   };
 }
 
