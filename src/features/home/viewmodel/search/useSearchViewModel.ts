@@ -2,47 +2,44 @@ import { useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
+import { CATEGORIES } from '@/src/features/home/data/static/villageData';
+import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
 
 export const useSearchViewModel = () => {
-  const params = useLocalSearchParams<{
-    categoryId?: string;
-    categoryName?: string;
-  }>();
+  const params = useLocalSearchParams<{ categoryId?: string; categoryName?: string }>();
 
   const [query, setQuery] = useState('');
+
+  const isValidCategory = params.categoryId
+    ? CATEGORIES.some(c => c.id === params.categoryId)
+    : false;
+
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(
-    params.categoryId ?? null
+    isValidCategory ? (params.categoryId ?? null) : null
   );
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
   const cartCount = useVillageStore(state => state.cartCount());
+  const { data: allProducts = [] } = useProductsQuery();
 
   const results = useMemo(() => {
     const trimmed = query.toLowerCase().trim();
-
     if (!trimmed && !activeCategoryId) return [];
-
-    return ALL_PRODUCTS
+    return allProducts
       .filter(p => !activeCategoryId || p.categoryId === activeCategoryId)
       .filter(p => !trimmed || p.name.toLowerCase().includes(trimmed));
-  }, [query, activeCategoryId]);
-
-  const clearCategory = () => setActiveCategoryId(null);
-
-  const openVariants = (product: Product) => setVariantProduct(product);
-  const closeVariants = () => setVariantProduct(null);
+  }, [allProducts, query, activeCategoryId]);
 
   return {
     query,
     setQuery,
     activeCategoryId,
     categoryName: activeCategoryId ? (params.categoryName ?? activeCategoryId) : null,
-    clearCategory,
+    clearCategory: () => setActiveCategoryId(null),
     results,
     cartCount,
     variantProduct,
-    openVariants,
-    closeVariants,
+    openVariants: (product: Product) => setVariantProduct(product),
+    closeVariants: () => setVariantProduct(null),
   };
 };
