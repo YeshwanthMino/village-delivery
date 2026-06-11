@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
+import { ALL_PRODUCTS, CATEGORIES } from '@/src/features/home/data/static/villageData';
 
 export const useSearchViewModel = () => {
   const params = useLocalSearchParams<{
@@ -11,8 +11,13 @@ export const useSearchViewModel = () => {
   }>();
 
   const [query, setQuery] = useState('');
+
+  const isValidCategory = params.categoryId
+    ? CATEGORIES.some(c => c.id === params.categoryId)
+    : false;
+
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(
-    params.categoryId ?? null
+    isValidCategory ? (params.categoryId ?? null) : null
   );
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
