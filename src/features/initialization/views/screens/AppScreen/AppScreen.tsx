@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/src/core/store';
+import { useAuthStore, useLocationStore } from '@/src/core/store';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
@@ -11,6 +11,9 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
+  const hydrateLocation = useLocationStore((s) => s.hydrate);
+  const hydrated = useLocationStore((s) => s.hydrated);
+  const hasServiceableLocation = useLocationStore((s) => s.serviceableVillage !== null);
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -21,7 +24,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
-      await checkExistingAuth();
+      await Promise.all([checkExistingAuth(), hydrateLocation()]);
       const firstLaunch = await StoredPrefs.getIsFirstLaunch();
       if (firstLaunch) {
         const initialUrl = await Linking.getInitialURL();
@@ -33,33 +36,39 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
       setReady(true);
     };
     init();
-  }, [checkExistingAuth]);
+  }, [checkExistingAuth, hydrateLocation]);
 
   useEffect(() => {
-    if (!fontsLoaded || !ready || isFirstLaunch === null) return;
+    if (!fontsLoaded || !ready || !hydrated || isFirstLaunch === null) return;
 
-    const inOnboarding = segments[0] === 'onboarding';
+    const root = segments[0] as string | undefined;
+    const inOnboarding = root === 'onboarding';
 
-    if (isFirstLaunch && !inOnboarding) {
-      router.replace('/onboarding/language');
+    // First launch → onboarding; stay there until it completes.
+    if (isFirstLaunch) {
+      if (!inOnboarding) router.replace('/onboarding/language');
       return;
     }
 
-    if (!isFirstLaunch) {
-      const inDashboard = segments[0] === '(dashboard)';
-      const inAuth = segments[0] === 'auth';
-      const inSearch = segments[0] === 'search';
-      const inCategoryDetails = segments[0] === 'category-details';
-      const inCart = segments[0] === 'cart';
-      const inTopPicks = segments[0] === 'top-picks';
-      const inOrderDetail = segments[0] === 'order-detail';
-      if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks && !inOrderDetail) {
-        router.replace('/(dashboard)/home');
-      }
+    // Hard gate: no serviceable location → force the location screen.
+    const inLocation = root === 'location';
+    if (!hasServiceableLocation) {
+      if (!inLocation) router.replace('/location' as any);
+      return;
     }
-  }, [fontsLoaded, ready, isFirstLaunch, segments, router]);
 
-  if (!fontsLoaded || !ready) return null;
+    // Serviceable: keep known routes; bounce unknown roots (and the now-stale
+    // /location gate) to home.
+    const allowed = [
+      '(dashboard)', 'auth', 'search', 'onboarding',
+      'category-details', 'cart', 'top-picks', 'order-detail', 'address',
+    ];
+    if (!root || !allowed.includes(root)) {
+      router.replace('/(dashboard)/home');
+    }
+  }, [fontsLoaded, ready, hydrated, isFirstLaunch, hasServiceableLocation, segments, router]);
+
+  if (!fontsLoaded || !ready || !hydrated) return null;
 
   return <>{children}</>;
 };

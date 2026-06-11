@@ -251,6 +251,14 @@ class ApiClient {
     });
   }
 
+  patch<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PATCH',
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+  }
+
   delete<T = any>(url: string, options?: FetchOptions) {
     return this.request<T>(url, { ...options, method: 'DELETE' });
   }

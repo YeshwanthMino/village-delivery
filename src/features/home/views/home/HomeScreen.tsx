@@ -1,21 +1,21 @@
 import { useRouter } from 'expo-router';
-import { Bell, ChevronDown, MapPin, Mic, Search } from 'lucide-react-native';
+import { Bell, Mic, Search } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  CategoryTile,
-  FloatingCartPill,
-  HeroCarousel,
-  ProductCard,
-  PromoStrip,
-  VariantBottomSheet,
-} from '@/src/shared/components';
+import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
+import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
+import { HomeSections } from './components/HomeSections';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { Locale } from '@/src/base/constants/translations';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
+import { LocationHeader } from '@/src/features/location/views/components/LocationHeader';
+import { LocationEntrySheet } from '@/src/features/location/views/LocationEntrySheet';
+import { AddressBottomSheet } from '@/src/features/location/views/AddressBottomSheet';
+import { useAuthStore } from '@/src/core/store';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -24,16 +24,13 @@ export const HomeScreen = () => {
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
   const setLocale = useVillageStore((s) => s.setLocale);
+  const village = useLocationStore((s) => s.serviceableVillage);
+  const [locationSheetOpen, setLocationSheetOpen] = React.useState(false);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [addressSheetOpen, setAddressSheetOpen] = React.useState(false);
+  const layout = useHomeLayoutViewModel();
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
-
-  const goToCategories = (catId?: string) => {
-    if (catId) {
-      router.push({ pathname: '/category-details', params: { categoryId: catId } } as any);
-    } else {
-      router.push('/(dashboard)/categories');
-    }
-  };
 
   const goToCart = () => router.push('/cart');
 
@@ -44,24 +41,14 @@ export const HomeScreen = () => {
       <View className="bg-white px-4 pb-3 border-b border-slate-100" style={{ paddingTop: insets.top + 4 }}>
         {/* Row 1: location + locale toggle + bell */}
         <View className="flex-row items-center justify-between mb-3">
-          <TouchableOpacity className="flex-row items-center gap-1.5 flex-1 mr-3">
-            <MapPin size={16} color="#16a34a" />
-            <View className="flex-1">
-              <View className="flex-row items-center gap-1">
-                <Text
-                  className="text-slate-900 font-bold text-sm"
-                  style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-                  numberOfLines={1}
-                >
-                  {t('home_label')}
-                </Text>
-                <ChevronDown size={14} color="#64748b" />
-              </View>
-              <Text className="text-slate-500 text-sm" numberOfLines={1}>
-                రాజంపేట · 25 min
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <LocationHeader
+            etaMinutes={8}
+            minutesLabel={t('minutes_label')}
+            primaryLabel={village?.name ?? t('home_label')}
+            secondaryLabel={village?.pincode ?? ''}
+            onPressLocation={() => (isAuthenticated ? setAddressSheetOpen(true) : setLocationSheetOpen(true))}
+            onPressProfile={() => router.push('/(dashboard)/profile')}
+          />
 
           {/* Locale toggle pill */}
           <View className="flex-row bg-slate-100 rounded-full p-0.5 mr-2">
@@ -120,88 +107,21 @@ export const HomeScreen = () => {
         alwaysBounceVertical={true}
         overScrollMode="always"
       >
-        {/* Hero Carousel */}
-        <HeroCarousel
-          slides={vm.heroSlides}
-          onShopNow={() => goToCategories()}
-        />
-
-        {/* Shop by category */}
-        <View className="px-4 mt-5">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text
-              className="text-slate-900 font-bold text-base"
-              style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-            >
-              {t('shop_by_category')}
-            </Text>
-            <TouchableOpacity onPress={() => goToCategories()}>
-              <Text
-                className="text-green-600 font-semibold text-sm"
-                style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
-              >
-                {t('see_all')}
-              </Text>
+        {/* Dynamic home layout (driven by /app/page-layout/path/main) */}
+        {layout.loading && layout.sections.length === 0 ? (
+          <View className="py-16 items-center">
+            <ActivityIndicator size="large" color="#16a34a" />
+          </View>
+        ) : layout.error && layout.sections.length === 0 ? (
+          <View className="py-16 items-center px-8">
+            <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
+            <TouchableOpacity onPress={layout.refresh} className="bg-green-600 rounded-xl px-5 py-2.5">
+              <Text className="text-white font-bold text-sm">{t('retry')}</Text>
             </TouchableOpacity>
           </View>
-
-          {/* 4-col grid — two rows of 4 */}
-          <View className="flex-row justify-between mb-3">
-            {vm.categories.slice(0, 4).map(cat => (
-              <CategoryTile
-                key={cat.id}
-                category={cat}
-                onPress={() => goToCategories(cat.id)}
-              />
-            ))}
-          </View>
-          <View className="flex-row justify-between pb-4">
-            {vm.categories.slice(4, 8).map(cat => (
-              <CategoryTile
-                key={cat.id}
-                category={cat}
-                onPress={() => goToCategories(cat.id)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Promo strip */}
-        <View className="px-4 mt-4">
-          <PromoStrip />
-        </View>
-
-        {/* Top picks */}
-        <View className="px-4 mt-5">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text
-              className="text-slate-900 font-bold text-base"
-              style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-            >
-              {t('top_picks')}
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/top-picks' as any)}>
-              <Text
-                className="text-green-600 font-semibold text-sm"
-                style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
-              >
-                {t('see_all')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 2-col product grid */}
-          <View className="flex-row flex-wrap gap-3 pb-4">
-            {vm.topPicks.map(product => (
-              <View key={product.id} style={{ width: '47.5%' }}>
-                <ProductCard
-                  product={product}
-                  openVariants={vm.openVariants}
-                />
-              </View>
-            ))}
-          </View>
-        </View>
+        ) : (
+          <HomeSections sections={layout.sections} />
+        )}
       </ScrollView>
 
       {/* Overlays */}
@@ -212,6 +132,8 @@ export const HomeScreen = () => {
         product={vm.variantProduct}
         onClose={vm.closeVariants}
       />
+      <LocationEntrySheet visible={locationSheetOpen} onClose={() => setLocationSheetOpen(false)} />
+      <AddressBottomSheet visible={addressSheetOpen} onClose={() => setAddressSheetOpen(false)} />
     </SafeAreaView>
   );
 };

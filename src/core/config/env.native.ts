@@ -25,6 +25,9 @@ export const env = {
 
   // API Configuration
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || '',
+
+  // Village location/address API (separate backend)
+  villageApiBaseUrl: process.env.EXPO_PUBLIC_VILLAGE_API_BASE_URL || '',
 };
 
 // Debug log for mobile (only in development)
