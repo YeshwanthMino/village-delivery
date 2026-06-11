@@ -47,8 +47,16 @@ function toDto(input: CreateAddressInput) {
   };
 }
 
+/** True when the find-by-location body carries a non-empty `title`. */
+function hasTitle(raw: any): boolean {
+  const data = raw?.data ?? raw;
+  const node = Array.isArray(data) ? data[0] : data;
+  return Boolean(node && typeof node === 'object' && typeof node.title === 'string' && node.title.trim());
+}
+
 /**
- * Serviceability check. Any 2xx → serviceable. A 4xx/empty → not serviceable.
+ * Serviceability check. Serviceable only when the response is 200 AND the body
+ * contains a `title`. Any non-200, or a 200 without `title`, → not serviceable.
  * Network/5xx throws so the caller can surface a retryable error.
  */
 export async function findByLocation(coords: LatLng): Promise<ServiceabilityResult> {
@@ -57,8 +65,12 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
       latitude: coords.latitude,
       longitude: coords.longitude,
     });
-    // 2xx → serviceable regardless of body; map village for the header if possible.
-    return { serviceable: true, village: mapVillage(res.data) };
+    // Serviceable requires 200 + a `title` in the body.
+    if (res.status === 200 && hasTitle(res.data)) {
+      return { serviceable: true, village: mapVillage(res.data) };
+    }
+    // 2xx without title (or any other non-200 2xx) → not serviceable.
+    return { serviceable: false, village: null };
   } catch (err: any) {
     const status = err?.response?.status;
     if (status && status >= 400 && status < 500) {
