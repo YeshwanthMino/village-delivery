@@ -54,7 +54,31 @@ export const CategoryDetailsScreen = () => {
   const goToCart = () => router.push('/cart');
 
   if (!vm.currentCategory || !vm.heroGradient) {
-    return null;
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
+        <View className="px-4" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.replace('/(dashboard)/categories' as any)}
+            className="p-1 self-start"
+          >
+            <ArrowLeft size={20} color="#0f172a" />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-4xl mb-4">🔍</Text>
+          <Text className="text-slate-900 font-bold text-lg mb-2 text-center">Category not found</Text>
+          <Text className="text-slate-500 text-sm text-center mb-6">
+            This category does not exist or may have been removed.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace('/(dashboard)/categories' as any)}
+            className="bg-green-500 rounded-2xl px-8 py-3"
+          >
+            <Text className="text-white font-bold text-base">Browse categories</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   const cat = vm.currentCategory;
