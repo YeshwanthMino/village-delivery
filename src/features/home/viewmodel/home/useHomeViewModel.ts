@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { CATEGORIES, ALL_PRODUCTS, HERO_SLIDES } from '@/src/features/home/data/static/villageData';
+import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
+import { useCategoriesQuery } from '@/src/features/home/data/queries/useCategoriesQuery';
+import { useHeroSlidesQuery } from '@/src/features/home/data/queries/useHeroSlidesQuery';
 
 export const useHomeViewModel = () => {
   const cart = useVillageStore(state => state.cart);
@@ -11,21 +13,22 @@ export const useHomeViewModel = () => {
   const toggleFav = useVillageStore(state => state.toggleFav);
   const cartCount = useVillageStore(state => state.cartCount());
 
+  const { data: products = [] } = useProductsQuery();
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: heroSlides = [] } = useHeroSlidesQuery();
+
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
   const topPicks = useMemo(() =>
-    [...ALL_PRODUCTS]
+    [...products]
       .sort((a, b) => b.rating * b.reviews - a.rating * a.reviews)
       .slice(0, 6),
-    []
+    [products]
   );
 
-  const openVariants = (product: Product) => setVariantProduct(product);
-  const closeVariants = () => setVariantProduct(null);
-
   return {
-    categories: CATEGORIES,
-    heroSlides: HERO_SLIDES,
+    categories,
+    heroSlides,
     topPicks,
     cart,
     favs,
@@ -34,7 +37,7 @@ export const useHomeViewModel = () => {
     addToCart,
     decFromCart,
     toggleFav,
-    openVariants,
-    closeVariants,
+    openVariants: (product: Product) => setVariantProduct(product),
+    closeVariants: () => setVariantProduct(null),
   };
 };
