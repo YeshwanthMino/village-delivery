@@ -8,6 +8,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppScreen } from '@/src/features/initialization/views/screens/AppScreen';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/src/base/query/queryClient';
 
 export default function RootLayout() {
   const loadLocale = useVillageStore((s) => s.loadLocale);
@@ -24,6 +26,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <QueryClientProvider client={queryClient}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <GluestackUIProvider mode="light">
@@ -46,5 +49,6 @@ export default function RootLayout() {
         </GluestackUIProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

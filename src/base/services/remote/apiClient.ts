@@ -1,96 +1,59 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { authInterceptor } from './interceptors/authInterceptor';
-import { loggingInterceptor } from './interceptors/loggingInterceptor';
-import { errorInterceptor } from './interceptors/errorInterceptor';
-
-// Import app constants
-import { IS_WEB } from '@/src/core/utils/platform';
 import { AuthTokens } from './apiTypes';
 import { WebService, AppConfig, StorageKeys } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
+import { IS_WEB } from '@/src/core/utils/platform';
+import { ErrorMapper } from './errorMapper';
+
+interface FetchOptions extends RequestInit {
+  withAuth?: boolean;
+  _retry?: boolean;
+}
 
 class ApiClient {
-  private axiosInstance: AxiosInstance;
-  private axiosInstanceWithoutAuth: AxiosInstance;
   private refreshTokenPromise: Promise<AuthTokens> | null = null;
   private storageService: IStorageService | null = null;
   private storageInitPromise: Promise<IStorageService> | null = null;
   private platformService: IPlatformService | null = null;
   private platformInitPromise: Promise<IPlatformService> | null = null;
+  private platformHeaders: Record<string, string> = {};
 
-  // Lazy-load storage service with async initialization for mobile
+  constructor() {
+    this.initializePlatformHeaders();
+  }
+
   private async getStorageService(): Promise<IStorageService> {
-    if (this.storageService) {
-      return this.storageService;
-    }
-
-    if (this.storageInitPromise) {
-      return this.storageInitPromise;
-    }
+    if (this.storageService) return this.storageService;
+    if (this.storageInitPromise) return this.storageInitPromise;
 
     if (IS_WEB) {
       this.storageService = StorageServiceFactory.create();
       return this.storageService;
-    } else {
-      this.storageInitPromise = StorageServiceFactory.createAsync().then((service) => {
-        this.storageService = service;
-        this.storageInitPromise = null;
-        return service;
-      });
-      return this.storageInitPromise;
     }
+
+    this.storageInitPromise = StorageServiceFactory.createAsync().then((service) => {
+      this.storageService = service;
+      this.storageInitPromise = null;
+      return service;
+    });
+    return this.storageInitPromise;
   }
 
-  // Lazy-load platform service with async initialization for mobile
   private async getPlatformService(): Promise<IPlatformService> {
-    if (this.platformService) {
-      return this.platformService;
-    }
-
-    if (this.platformInitPromise) {
-      return this.platformInitPromise;
-    }
+    if (this.platformService) return this.platformService;
+    if (this.platformInitPromise) return this.platformInitPromise;
 
     if (IS_WEB) {
       this.platformService = PlatformServiceFactory.create();
       return this.platformService;
-    } else {
-      this.platformInitPromise = PlatformServiceFactory.createAsync().then((service) => {
-        this.platformService = service;
-        this.platformInitPromise = null;
-        return service;
-      });
-      return this.platformInitPromise;
     }
-  }
 
-  constructor() {
-    // Main axios instance with auth
-    this.axiosInstance = axios.create({
-      timeout: 30000,
-      headers: this.getBasicHeaders(),
+    this.platformInitPromise = PlatformServiceFactory.createAsync().then((service) => {
+      this.platformService = service;
+      this.platformInitPromise = null;
+      return service;
     });
-
-    // Instance without auth interceptor (for token refresh)
-    this.axiosInstanceWithoutAuth = axios.create({
-      timeout: 30000,
-      headers: this.getBasicHeaders(),
-    });
-
-    this.setupInterceptors();
-
-    // Initialize platform-specific headers async
-    this.initializePlatformHeaders();
-  }
-
-  private getBasicHeaders(): Record<string, string> {
-    // Basic headers that don't require platform service
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Village-App-Version': `${AppConfig.name} (v${AppConfig.version})`,
-    };
+    return this.platformInitPromise;
   }
 
   private async initializePlatformHeaders(): Promise<void> {
@@ -100,152 +63,157 @@ class ApiClient {
       const platformName = platformService.getPlatform();
       const platform = platformName === 'ios' ? 'iOS' : platformName === 'android' ? 'Android' : 'Web';
 
-      // Get device model based on platform
       let deviceModel = `${platform} Device`;
       if (IS_WEB) {
-        // For web, use browser info
-        deviceModel = navigator.userAgent.includes('Chrome') ? 'Chrome Browser' :
-                      navigator.userAgent.includes('Firefox') ? 'Firefox Browser' :
-                      navigator.userAgent.includes('Safari') ? 'Safari Browser' : 'Web Browser';
+        deviceModel = navigator.userAgent.includes('Chrome') ? 'Chrome Browser'
+          : navigator.userAgent.includes('Firefox') ? 'Firefox Browser'
+          : navigator.userAgent.includes('Safari') ? 'Safari Browser'
+          : 'Web Browser';
       } else {
-        // For mobile, dynamically import expo-constants
         const Constants = require('expo-constants').default;
         deviceModel = Constants.deviceName || deviceModel;
       }
 
-      // Update headers on both axios instances
-      const headers = {
+      this.platformHeaders = {
         'Village-Client': platform,
         'Village-Client-Device': `${deviceModel} (${osVersion})`,
       };
-
-      Object.assign(this.axiosInstance.defaults.headers.common, headers);
-      Object.assign(this.axiosInstanceWithoutAuth.defaults.headers.common, headers);
     } catch (error) {
       console.warn('Failed to initialize platform headers:', error);
     }
   }
 
-  private setupInterceptors() {
-    // Request interceptors
-    this.axiosInstance.interceptors.request.use(
-      loggingInterceptor.request,
-      (error: any) => Promise.reject(error)
-    );
+  private getBaseHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Village-App-Version': `${AppConfig.name} (v${AppConfig.version})`,
+      ...this.platformHeaders,
+    };
+  }
 
-    this.axiosInstance.interceptors.request.use(
-      authInterceptor.request,
-      (error: any) => Promise.reject(error)
-    );
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    try {
+      const storage = await this.getStorageService();
+      const token = await storage.getItem(StorageKeys.ACCESS_TOKEN);
+      const tokenType = await storage.getItem(StorageKeys.TOKEN_TYPE);
+      if (token && tokenType) {
+        return { Authorization: `${tokenType} ${token}` };
+      }
+    } catch (error) {
+      console.warn('Failed to get auth token:', error);
+    }
+    return {};
+  }
 
-    // Response interceptors
-    this.axiosInstance.interceptors.response.use(
-      (response: any) => {
-        loggingInterceptor.response(response);
-        return authInterceptor.response(response);
-      },
-      async (error: any) => {
-        if (error.response?.status === 401 && !error.config._retry) {
-          error.config._retry = true;
+  private async request<T>(url: string, options: FetchOptions = {}): Promise<T> {
+    const { withAuth = true, _retry = false, ...fetchOptions } = options;
 
-          try {
-            const tokens = await this.refreshAccessToken();
-            if (tokens) {
-              // Retry the original request with new token
-              error.config.headers.Authorization = `${tokens.tokenType} ${tokens.accessToken}`;
-              return this.axiosInstance.request(error.config);
-            }
-          } catch (refreshError) {
-            await this.logout();
-            return Promise.reject(refreshError);
-          }
+    const authHeaders = withAuth ? await this.getAuthHeaders() : {};
+    const headers: Record<string, string> = {
+      ...this.getBaseHeaders(),
+      ...authHeaders,
+      ...(fetchOptions.headers as Record<string, string> ?? {}),
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AppConfig.timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+        signal: controller.signal,
+      });
+
+      if (response.status === 401 && withAuth && !_retry) {
+        try {
+          const tokens = await this.refreshAccessToken();
+          return this.request<T>(url, {
+            ...options,
+            _retry: true,
+            headers: {
+              ...(options.headers as Record<string, string> ?? {}),
+              Authorization: `${tokens.tokenType} ${tokens.accessToken}`,
+            },
+          });
+        } catch {
+          await this.clearTokens();
+          throw await ErrorMapper.mapFetchResponse(response);
         }
-
-        const networkError = errorInterceptor.error(error);
-        return Promise.reject(networkError);
       }
-    );
 
-    // Setup logging for non-auth instance
-    this.axiosInstanceWithoutAuth.interceptors.request.use(
-      loggingInterceptor.request,
-      (error) => Promise.reject(error)
-    );
-
-    this.axiosInstanceWithoutAuth.interceptors.response.use(
-      loggingInterceptor.response,
-      (error: any) => {
-        const networkError = errorInterceptor.error(error);
-        return Promise.reject(networkError);
+      if (!response.ok) {
+        throw await ErrorMapper.mapFetchResponse(response);
       }
-    );
+
+      const text = await response.text();
+      if (!text) return undefined as T;
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        throw ErrorMapper.createNetworkError('DECODE_FAILED');
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        throw ErrorMapper.createNetworkError('REQUEST_TIMED_OUT');
+      }
+      // Re-throw NetworkError objects as-is
+      if (error?.type && error?.message) throw error;
+      // TypeError from fetch = no network
+      throw ErrorMapper.createNetworkError('NO_INTERNET', error?.message);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private async refreshAccessToken(): Promise<AuthTokens> {
-    if (this.refreshTokenPromise) {
-      return this.refreshTokenPromise;
-    }
-
+    if (this.refreshTokenPromise) return this.refreshTokenPromise;
     this.refreshTokenPromise = this.performTokenRefresh();
-
     try {
-      const result = await this.refreshTokenPromise;
-      return result;
+      return await this.refreshTokenPromise;
     } finally {
       this.refreshTokenPromise = null;
     }
   }
 
   private async performTokenRefresh(): Promise<AuthTokens> {
-    try {
-      const storage = await this.getStorageService();
-      const refreshToken = await storage.getItem(StorageKeys.REFRESH_TOKEN);
+    const storage = await this.getStorageService();
+    const refreshToken = await storage.getItem(StorageKeys.REFRESH_TOKEN);
 
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
+    if (!refreshToken) throw ErrorMapper.createNetworkError('AUTHENTICATION', 'No refresh token available');
 
-      const response = await this.axiosInstanceWithoutAuth.post(
-        `${WebService.villageService}v1/refresh-token`,
-        { refreshToken }
-      );
+    const response = await this.post<any>(
+      `${WebService.villageService}v1/refresh-token`,
+      { refreshToken },
+      { withAuth: false }
+    );
 
-      // Handle both wrapped and direct response formats
-      const tokenData = response.data.data || response.data;
-      const tokens: AuthTokens = {
-        accessToken: tokenData.accessToken,
-        refreshToken: tokenData.refreshToken,
-        tokenType: tokenData.tokenType,
-        expiresIn: tokenData.expiresIn,
-        userId: tokenData.userId
-      };
-      await this.saveTokens(tokens);
-
-      return tokens;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      throw error;
-    }
+    const tokenData = response?.data ?? response;
+    const tokens: AuthTokens = {
+      accessToken: tokenData.accessToken,
+      refreshToken: tokenData.refreshToken,
+      tokenType: tokenData.tokenType,
+      expiresIn: tokenData.expiresIn,
+      userId: tokenData.userId,
+    };
+    await this.saveTokens(tokens);
+    return tokens;
   }
 
   async saveTokens(tokens: AuthTokens): Promise<void> {
-    // Save tokens using storage service
     const storage = await this.getStorageService();
     await Promise.all([
       storage.setItem(StorageKeys.ACCESS_TOKEN, tokens.accessToken),
       storage.setItem(StorageKeys.REFRESH_TOKEN, tokens.refreshToken),
       storage.setItem(StorageKeys.TOKEN_TYPE, tokens.tokenType),
     ]);
-
-    // Update user ID in headers
     if (tokens.userId) {
       await storage.setItem(StorageKeys.USER_ID, tokens.userId.toString());
-      await this.updateUserId(tokens.userId);
     }
   }
 
   async clearTokens(): Promise<void> {
-    // Clear tokens using storage service
     const storage = await this.getStorageService();
     await Promise.all([
       storage.removeItem(StorageKeys.ACCESS_TOKEN),
@@ -253,86 +221,56 @@ class ApiClient {
       storage.removeItem(StorageKeys.TOKEN_TYPE),
       storage.removeItem(StorageKeys.USER_ID),
     ]);
-    // Reset user id header to null
-    this.axiosInstance.defaults.headers.common['Village-User-Id'] = 'null';
-    this.axiosInstanceWithoutAuth.defaults.headers.common['Village-User-Id'] = 'null';
   }
 
-  private async logout(): Promise<void> {
-    await this.clearTokens();
-    // Here you would typically navigate to login screen
-    // This should be handled by your app's navigation logic
-  }
-
-  // Public methods for making requests
-  get<T = any>(url: string, config?: AxiosRequestConfig) {
-    return this.axiosInstance.get<T>(url, config);
-  }
-
-  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
-    return this.axiosInstance.post<T>(url, data, config);
-  }
-
-  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
-    return this.axiosInstance.put<T>(url, data, config);
-  }
-
-  delete<T = any>(url: string, config?: AxiosRequestConfig) {
-    return this.axiosInstance.delete<T>(url, config);
-  }
-
-  // Methods for requests without auth (like login, register)
-  getWithoutAuth<T = any>(url: string, config?: AxiosRequestConfig) {
-    return this.axiosInstanceWithoutAuth.get<T>(url, config);
-  }
-
-  postWithoutAuth<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
-    return this.axiosInstanceWithoutAuth.post<T>(url, data, config);
-  }
-
-  // Update user ID in headers
-  async updateUserId(userId?: number | string): Promise<void> {
-    const userIdValue = userId ? userId.toString() : 'null';
-    this.axiosInstance.defaults.headers.common['Village-User-Id'] = userIdValue;
-    this.axiosInstanceWithoutAuth.defaults.headers.common['Village-User-Id'] = userIdValue;
-  }
-
-  // Initialize user ID from storage
   async initializeUserId(): Promise<void> {
     try {
-      const storage = await this.getStorageService();
-      const userId = await storage.getItem(StorageKeys.USER_ID);
-      if (userId) {
-        await this.updateUserId(userId);
-      }
+      await this.getStorageService();
     } catch (error) {
-      console.warn('Failed to initialize user ID:', error);
+      console.warn('Failed to initialize storage:', error);
     }
   }
 
-  // Set base URLs dynamically
-  setAuthBaseURL(url: string) {
-    this.axiosInstance.defaults.baseURL = url;
-    this.axiosInstanceWithoutAuth.defaults.baseURL = url;
+  get<T = any>(url: string, options?: FetchOptions) {
+    return this.request<T>(url, { ...options, method: 'GET' });
   }
 
-  // Get current headers for debugging
-  async getHeaders(): Promise<Record<string, string>> {
-    const headers = { ...this.axiosInstance.defaults.headers.common } as Record<string, string>;
-    const storage = await this.getStorageService();
-    const accessToken = await storage.getItem(StorageKeys.ACCESS_TOKEN);
-    const tokenType = await storage.getItem(StorageKeys.TOKEN_TYPE);
+  post<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+  }
 
-    if (accessToken && tokenType) {
-      headers['Authorization'] = `${tokenType} ${accessToken}`;
-    }
+  put<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+  }
 
-    return headers;
+  patch<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PATCH',
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  delete<T = any>(url: string, options?: FetchOptions) {
+    return this.request<T>(url, { ...options, method: 'DELETE' });
+  }
+
+  getWithoutAuth<T = any>(url: string, options?: FetchOptions) {
+    return this.get<T>(url, { ...options, withAuth: false });
+  }
+
+  postWithoutAuth<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.post<T>(url, data, { ...options, withAuth: false });
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();
-
-// Initialize user ID from storage on app start
 apiClient.initializeUserId();
