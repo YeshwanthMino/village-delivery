@@ -38,6 +38,7 @@ export function mapVillage(raw: any): Village | null {
     pincode: pick(node, ['pincode', 'pinCode', 'postalCode']),
     latitude: pick(node, ['latitude', 'lat']) ?? def?.latitude,
     longitude: pick(node, ['longitude', 'lng', 'long']) ?? def?.longitude,
+    storeId: pick(node, ['storeId', 'store']),
   };
 }
 
