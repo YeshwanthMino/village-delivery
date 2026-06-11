@@ -2,11 +2,9 @@ import { useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Product, SortKey } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import {
-  CATEGORIES,
-  getProducts,
-  sortProducts,
-} from '@/src/features/home/data/static/villageData';
+import { sortProducts } from '@/src/features/home/data/static/villageData';
+import { useCategoriesQuery } from '@/src/features/home/data/queries/useCategoriesQuery';
+import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
 
 const HERO_GRADIENTS: Record<string, { from: string; to: string }> = {
   fruits:     { from: 'from-red-400',    to: 'to-rose-500' },
@@ -29,15 +27,18 @@ export const useCategoryDetailsViewModel = () => {
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: allProducts = [] } = useProductsQuery();
+
   const currentCategory = useMemo(
-    () => CATEGORIES.find(c => c.id === categoryId) ?? null,
-    [categoryId]
+    () => categories.find(c => c.id === categoryId) ?? null,
+    [categories, categoryId]
   );
 
   const products = useMemo(() => {
     if (!categoryId) return [];
-    return sortProducts(getProducts(categoryId), sortKey);
-  }, [categoryId, sortKey]);
+    return sortProducts(allProducts.filter(p => p.categoryId === categoryId), sortKey);
+  }, [allProducts, categoryId, sortKey]);
 
   const heroGradient = categoryId ? (HERO_GRADIENTS[categoryId] ?? null) : null;
 

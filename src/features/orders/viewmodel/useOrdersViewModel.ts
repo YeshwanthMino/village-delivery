@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { Order } from '@/src/base/types/village.types';
-import { useVillageStore } from '@/src/core/store';
+import { useOrdersQuery } from '@/src/features/orders/data/queries/useOrdersQuery';
 
 const ACTIVE_STATUSES = new Set(['placed', 'confirmed', 'out_for_delivery']);
 
 export const useOrdersViewModel = () => {
-  const orders = useVillageStore(state => state.orders);
+  const { data: orders = [], isLoading, isError } = useOrdersQuery();
 
   const activeOrders = useMemo(
     () => orders.filter(o => ACTIVE_STATUSES.has(o.status)),
@@ -17,5 +16,5 @@ export const useOrdersViewModel = () => {
     [orders]
   );
 
-  return { allOrders: orders, activeOrders, pastOrders };
+  return { allOrders: orders, activeOrders, pastOrders, isLoading, isError };
 };

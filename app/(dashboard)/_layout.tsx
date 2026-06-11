@@ -1,8 +1,7 @@
 import { LayoutGrid, Home, ClipboardList, User } from 'lucide-react-native';
-import { Redirect, Tabs } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Tabs } from 'expo-router';
+import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
 const TAB_BAR_CONTENT_HEIGHT = 64;
@@ -11,16 +10,6 @@ export default function DashboardLayout() {
   const { bottom } = useSafeAreaInsets();
   const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + bottom;
   const { t } = useTranslation();
-  const [firstLaunch, setFirstLaunch] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    StoredPrefs.getIsFirstLaunch().then((isFirst) => {
-      setFirstLaunch(isFirst);
-    });
-  }, []);
-
-  if (firstLaunch === null) return null;
-  if (firstLaunch) return <Redirect href="/onboarding/language" />;
 
   return (
     <Tabs
