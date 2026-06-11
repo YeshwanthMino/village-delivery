@@ -1,18 +1,13 @@
 import { useRouter } from 'expo-router';
 import { Bell, Mic, Search } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  CategoryTile,
-  FloatingCartPill,
-  HeroCarousel,
-  ProductCard,
-  PromoStrip,
-  VariantBottomSheet,
-} from '@/src/shared/components';
+import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
+import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
+import { HomeSections } from './components/HomeSections';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { Locale } from '@/src/base/constants/translations';
@@ -33,16 +28,9 @@ export const HomeScreen = () => {
   const [locationSheetOpen, setLocationSheetOpen] = React.useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [addressSheetOpen, setAddressSheetOpen] = React.useState(false);
+  const layout = useHomeLayoutViewModel();
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
-
-  const goToCategories = (catId?: string) => {
-    if (catId) {
-      router.push({ pathname: '/category-details', params: { categoryId: catId } } as any);
-    } else {
-      router.push('/(dashboard)/categories');
-    }
-  };
 
   const goToCart = () => router.push('/cart');
 
@@ -119,88 +107,21 @@ export const HomeScreen = () => {
         alwaysBounceVertical={true}
         overScrollMode="always"
       >
-        {/* Hero Carousel */}
-        <HeroCarousel
-          slides={vm.heroSlides}
-          onShopNow={() => goToCategories()}
-        />
-
-        {/* Shop by category */}
-        <View className="px-4 mt-5">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text
-              className="text-slate-900 font-bold text-base"
-              style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-            >
-              {t('shop_by_category')}
-            </Text>
-            <TouchableOpacity onPress={() => goToCategories()}>
-              <Text
-                className="text-green-600 font-semibold text-sm"
-                style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
-              >
-                {t('see_all')}
-              </Text>
+        {/* Dynamic home layout (driven by /app/page-layout/path/main) */}
+        {layout.loading && layout.sections.length === 0 ? (
+          <View className="py-16 items-center">
+            <ActivityIndicator size="large" color="#16a34a" />
+          </View>
+        ) : layout.error && layout.sections.length === 0 ? (
+          <View className="py-16 items-center px-8">
+            <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
+            <TouchableOpacity onPress={layout.refresh} className="bg-green-600 rounded-xl px-5 py-2.5">
+              <Text className="text-white font-bold text-sm">{t('retry')}</Text>
             </TouchableOpacity>
           </View>
-
-          {/* 4-col grid — two rows of 4 */}
-          <View className="flex-row justify-between mb-3">
-            {vm.categories.slice(0, 4).map(cat => (
-              <CategoryTile
-                key={cat.id}
-                category={cat}
-                onPress={() => goToCategories(cat.id)}
-              />
-            ))}
-          </View>
-          <View className="flex-row justify-between pb-4">
-            {vm.categories.slice(4, 8).map(cat => (
-              <CategoryTile
-                key={cat.id}
-                category={cat}
-                onPress={() => goToCategories(cat.id)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Promo strip */}
-        <View className="px-4 mt-4">
-          <PromoStrip />
-        </View>
-
-        {/* Top picks */}
-        <View className="px-4 mt-5">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text
-              className="text-slate-900 font-bold text-base"
-              style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
-            >
-              {t('top_picks')}
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/top-picks' as any)}>
-              <Text
-                className="text-green-600 font-semibold text-sm"
-                style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
-              >
-                {t('see_all')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 2-col product grid */}
-          <View className="flex-row flex-wrap gap-3 pb-4">
-            {vm.topPicks.map(product => (
-              <View key={product.id} style={{ width: '47.5%' }}>
-                <ProductCard
-                  product={product}
-                  openVariants={vm.openVariants}
-                />
-              </View>
-            ))}
-          </View>
-        </View>
+        ) : (
+          <HomeSections sections={layout.sections} />
+        )}
       </ScrollView>
 
       {/* Overlays */}
