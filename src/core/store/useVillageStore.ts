@@ -11,6 +11,7 @@ interface VillageState {
   favs: Record<string, boolean>;
   locale: Locale;
   orders: Order[];
+  dynamicPrices: Record<string, number>;
 }
 
 interface VillageActions {
@@ -20,6 +21,7 @@ interface VillageActions {
   clearCart: () => void;
   setLocale: (locale: Locale) => Promise<void>;
   loadLocale: () => Promise<void>;
+  registerDynamicPrices: (prices: Record<string, number>) => void;
 }
 
 interface VillageComputed {
@@ -34,6 +36,7 @@ const initialState: VillageState = {
   favs: {},
   locale: 'te',
   orders: [], // TEMP: empty for UI testing
+  dynamicPrices: {},
 };
 
 function parseCartKey(key: string): { productId: string; variantIndex: number | null } {
@@ -87,16 +90,24 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
     }
   },
 
+  registerDynamicPrices: (prices) =>
+    set((state) => ({ dynamicPrices: { ...state.dynamicPrices, ...prices } })),
+
   cartCount: () => {
     const { cart } = get();
     return Object.values(cart).reduce((sum, count) => sum + count, 0);
   },
 
   cartTotal: () => {
-    const { cart } = get();
+    const { cart, dynamicPrices } = get();
     let total = 0;
     for (const [key, count] of Object.entries(cart)) {
       const { productId, variantIndex } = parseCartKey(key);
+      // Dynamic (API) products: real rupee price, no ×20 multiplier.
+      if (variantIndex === null && dynamicPrices[productId] != null) {
+        total += dynamicPrices[productId] * count;
+        continue;
+      }
       const product = ALL_PRODUCTS.find((p) => p.id === productId);
       if (!product) continue;
       let price: number;
