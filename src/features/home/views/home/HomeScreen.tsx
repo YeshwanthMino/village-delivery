@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Bell, Mic, Search } from 'lucide-react-native';
 import React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
@@ -10,11 +10,7 @@ import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewMo
 import { HomeSections } from './components/HomeSections';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
-import { Locale } from '@/src/base/constants/translations';
-import { useLocationStore } from '@/src/core/store/useLocationStore';
-import { LocationHeader } from '@/src/features/location/views/components/LocationHeader';
-import { LocationEntrySheet } from '@/src/features/location/views/LocationEntrySheet';
-import { AddressBottomSheet } from '@/src/features/location/views/AddressBottomSheet';
+import { HomeSkeleton } from './components/HomeSkeleton';
 import { useAuthStore } from '@/src/core/store';
 
 export const HomeScreen = () => {
@@ -23,11 +19,7 @@ export const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
-  const setLocale = useVillageStore((s) => s.setLocale);
-  const village = useLocationStore((s) => s.serviceableVillage);
-  const [locationSheetOpen, setLocationSheetOpen] = React.useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [addressSheetOpen, setAddressSheetOpen] = React.useState(false);
   const layout = useHomeLayoutViewModel();
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
@@ -37,35 +29,13 @@ export const HomeScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
 
-      {/* ── Top Bar ── */}
+      {/* ── Top Bar (placeholder, location to be rebuilt) ── */}
       <View className="bg-white px-4 pb-3 border-b border-slate-100" style={{ paddingTop: insets.top + 4 }}>
-        {/* Row 1: location + locale toggle + bell */}
+        {/* Row 1: placeholder header + bell */}
         <View className="flex-row items-center justify-between mb-3">
-          <LocationHeader
-            etaMinutes={8}
-            minutesLabel={t('minutes_label')}
-            primaryLabel={village?.name ?? t('home_label')}
-            secondaryLabel={village?.pincode ?? ''}
-            onPressLocation={() => (isAuthenticated ? setAddressSheetOpen(true) : setLocationSheetOpen(true))}
-            onPressProfile={() => router.push('/(dashboard)/profile')}
-          />
-
-          {/* Locale toggle pill */}
-          <View className="flex-row bg-slate-100 rounded-full p-0.5 mr-2">
-            {(['te', 'en'] as Locale[]).map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                onPress={() => setLocale(lang)}
-                className={`px-2.5 py-1 rounded-full ${locale === lang ? 'bg-green-600' : ''}`}
-              >
-                <Text
-                  className={`text-xs font-bold ${locale === lang ? 'text-white' : 'text-slate-500'}`}
-                  style={lang === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold', fontSize: 13 } : undefined}
-                >
-                  {lang === 'te' ? 'తె' : 'EN'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View className="flex-1">
+            <Text className="text-slate-700 font-semibold text-sm">Delivery location</Text>
+            <Text className="text-slate-900 font-bold text-base">Select location</Text>
           </View>
 
           <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
@@ -97,6 +67,7 @@ export const HomeScreen = () => {
         </View>
       </View>
 
+      {/* Home content */}
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
@@ -109,9 +80,7 @@ export const HomeScreen = () => {
       >
         {/* Dynamic home layout (driven by /app/page-layout/path/main) */}
         {layout.loading && layout.sections.length === 0 ? (
-          <View className="py-16 items-center">
-            <ActivityIndicator size="large" color="#16a34a" />
-          </View>
+          <HomeSkeleton />
         ) : layout.error && layout.sections.length === 0 ? (
           <View className="py-16 items-center px-8">
             <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
@@ -132,8 +101,6 @@ export const HomeScreen = () => {
         product={vm.variantProduct}
         onClose={vm.closeVariants}
       />
-      <LocationEntrySheet visible={locationSheetOpen} onClose={() => setLocationSheetOpen(false)} />
-      <AddressBottomSheet visible={addressSheetOpen} onClose={() => setAddressSheetOpen(false)} />
     </SafeAreaView>
   );
 };

@@ -1,7 +1,7 @@
-import { useAuthStore, useLocationStore } from '@/src/core/store';
+import { useAuthStore } from '@/src/core/store';
+import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useFonts } from 'expo-font';
-import * as Linking from 'expo-linking';
 import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
@@ -9,11 +9,8 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const segments = useSegments();
   const [ready, setReady] = useState(false);
-  const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
-  const hydrateLocation = useLocationStore((s) => s.hydrate);
-  const hydrated = useLocationStore((s) => s.hydrated);
-  const hasServiceableLocation = useLocationStore((s) => s.serviceableVillage !== null);
+  const setLocale = useVillageStore((s) => s.setLocale);
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -24,51 +21,35 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
-      await Promise.all([checkExistingAuth(), hydrateLocation()]);
+      await checkExistingAuth();
+      // MVP: only English is shipped. On first launch default to English and
+      // mark onboarding complete so the language screen is never shown.
       const firstLaunch = await StoredPrefs.getIsFirstLaunch();
       if (firstLaunch) {
-        const initialUrl = await Linking.getInitialURL();
-        if (initialUrl?.startsWith('villagedelivery://')) {
-          await StoredPrefs.setDeferredDeepLink(initialUrl);
-        }
+        await setLocale('en');
+        await StoredPrefs.setIsFirstLaunch(false);
       }
-      setIsFirstLaunch(firstLaunch);
       setReady(true);
     };
     init();
-  }, [checkExistingAuth, hydrateLocation]);
+  }, [checkExistingAuth, setLocale]);
 
   useEffect(() => {
-    if (!fontsLoaded || !ready || !hydrated || isFirstLaunch === null) return;
+    if (!fontsLoaded || !ready) return;
 
     const root = segments[0] as string | undefined;
-    const inOnboarding = root === 'onboarding';
 
-    // First launch → onboarding; stay there until it completes.
-    if (isFirstLaunch) {
-      if (!inOnboarding) router.replace('/onboarding/language');
-      return;
-    }
-
-    // Hard gate: no serviceable location → force the location screen.
-    const inLocation = root === 'location';
-    if (!hasServiceableLocation) {
-      if (!inLocation) router.replace('/location' as any);
-      return;
-    }
-
-    // Serviceable: keep known routes; bounce unknown roots (and the now-stale
-    // /location gate) to home.
+    // Keep known routes; bounce unknown roots to home.
     const allowed = [
-      '(dashboard)', 'auth', 'search', 'onboarding',
-      'category-details', 'cart', 'top-picks', 'order-detail', 'address',
+      '(dashboard)', 'auth', 'search',
+      'category-details', 'cart', 'top-picks', 'order-detail',
     ];
     if (!root || !allowed.includes(root)) {
       router.replace('/(dashboard)/home');
     }
-  }, [fontsLoaded, ready, hydrated, isFirstLaunch, hasServiceableLocation, segments, router]);
+  }, [fontsLoaded, ready, segments, router]);
 
-  if (!fontsLoaded || !ready || !hydrated) return null;
+  if (!fontsLoaded || !ready) return null;
 
   return <>{children}</>;
 };

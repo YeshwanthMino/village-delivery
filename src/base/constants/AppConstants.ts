@@ -67,6 +67,7 @@ export const StorageKeys = {
   // Location
   SERVICEABLE_VILLAGE: 'serviceable_village',
   SELECTED_ADDRESS_ID: 'selected_address_id',
+  RECENT_LOCATIONS: 'recent_locations',
 
   // Deep linking
   DEFERRED_DEEP_LINK: 'deferredDeepLink',

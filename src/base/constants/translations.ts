@@ -148,6 +148,7 @@ export const TRANSLATIONS: TranslationMap = {
   enable:                 { te: 'ఆన్ చేయి',                          en: 'Enable' },
   request_from_friend:    { te: 'స్నేహితుని నుండి చిరునామా అడగండి',  en: 'Request address from friend' },
   search_your_location:   { te: 'మీ లొకేషన్ వెతకండి',                en: 'Search your Location' },
+  your_location:          { te: 'మీ లొకేషన్',                       en: 'Your location' },
   permission_off_title:   { te: 'లొకేషన్ అనుమతి ఆఫ్‌లో ఉంది',        en: 'Location permission is off' },
   permission_off_sub:     { te: 'లొకేషన్ ఆన్ చేస్తే మేము మిమ్మల్ని త్వరగా చేరుకోగలం', en: 'Enabling location helps us reach you quickly with accurate delivery' },
   open_settings:          { te: 'సెట్టింగ్స్ తెరవండి',               en: 'Open settings' },
@@ -173,6 +174,26 @@ export const TRANSLATIONS: TranslationMap = {
   err_house_required:     { te: 'ఇంటి నెం./వీధి అవసరం',             en: 'House no./street is required' },
   err_pincode_invalid:    { te: 'సరైన 6 అంకెల పిన్‌కోడ్ ఇవ్వండి',   en: 'Enter a valid 6-digit pincode' },
   minutes_label:          { te: 'నిమిషాలు',                        en: 'minutes' },
+  // Home serviceability / toolbar states
+  select_delivery_location:{ te: 'డెలివరీ లొకేషన్ ఎంచుకోండి',        en: 'Select delivery location' },
+  service_unavailable:    { te: 'సేవ అందుబాటులో లేదు',             en: 'Service unavailable' },
+  location_not_set:       { te: 'లొకేషన్ సెట్ చేయలేదు',            en: 'Location not set' },
+  set_location_prompt:    { te: 'డెలివరీ ప్రారంభించడానికి మీ లొకేషన్ ఎంచుకోండి', en: 'Set your location to start ordering' },
+  not_available_here:     { te: 'ఈ ప్రాంతంలో డెలివరీ ఇంకా అందుబాటులో లేదు', en: "Delivery isn't available for this area yet" },
+  change_location:        { te: 'లొకేషన్ మార్చండి',                en: 'Change Location' },
+  recent_locations:       { te: 'ఇటీవలి లొకేషన్లు',               en: 'Recent locations' },
+  saved_addresses:        { te: 'సేవ్ చేసిన చిరునామాలు',          en: 'Saved addresses' },
+  // Permission-denied (blocked) sheet
+  perm_blocked_title:     { te: 'లొకేషన్ యాక్సెస్ అవసరం',          en: 'Location access needed' },
+  perm_blocked_sub:       { te: 'మీ ప్రస్తుత లొకేషన్ గుర్తించడానికి సెట్టింగ్స్‌లో లొకేషన్ అనుమతి ఇవ్వండి', en: 'Allow location access in Settings so we can detect your current location' },
+  go_to_settings:         { te: 'సెట్టింగ్స్‌కు వెళ్లండి',         en: 'Go to Settings' },
+  cancel:                 { te: 'రద్దు చేయండి',                    en: 'Cancel' },
+  // Location permission sheet (design: LocationPermissionSheet)
+  location_blocked_title: { te: 'లొకేషన్ యాక్సెస్ బ్లాక్ అయింది', en: 'Location access blocked' },
+  select_your_address:    { te: 'మీ చిరునామా ఎంచుకోండి',          en: 'Select your address' },
+  add_manage_address:     { te: '+ చిరునామా జోడించు / నిర్వహించు', en: '+ Add / Manage Address' },
+  try_again:              { te: 'మళ్ళీ ప్రయత్నించండి',            en: 'Try Again' },
+  location_denied_inline: { te: 'మీరు లొకేషన్ యాక్సెస్ నిరాకరించారు. “మళ్ళీ ప్రయత్నించండి” నొక్కండి లేదా కింద సేవ్ చేసిన చిరునామా ఎంచుకోండి.', en: 'You denied location access. Tap “Try Again”, or choose a saved address below.' },
 };
 
 /** Returns translated string; falls back to English if key missing. */

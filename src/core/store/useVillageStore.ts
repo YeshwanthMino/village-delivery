@@ -33,7 +33,7 @@ type VillageStore = VillageState & VillageActions & VillageComputed;
 const initialState: VillageState = {
   cart: {},
   favs: {},
-  locale: 'te',
+  locale: 'en',
   orders: [], // TEMP: empty for UI testing
   dynamicPrices: {},
 };
@@ -83,8 +83,10 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   },
 
   loadLocale: async () => {
+    // MVP ships English only. Ignore any previously-saved 'te' so existing
+    // installs migrate to English. Restore the 'te' branch when Telugu returns.
     const saved = await StoredPrefs.getCustomData<Locale>(StorageKeys.LOCALE);
-    if (saved === 'te' || saved === 'en') {
+    if (saved === 'en') {
       set({ locale: saved });
     }
   },

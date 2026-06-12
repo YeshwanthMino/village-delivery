@@ -22,6 +22,8 @@ interface VillageBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** When false the sheet cannot be dismissed (no backdrop tap, swipe springs back). */
+  dismissable?: boolean;
 }
 
 const OPEN_SPRING = { damping: 26, stiffness: 320, mass: 0.7 };
@@ -29,7 +31,7 @@ const DISMISS_THRESHOLD_PX = 80;
 const DISMISS_VELOCITY = 600;
 const MAX_HEIGHT_RATIO = 0.75;
 
-export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottomSheetProps) => {
+export const VillageBottomSheet = ({ visible, onClose, children, dismissable = true }: VillageBottomSheetProps) => {
   const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const maxSheetHeight = screenHeight * MAX_HEIGHT_RATIO;
@@ -79,7 +81,8 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
     })
     .onEnd((e) => {
       const shouldDismiss =
-        e.translationY > DISMISS_THRESHOLD_PX || e.velocityY > DISMISS_VELOCITY;
+        dismissable &&
+        (e.translationY > DISMISS_THRESHOLD_PX || e.velocityY > DISMISS_VELOCITY);
 
       if (shouldDismiss) {
         backdropOpacity.value = withTiming(0, { duration: 200 });
@@ -112,7 +115,7 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={dismissable ? onClose : undefined}
       onShow={handleShow}
     >
       <Wrapper style={StyleSheet.absoluteFillObject}>
@@ -120,7 +123,7 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
         <Animated.View
           style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropStyle]}
         >
-          <Pressable style={{ flex: 1 }} onPress={onClose} />
+          <Pressable style={{ flex: 1 }} onPress={dismissable ? onClose : undefined} />
         </Animated.View>
 
         <Animated.View style={[styles.sheet, { maxHeight: maxSheetHeight }, sheetStyle]}>
