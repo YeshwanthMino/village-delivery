@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/src/core/store';
+import { useAuthStore, useLocationStore } from '@/src/core/store';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useFonts } from 'expo-font';
@@ -11,6 +11,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(false);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
   const setLocale = useVillageStore((s) => s.setLocale);
+  const hydrateLocation = useLocationStore((s) => s.hydrate);
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -21,7 +22,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
-      await checkExistingAuth();
+      await Promise.all([checkExistingAuth(), hydrateLocation()]);
       // MVP: only English is shipped. On first launch default to English and
       // mark onboarding complete so the language screen is never shown.
       const firstLaunch = await StoredPrefs.getIsFirstLaunch();
@@ -32,7 +33,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
       setReady(true);
     };
     init();
-  }, [checkExistingAuth, setLocale]);
+  }, [checkExistingAuth, hydrateLocation, setLocale]);
 
   useEffect(() => {
     if (!fontsLoaded || !ready) return;

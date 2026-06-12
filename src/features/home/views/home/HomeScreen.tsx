@@ -8,10 +8,13 @@ import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
 import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
 import { HomeSections } from './components/HomeSections';
+import { HomeSkeleton } from './components/HomeSkeleton';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
-import { HomeSkeleton } from './components/HomeSkeleton';
-import { useAuthStore } from '@/src/core/store';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
+import { LocationBar } from '@/src/features/location/views/components/LocationBar';
+import { LocationPermissionSheet } from '@/src/features/location/views/LocationPermissionSheet';
+import { LocationSheet } from '@/src/features/location/views/LocationSheet';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -19,38 +22,45 @@ export const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const village = useLocationStore((s) => s.serviceableVillage);
+  const status = useLocationStore((s) => s.status);
+  const hydrated = useLocationStore((s) => s.hydrated);
   const layout = useHomeLayoutViewModel();
+
+  const [permSheetOpen, setPermSheetOpen] = React.useState(false);
+  const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
+
+  const detecting = status === 'locating' || status === 'checking';
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+
+  // First open with no saved location → prompt for it (Zepto/Blinkit).
+  React.useEffect(() => {
+    if (hydrated && !village) setPermSheetOpen(true);
+  }, [hydrated, village]);
 
   const goToCart = () => router.push('/cart');
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
 
-      {/* ── Top Bar (placeholder, location to be rebuilt) ── */}
+      {/* ── Top Bar ── */}
       <View className="bg-white px-4 pb-3 border-b border-slate-100" style={{ paddingTop: insets.top + 4 }}>
-        {/* Row 1: placeholder header + bell */}
         <View className="flex-row items-center justify-between mb-3">
-          <View className="flex-1">
-            <Text className="text-slate-700 font-semibold text-sm">Delivery location</Text>
-            <Text className="text-slate-900 font-bold text-base">Select location</Text>
-          </View>
-
+          <LocationBar
+            village={village}
+            detecting={detecting}
+            onPress={() => (village ? setChangeSheetOpen(true) : setPermSheetOpen(true))}
+          />
           <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
             <Bell size={18} color="#475569" />
           </TouchableOpacity>
         </View>
 
-        {/* Row 2: search bar + mic button */}
+        {/* Search bar + mic */}
         <View className="flex-row items-center bg-slate-100 rounded-xl px-3 h-11 gap-2">
           <Search size={16} color="#94a3b8" />
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={{ flex: 1 }}
-            onPress={() => router.push('/search')}
-          >
+          <TouchableOpacity activeOpacity={0.7} style={{ flex: 1 }} onPress={() => router.push('/search')}>
             <Text
               className="text-slate-400 text-base"
               style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined}
@@ -67,40 +77,48 @@ export const HomeScreen = () => {
         </View>
       </View>
 
-      {/* Home content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: scrollPadding }}
-        decelerationRate="normal"
-        scrollEventThrottle={16}
-        bounces={true}
-        alwaysBounceVertical={true}
-        overScrollMode="always"
-      >
-        {/* Dynamic home layout (driven by /app/page-layout/path/main) */}
-        {layout.loading && layout.sections.length === 0 ? (
-          <HomeSkeleton />
-        ) : layout.error && layout.sections.length === 0 ? (
-          <View className="py-16 items-center px-8">
-            <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
-            <TouchableOpacity onPress={layout.refresh} className="bg-green-600 rounded-xl px-5 py-2.5">
-              <Text className="text-white font-bold text-sm">{t('retry')}</Text>
-            </TouchableOpacity>
+      {/* Body */}
+      {!village ? (
+        // No location yet → loading gate (the permission sheet is open over this).
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-16 h-16 rounded-full border-4 border-green-100 border-t-green-600 items-center justify-center">
+            <Text className="text-2xl">📍</Text>
           </View>
-        ) : (
-          <HomeSections sections={layout.sections} />
-        )}
-      </ScrollView>
+          <Text className="text-slate-900 font-black text-base mt-5">{t('finding_location')}</Text>
+          <Text className="text-slate-500 text-xs mt-1.5">{t('getting_ready')}</Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: scrollPadding }}
+          decelerationRate="normal"
+          scrollEventThrottle={16}
+          bounces
+          alwaysBounceVertical
+          overScrollMode="always"
+        >
+          {layout.loading && layout.sections.length === 0 ? (
+            <HomeSkeleton />
+          ) : layout.error && layout.sections.length === 0 ? (
+            <View className="py-16 items-center px-8">
+              <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
+              <TouchableOpacity onPress={layout.refresh} className="bg-green-600 rounded-xl px-5 py-2.5">
+                <Text className="text-white font-bold text-sm">{t('retry')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <HomeSections sections={layout.sections} />
+          )}
+        </ScrollView>
+      )}
 
       {/* Overlays */}
-      {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} />
-      )}
-      <VariantBottomSheet
-        product={vm.variantProduct}
-        onClose={vm.closeVariants}
-      />
+      {vm.cartCount > 0 && <FloatingCartPill count={vm.cartCount} onPress={goToCart} />}
+      <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
+
+      <LocationPermissionSheet visible={permSheetOpen} onClose={() => setPermSheetOpen(false)} />
+      <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} />
     </SafeAreaView>
   );
 };

@@ -1,17 +1,78 @@
 // src/core/store/useLocationStore.ts
-//
-// Minimal temporary location store to unblock home layout during location feature rebuild.
-// Provides storeId for page-layout API calls. Full location feature (permission, sheets,
-// serviceability) will be rebuilt from the Village Delivery design.
 
 import { create } from 'zustand';
+import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { StorageKeys } from '@/src/base/constants/AppConstants';
+import { Address, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
+
+const RECENT_LIMIT = 5;
 
 interface LocationState {
-  serviceableVillage: { id: string; name: string; storeId?: string } | null;
-  setServiceable: (village: { id: string; name: string; storeId?: string }) => void;
+  status: ServiceabilityStatus;
+  serviceableVillage: Village | null;
+  savedAddresses: Address[];
+  recentLocations: RecentLocation[];
+  hydrated: boolean;
 }
 
-export const useLocationStore = create<LocationState>((set) => ({
+interface LocationActions {
+  hydrate: () => Promise<void>;
+  setStatus: (status: ServiceabilityStatus) => void;
+  setServiceable: (village: Village) => Promise<void>;
+  setNotServiceable: () => void;
+  setSavedAddresses: (addresses: Address[]) => void;
+  addRecent: (recent: RecentLocation) => Promise<void>;
+  clearLocation: () => Promise<void>;
+}
+
+type LocationStore = LocationState & LocationActions;
+
+const initialState: LocationState = {
+  status: 'idle',
   serviceableVillage: null,
-  setServiceable: (village) => set({ serviceableVillage: village }),
+  savedAddresses: [],
+  recentLocations: [],
+  hydrated: false,
+};
+
+export const useLocationStore = create<LocationStore>((set, get) => ({
+  ...initialState,
+
+  hydrate: async () => {
+    const [village, recents] = await Promise.all([
+      StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
+      StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
+    ]);
+    set({
+      serviceableVillage: village ?? null,
+      recentLocations: Array.isArray(recents) ? recents : [],
+      status: village ? 'serviceable' : 'idle',
+      hydrated: true,
+    });
+  },
+
+  setStatus: (status) => set({ status }),
+
+  setServiceable: async (village) => {
+    set({ serviceableVillage: village, status: 'serviceable' });
+    await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
+  },
+
+  setNotServiceable: () => set({ status: 'not_serviceable' }),
+
+  setSavedAddresses: (addresses) => set({ savedAddresses: addresses }),
+
+  addRecent: async (recent) => {
+    const next = [
+      recent,
+      ...get().recentLocations.filter((r) => r.storeId !== recent.storeId),
+    ].slice(0, RECENT_LIMIT);
+    set({ recentLocations: next });
+    await StoredPrefs.setCustomData(StorageKeys.RECENT_LOCATIONS, next);
+  },
+
+  clearLocation: async () => {
+    set({ serviceableVillage: null, status: 'idle' });
+    await StoredPrefs.removeCustomData(StorageKeys.SERVICEABLE_VILLAGE);
+  },
 }));

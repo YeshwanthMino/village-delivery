@@ -194,6 +194,14 @@ export const TRANSLATIONS: TranslationMap = {
   add_manage_address:     { te: '+ చిరునామా జోడించు / నిర్వహించు', en: '+ Add / Manage Address' },
   try_again:              { te: 'మళ్ళీ ప్రయత్నించండి',            en: 'Try Again' },
   location_denied_inline: { te: 'మీరు లొకేషన్ యాక్సెస్ నిరాకరించారు. “మళ్ళీ ప్రయత్నించండి” నొక్కండి లేదా కింద సేవ్ చేసిన చిరునామా ఎంచుకోండి.', en: 'You denied location access. Tap “Try Again”, or choose a saved address below.' },
+  // Toolbar + change-location sheet + loading gate
+  delivery_in:            { te: 'డెలివరీ',                        en: 'Delivery in' },
+  detecting_location:     { te: 'లొకేషన్ గుర్తిస్తోంది…',          en: 'Detecting location…' },
+  finding_address:        { te: 'మీ చిరునామా కనుగొంటోంది',         en: 'Finding your address' },
+  change_delivery_location:{ te: 'డెలివరీ లొకేషన్ మార్చండి',       en: 'Change delivery location' },
+  detect_via_gps:         { te: 'GPS ద్వారా ఆటోమేటిక్‌గా గుర్తించండి', en: 'Detect via GPS automatically' },
+  finding_location:       { te: 'మీ లొకేషన్ కనుగొంటోంది',          en: 'Finding your location' },
+  getting_ready:          { te: 'షాపింగ్ కోసం సిద్ధం చేస్తోంది',    en: "We're getting you ready to shop" },
 };
 
 /** Returns translated string; falls back to English if key missing. */
