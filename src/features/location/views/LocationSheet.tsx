@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Check, MapPin, Navigation, X } from 'lucide-react-native';
+import { Check, MapPin, X } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
+import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 
 interface Props {
@@ -37,20 +38,14 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
             </TouchableOpacity>
           </View>
 
-          {/* Use current GPS */}
-          <TouchableOpacity
-            onPress={() => run(vm.detectCurrentLocation())}
-            disabled={vm.detecting}
-            className="flex-row items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-3 mb-4"
-          >
-            <View className="w-10 h-10 rounded-xl bg-green-600 items-center justify-center">
-              <Navigation size={20} color="#ffffff" />
-            </View>
-            <View>
-              <Text className="text-green-900 font-extrabold text-[13.5px]">{t('use_current_location')}</Text>
-              <Text className="text-green-700 text-[11px] mt-0.5">{t('detect_via_gps')}</Text>
-            </View>
-          </TouchableOpacity>
+          {/* Use current location — Enable button only when permission not granted */}
+          <View className="mb-4">
+            <UseCurrentLocationRow
+              permission={vm.permission}
+              loading={vm.detecting}
+              onPress={() => run(vm.detectCurrentLocation())}
+            />
+          </View>
 
           {/* Recent locations */}
           {vm.recentLocations.length > 0 ? (

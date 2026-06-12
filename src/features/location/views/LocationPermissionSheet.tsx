@@ -6,13 +6,14 @@
 import React from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, LocateFixed, Search } from 'lucide-react-native';
+import { ChevronRight, Search } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { AddressTag } from '../domain/models';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { useAddressBookViewModel } from '../viewmodel/useAddressBookViewModel';
 import { LocationPinGraphic } from './components/LocationPinGraphic';
+import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 
 interface Props {
@@ -51,24 +52,14 @@ export const LocationPermissionSheet = ({ visible, onClose }: Props) => {
 
         <View className="px-4 pt-3 pb-2">
           {/* Use my Current Location */}
-          <View className="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-4">
-            <View className="flex-row items-center gap-3 px-4 py-3.5">
-              <View className="w-9 h-9 rounded-full bg-green-50 items-center justify-center">
-                <LocateFixed size={18} color="#16a34a" />
-              </View>
-              <Text className="flex-1 text-slate-900 font-bold text-sm">{t('use_current_location')}</Text>
-              <TouchableOpacity
-                onPress={() => run(vm.detectCurrentLocation())}
-                disabled={vm.detecting}
-                className="bg-green-600 px-4 py-2 rounded-xl"
-              >
-                <Text className="text-white font-extrabold text-xs tracking-wide">
-                  {denied ? t('try_again') : t('enable')}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <View className="mb-4">
+            <UseCurrentLocationRow
+              permission={vm.permission}
+              loading={vm.detecting}
+              onPress={() => run(vm.detectCurrentLocation())}
+            />
             {denied ? (
-              <View className="px-4 py-2.5 bg-amber-50 border-t border-amber-100">
+              <View className="px-4 py-2.5 mt-2 bg-amber-50 border border-amber-100 rounded-xl">
                 <Text className="text-amber-800 font-medium text-[11.5px] leading-snug">
                   {t('location_denied_inline')}
                 </Text>
