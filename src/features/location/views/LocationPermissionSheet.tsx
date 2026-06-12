@@ -4,7 +4,8 @@
 // Visual: Village Delivery design's LocationPermissionSheet.
 
 import React from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronRight, Search } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
@@ -25,13 +26,18 @@ const TAG_EMOJI: Record<AddressTag, string> = { home: '🏠', work: '🏢', othe
 
 export const LocationPermissionSheet = ({ visible, onClose }: Props) => {
   const { t } = useTranslation();
+  const router = useRouter();
   const vm = useLocationViewModel();
   const book = useAddressBookViewModel();
-  const [search, setSearch] = React.useState('');
   const denied = vm.permission === 'denied';
 
   const run = async (p: Promise<boolean>) => {
     if (await p) onClose();
+  };
+
+  const openSearch = () => {
+    onClose();
+    router.push('/location' as any);
   };
 
   return (
@@ -96,19 +102,14 @@ export const LocationPermissionSheet = ({ visible, onClose }: Props) => {
             </>
           ) : null}
 
-          {/* Search */}
-          <View className="bg-white border border-slate-200 rounded-2xl px-4 py-1 flex-row items-center gap-3 mb-2">
+          {/* Search → full Select Location screen */}
+          <TouchableOpacity
+            onPress={openSearch}
+            className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center gap-3 mb-2"
+          >
             <Search size={20} color="#64748b" />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              onSubmitEditing={() => run(vm.searchLocation(search))}
-              returnKeyType="search"
-              placeholder={t('search_your_location')}
-              placeholderTextColor="#64748b"
-              className="flex-1 text-slate-800 font-medium text-sm py-3"
-            />
-          </View>
+            <Text className="flex-1 text-slate-700 font-bold text-sm">{t('search_your_location')}</Text>
+          </TouchableOpacity>
         </View>
       </VillageBottomSheet>
 

@@ -42,7 +42,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
     // Keep known routes; bounce unknown roots to home.
     const allowed = [
-      '(dashboard)', 'auth', 'search',
+      '(dashboard)', 'auth', 'search', 'location',
       'category-details', 'cart', 'top-picks', 'order-detail',
     ];
     if (!root || !allowed.includes(root)) {
