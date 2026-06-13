@@ -15,6 +15,15 @@ export const WebService = {
   villageBaseURL: env.villageApiBaseUrl,
 };
 
+// AppAuth (customer app) endpoint paths — joined onto WebService.villageBaseURL.
+export const AppAuthRoutes = {
+  loginOtp: '/app/auth/login-otp',
+  loginVerify: '/app/auth/login-verify',
+  loginSignup: '/app/auth/login-signup',
+  me: '/app/auth/me',
+  refresh: '/app/auth/refresh',
+};
+
 // App configuration
 export const AppConfig = {
   name: 'Village',
