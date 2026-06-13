@@ -31,7 +31,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-type Step = 'phone' | 'otp' | 'placing' | 'success';
+type Step = 'phone' | 'otp' | 'signup' | 'placing' | 'success';
 
 const OTP_LEN = 6;
 
@@ -49,9 +49,10 @@ interface PhoneStepProps {
   onClose: () => void;
   busy: boolean;
   onSimPick: (phone: string) => void;
+  error: string | null;
 }
 
-const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick }: PhoneStepProps) => {
+const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error }: PhoneStepProps) => {
   const valid = phone.length === 10;
   const inputRef = useRef<TextInput>(null);
   const [simBusy, setSimBusy] = useState(false);
@@ -130,6 +131,8 @@ const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick }: Phon
           </View>
         )}
       </View>
+
+      {error && <Text style={[s.errorText, { marginTop: 8 }]}>{error}</Text>}
 
       {/* Trust row */}
       <View style={s.trustRow}>
@@ -335,6 +338,84 @@ const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStepProps) 
   );
 };
 
+// ─── Signup Step ──────────────────────────────────────────────────────────────
+
+interface SignupStepProps {
+  phone: string;
+  onBack: () => void;
+  onSubmit: (firstName: string, lastName: string) => void;
+  busy: boolean;
+  error: string | null;
+}
+
+const SignupStep = ({ phone, onBack, onSubmit, busy, error }: SignupStepProps) => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const valid = firstName.trim().length > 0 && lastName.trim().length > 0;
+
+  return (
+    <View style={s.stepContainer}>
+      <View style={s.headerRow}>
+        <TouchableOpacity onPress={onBack} style={s.iconBtn} activeOpacity={0.7}>
+          <ArrowLeft size={16} color="#334155" strokeWidth={2.4} />
+        </TouchableOpacity>
+        <View style={s.badge}>
+          <Text style={s.badgeText}>CREATE ACCOUNT</Text>
+        </View>
+        <View style={s.iconBtn} />
+      </View>
+
+      <Text style={s.title}>Tell us your name</Text>
+      <Text style={s.subtitle}>
+        New here — we just need your name to set up{' '}
+        <Text style={s.phoneBold}>+91 {formatPhone(phone)}</Text>.
+      </Text>
+
+      <View style={[s.phoneRow, { marginTop: 16 }, firstName.trim() && s.phoneRowValid]}>
+        <TextInput
+          style={[s.phoneInput, { paddingLeft: 14 }]}
+          placeholder="First name"
+          placeholderTextColor="#94a3b8"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+          returnKeyType="next"
+          editable={!busy}
+        />
+      </View>
+
+      <View style={[s.phoneRow, { marginTop: 12 }, lastName.trim() && s.phoneRowValid]}>
+        <TextInput
+          style={[s.phoneInput, { paddingLeft: 14 }]}
+          placeholder="Last name"
+          placeholderTextColor="#94a3b8"
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+          returnKeyType="done"
+          editable={!busy}
+          onSubmitEditing={() => valid && !busy && onSubmit(firstName.trim(), lastName.trim())}
+        />
+      </View>
+
+      <View style={{ minHeight: 18, marginTop: 6 }}>
+        {error && <Text style={s.errorText}>{error}</Text>}
+      </View>
+
+      <TouchableOpacity
+        onPress={() => onSubmit(firstName.trim(), lastName.trim())}
+        disabled={!valid || busy}
+        style={[s.cta, valid && !busy ? s.ctaActive : s.ctaDisabled]}
+        activeOpacity={0.88}
+      >
+        <Text style={[s.ctaText, valid && !busy ? s.ctaTextActive : s.ctaTextDisabled]}>
+          {busy ? 'Creating account…' : 'Continue'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 // ─── Placing Step ──────────────────────────────────────────────────────────────
 
 const PlacingStep = () => {
@@ -448,48 +529,77 @@ export const LoginBottomSheet = ({
 }: LoginBottomSheetProps) => {
   const [step, setStep] = useState<Step>(initialStep);
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [signingUp, setSigningUp] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
 
-  const login = useAuthStore(state => state.login);
+  const requestOtp = useAuthStore(state => state.requestOtp);
+  const verifyOtp = useAuthStore(state => state.verifyOtp);
+  const signupUser = useAuthStore(state => state.signupUser);
 
   useEffect(() => {
     if (visible) {
       setStep(initialStep);
       setSending(false);
       setVerifying(false);
+      setSigningUp(false);
+      setPhoneError(null);
       setOtpError(null);
+      setSignupError(null);
       if (initialStep === 'placing') {
         setTimeout(() => setStep('success'), 1200);
       }
     }
   }, [visible]);
 
-  const handlePhoneSubmit = () => {
+  const handlePhoneSubmit = async () => {
     if (phone.length !== 10) return;
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    setPhoneError(null);
+    try {
+      await requestOtp(phone);
       setStep('otp');
-    }, 600);
+    } catch (e) {
+      setPhoneError(e instanceof Error ? e.message : 'Could not send OTP. Try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleVerified = async (otp: string) => {
-    if (otp === '000000') {
-      setOtpError('Incorrect OTP. Try again.');
-      return;
-    }
+  const handleVerified = async (code: string) => {
     setVerifying(true);
     setOtpError(null);
+    setOtp(code);
     try {
-      await login(phone, otp);
-      setStep('placing');
-      setTimeout(() => setStep('success'), 1200);
-    } catch {
-      setOtpError('Verification failed. Try again.');
+      const result = await verifyOtp(phone, code);
+      if (result === 'ok') {
+        setStep('placing');
+        setTimeout(() => setStep('success'), 1200);
+      } else {
+        setStep('signup');
+      }
+    } catch (e) {
+      setOtpError(e instanceof Error ? e.message : 'Verification failed. Try again.');
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleSignup = async (firstName: string, lastName: string) => {
+    setSigningUp(true);
+    setSignupError(null);
+    try {
+      await signupUser(phone, otp, firstName, lastName);
+      setStep('placing');
+      setTimeout(() => setStep('success'), 1200);
+    } catch (e) {
+      setSignupError(e instanceof Error ? e.message : 'Could not create account. Try again.');
+    } finally {
+      setSigningUp(false);
     }
   };
 
@@ -508,6 +618,7 @@ export const LoginBottomSheet = ({
           onClose={onClose}
           busy={sending}
           onSimPick={num => setPhone(num)}
+          error={phoneError}
         />
       )}
       {step === 'otp' && (
@@ -517,6 +628,15 @@ export const LoginBottomSheet = ({
           onVerified={handleVerified}
           verifying={verifying}
           error={otpError}
+        />
+      )}
+      {step === 'signup' && (
+        <SignupStep
+          phone={phone}
+          onBack={() => { setStep('otp'); setSignupError(null); }}
+          onSubmit={handleSignup}
+          busy={signingUp}
+          error={signupError}
         />
       )}
       {step === 'placing' && <PlacingStep />}
