@@ -50,9 +50,10 @@ interface PhoneStepProps {
   busy: boolean;
   onSimPick: (phone: string) => void;
   error: string | null;
+  badge: string;
 }
 
-const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error }: PhoneStepProps) => {
+const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error, badge }: PhoneStepProps) => {
   const valid = phone.length === 10;
   const inputRef = useRef<TextInput>(null);
   const [simBusy, setSimBusy] = useState(false);
@@ -77,7 +78,7 @@ const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error 
       {/* Header row */}
       <View style={s.headerRow}>
         <View style={s.badge}>
-          <Text style={s.badgeText}>LOGIN TO CHECKOUT</Text>
+          <Text style={s.badgeText}>{badge}</Text>
         </View>
         <TouchableOpacity onPress={onClose} style={s.iconBtn} activeOpacity={0.7}>
           <X size={16} color="#334155" strokeWidth={2.4} />
@@ -634,6 +635,7 @@ export const LoginBottomSheet = ({
           busy={sending}
           onSimPick={num => setPhone(num)}
           error={phoneError}
+          badge={mode === 'auth' ? 'LOGIN' : 'LOGIN TO CHECKOUT'}
         />
       )}
       {step === 'otp' && (

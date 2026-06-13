@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
+  useAnimatedKeyboard,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -39,6 +40,8 @@ export const VillageBottomSheet = ({ visible, onClose, children, dismissable = t
   const translateY = useSharedValue(screenHeight);
   const backdropOpacity = useSharedValue(0);
   const dragStartY = useSharedValue(0);
+  // Lifts the sheet above the soft keyboard so inputs stay visible.
+  const keyboard = useAnimatedKeyboard();
 
   // Track whether the Modal's native layer is ready (iOS fires onShow after present)
   const modalReady = useRef(false);
@@ -96,7 +99,7 @@ export const VillageBottomSheet = ({ visible, onClose, children, dismissable = t
     });
 
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value - keyboard.height.value }],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
