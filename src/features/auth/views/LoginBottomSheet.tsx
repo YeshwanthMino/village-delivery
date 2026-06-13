@@ -40,6 +40,13 @@ function formatPhone(digits: string): string {
   return digits.slice(0, 5) + ' ' + digits.slice(5);
 }
 
+// Auth failures arrive either as a thrown Error (e.g. "Select your location
+// first") or as the apiClient's NetworkError plain object (carries the real
+// server message in .message / .fullMessage). Surface whichever is present.
+function errText(e: any, fallback: string): string {
+  return e?.fullMessage || e?.message || fallback;
+}
+
 // ─── Phone Step ────────────────────────────────────────────────────────────────
 
 interface PhoneStepProps {
@@ -572,7 +579,7 @@ export const LoginBottomSheet = ({
       await requestOtp(phone);
       setStep('otp');
     } catch (e) {
-      setPhoneError(e instanceof Error ? e.message : 'Could not send OTP. Try again.');
+      setPhoneError(errText(e, 'Could not send OTP. Try again.'));
     } finally {
       setSending(false);
     }
@@ -595,7 +602,7 @@ export const LoginBottomSheet = ({
         setStep('signup');
       }
     } catch (e) {
-      setOtpError(e instanceof Error ? e.message : 'Verification failed. Try again.');
+      setOtpError(errText(e, 'Verification failed. Try again.'));
     } finally {
       setVerifying(false);
     }
@@ -613,7 +620,7 @@ export const LoginBottomSheet = ({
         setTimeout(() => setStep('success'), 1200);
       }
     } catch (e) {
-      setSignupError(e instanceof Error ? e.message : 'Could not create account. Try again.');
+      setSignupError(errText(e, 'Could not create account. Try again.'));
     } finally {
       setSigningUp(false);
     }
