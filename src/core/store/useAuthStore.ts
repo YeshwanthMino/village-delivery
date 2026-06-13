@@ -3,12 +3,16 @@
  * Manages authentication state
  */
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { apiClient } from '@/src/base/services/remote/apiClient';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
+import * as appAuth from '@/src/features/auth/data/appAuthApi';
+import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 import { create } from 'zustand';
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: { id: string; phoneNumber: string } | null;
+  user: any | null;
   accessToken: string | null;
   refreshToken: string | null;
   error: string | null;
@@ -24,7 +28,14 @@ interface AuthActions {
 
   // Async actions
   checkExistingAuth: () => Promise<void>;
-  login: (phoneNumber: string, otp: string) => Promise<void>;
+  requestOtp: (phoneNumber: string) => Promise<void>;
+  verifyOtp: (phoneNumber: string, otp: string) => Promise<'ok' | 'new_user'>;
+  signupUser: (
+    phoneNumber: string,
+    otp: string,
+    firstName: string,
+    lastName: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 
   // Reset
@@ -42,7 +53,36 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+function requireStoreId(): string {
+  const storeId = useLocationStore.getState().serviceableVillage?.storeId;
+  if (!storeId) throw new Error('Select your location first');
+  return storeId;
+}
+
+function errMessage(e: unknown): string {
+  return e instanceof Error ? e.message : 'Something went wrong';
+}
+
+export const useAuthStore = create<AuthStore>((set, get) => {
+  const finalizeAuth = async (tokens: AuthTokens) => {
+    await apiClient.saveTokens(tokens);
+    let profile: any = null;
+    try {
+      profile = await appAuth.getMe(requireStoreId());
+    } catch (e) {
+      console.warn('getMe failed after auth:', e);
+    }
+    set({
+      isAuthenticated: true,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: profile,
+      isLoading: false,
+      error: null,
+    });
+  };
+
+  return {
   ...initialState,
 
   // Synchronous actions
@@ -97,36 +137,46 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  login: async (phoneNumber: string, otp: string) => {
+  requestOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
-
     try {
-      // TODO: Implement actual login API call
-      // For now, this is a placeholder
-      console.log('Login attempt:', { phoneNumber, otp });
-
-      // Simulated login success
-      const mockAccessToken = 'mock-access-token';
-      const mockRefreshToken = 'mock-refresh-token';
-      const mockUser = { id: '1', phoneNumber };
-
-      // Store tokens
-      await StoredPrefs.setAccessToken(mockAccessToken);
-      await StoredPrefs.setRefreshToken(mockRefreshToken);
-
-      set({
-        isAuthenticated: true,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-        user: mockUser,
-        isLoading: false,
-      });
+      await appAuth.requestOtp(requireStoreId(), phoneNumber);
+      set({ isLoading: false });
     } catch (error) {
-      console.error('Login failed:', error);
-      set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Login failed',
+      set({ isLoading: false, error: errMessage(error) });
+      throw error;
+    }
+  },
+
+  verifyOtp: async (phoneNumber: string, otp: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp);
+      if (result.status === 'ok') {
+        await finalizeAuth(result.tokens);
+        return 'ok';
+      }
+      set({ isLoading: false });
+      return 'new_user';
+    } catch (error) {
+      set({ isLoading: false, error: errMessage(error) });
+      throw error;
+    }
+  },
+
+  signupUser: async (phoneNumber, otp, firstName, lastName) => {
+    set({ isLoading: true, error: null });
+    try {
+      const tokens = await appAuth.signup(requireStoreId(), {
+        mobileNumber: phoneNumber,
+        otp,
+        firstName,
+        lastName,
       });
+      await finalizeAuth(tokens);
+    } catch (error) {
+      set({ isLoading: false, error: errMessage(error) });
+      throw error;
     }
   },
 
@@ -150,7 +200,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   reset: () => set(initialState),
-}));
+  };
+});
 
 // Selectors
 export const authSelectors = {
