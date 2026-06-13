@@ -517,6 +517,12 @@ export interface LoginBottomSheetProps {
   initialStep?: Step;
   itemCount?: number;
   grandTotal?: number;
+  /**
+   * 'checkout' (default) runs the placing→success order animation after auth.
+   * 'auth' is a standalone sign-in (e.g. profile): once authenticated it calls
+   * onComplete immediately without the order steps.
+   */
+  mode?: 'checkout' | 'auth';
 }
 
 export const LoginBottomSheet = ({
@@ -526,6 +532,7 @@ export const LoginBottomSheet = ({
   initialStep = 'phone',
   itemCount = 0,
   grandTotal = 0,
+  mode = 'checkout',
 }: LoginBottomSheetProps) => {
   const [step, setStep] = useState<Step>(initialStep);
   const [phone, setPhone] = useState('');
@@ -577,8 +584,12 @@ export const LoginBottomSheet = ({
     try {
       const result = await verifyOtp(phone, code);
       if (result === 'ok') {
-        setStep('placing');
-        setTimeout(() => setStep('success'), 1200);
+        if (mode === 'auth') {
+          onComplete();
+        } else {
+          setStep('placing');
+          setTimeout(() => setStep('success'), 1200);
+        }
       } else {
         setStep('signup');
       }
@@ -594,8 +605,12 @@ export const LoginBottomSheet = ({
     setSignupError(null);
     try {
       await signupUser(phone, otp, firstName, lastName);
-      setStep('placing');
-      setTimeout(() => setStep('success'), 1200);
+      if (mode === 'auth') {
+        onComplete();
+      } else {
+        setStep('placing');
+        setTimeout(() => setStep('success'), 1200);
+      }
     } catch (e) {
       setSignupError(e instanceof Error ? e.message : 'Could not create account. Try again.');
     } finally {

@@ -119,6 +119,8 @@ export const TRANSLATIONS: TranslationMap = {
   sign_in_title:       { te: 'విలేజ్ డెలివరీకి సైన్ ఇన్ చేయండి',                en: 'Sign in to Village Delivery' },
   sign_in_subtitle:    { te: 'ఆర్డర్లు ట్రాక్ చేయండి, ఫేవరెట్లు సేవ్ చేయండి',  en: 'Track orders, save favourites and unlock member-only deals.' },
   sign_in_btn:         { te: 'సైన్ ఇన్',                                          en: 'Sign In' },
+  profile_greeting:    { te: 'నమస్కారం',                                          en: 'Hello' },
+  profile_logout_btn:  { te: 'సైన్ అవుట్',                                        en: 'Sign Out' },
 
   // Orders screen
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
