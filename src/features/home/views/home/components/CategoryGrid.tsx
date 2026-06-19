@@ -7,7 +7,7 @@ import { CategorySection, CategoryItem } from '../../../data/homeLayout.types';
 
 interface Props {
   section: CategorySection;
-  onPressItem: (item: CategoryItem) => void;
+  onPressItem: (item: CategoryItem, section: CategorySection) => void;
 }
 
 export const CategoryGrid = ({ section, onPressItem }: Props) => {
@@ -23,7 +23,7 @@ export const CategoryGrid = ({ section, onPressItem }: Props) => {
         {section.items.map((item) => (
           <TouchableOpacity
             key={item.id}
-            onPress={() => onPressItem(item)}
+            onPress={() => onPressItem(item, section)}
             activeOpacity={0.7}
             className="items-center mb-4"
             style={{ width: '25%' }}

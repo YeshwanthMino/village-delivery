@@ -4,7 +4,7 @@
 
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { CategoryItem, HomeSection } from '../../../data/homeLayout.types';
+import { CategoryItem, CategorySection, HomeSection } from '../../../data/homeLayout.types';
 import { CategoryGrid } from './CategoryGrid';
 import { HomeBannerCarousel } from './HomeBannerCarousel';
 import { ProductCarouselRow } from './ProductCarouselRow';
@@ -16,8 +16,15 @@ interface Props {
 export const HomeSections = ({ sections }: Props) => {
   const router = useRouter();
 
-  const goCategory = (item: CategoryItem) =>
-    router.push({ pathname: '/category-details', params: { categoryId: item.id } } as any);
+  const goCategory = (item: CategoryItem, section: CategorySection) =>
+    router.push({
+      pathname: '/category-details',
+      params: {
+        categoryId: item.id,
+        title: section.title,
+        subcategories: JSON.stringify(section.items),
+      },
+    } as any);
 
   // Banner slide links are slug paths (e.g. /category/<slug>) with no matching
   // native route yet; left as a no-op until product/category slug routes exist.
