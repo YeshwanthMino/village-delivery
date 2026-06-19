@@ -3,16 +3,17 @@
 import { Image } from 'expo-image';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { HomeProduct } from '../../../data/homeLayout.types';
 
 interface Props {
   product: HomeProduct;
+  width?: DimensionValue;
 }
 
-export const DynamicProductCard = ({ product }: Props) => {
+export const DynamicProductCard = ({ product, width = 150 }: Props) => {
   const cart = useVillageStore((s) => s.cart);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
@@ -22,8 +23,22 @@ export const DynamicProductCard = ({ product }: Props) => {
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const displayTitle = locale === 'te' && product.teluguTitle ? product.teluguTitle : product.title;
 
+  // API prices are real rupees; cart pipeline works in "units" (display ×20).
+  const handleAdd = () =>
+    addToCart(product.id, {
+      key: product.id,
+      productId: product.id,
+      variantIndex: null,
+      name: product.title,
+      nameTE: product.teluguTitle,
+      weight: '',
+      price: product.price / 20,
+      mrp: product.mrp / 20,
+      imageUrl: product.image,
+    });
+
   return (
-    <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width: 150 }}>
+    <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width }}>
       <View style={{ position: 'relative' }}>
         <Image
           source={{ uri: product.image }}
@@ -63,7 +78,7 @@ export const DynamicProductCard = ({ product }: Props) => {
           {count === 0 ? (
             <TouchableOpacity
               disabled={!product.inStock}
-              onPress={() => addToCart(product.id)}
+              onPress={handleAdd}
               className={`rounded-xl py-2 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
               <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
@@ -76,7 +91,7 @@ export const DynamicProductCard = ({ product }: Props) => {
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>
               <Text className="text-white font-bold text-sm">{count}</Text>
-              <TouchableOpacity onPress={() => addToCart(product.id)} hitSlop={6}>
+              <TouchableOpacity onPress={handleAdd} hitSlop={6}>
                 <Plus size={16} color="#ffffff" />
               </TouchableOpacity>
             </View>
