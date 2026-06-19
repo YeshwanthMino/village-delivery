@@ -1,34 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { CATEGORIES } from '@/src/features/home/data/static/villageData';
-import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
+import { useProductSearchQuery } from '@/src/features/home/data/queries/useProductSearchQuery';
 
 export const useSearchViewModel = () => {
   const params = useLocalSearchParams<{ categoryId?: string; categoryName?: string }>();
 
   const [query, setQuery] = useState('');
-
-  const isValidCategory = params.categoryId
-    ? CATEGORIES.some(c => c.id === params.categoryId)
-    : false;
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(
-    isValidCategory ? (params.categoryId ?? null) : null
+    params.categoryId ?? null,
   );
-  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
-  const cartCount = useVillageStore(state => state.cartCount());
-  const { data: allProducts = [] } = useProductsQuery();
+  // 500ms debounce: API fires only after typing settles.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query), 500);
+    return () => clearTimeout(id);
+  }, [query]);
 
-  const results = useMemo(() => {
-    const trimmed = query.toLowerCase().trim();
-    if (!trimmed && !activeCategoryId) return [];
-    return allProducts
-      .filter(p => !activeCategoryId || p.categoryId === activeCategoryId)
-      .filter(p => !trimmed || p.name.toLowerCase().includes(trimmed));
-  }, [allProducts, query, activeCategoryId]);
+  const cartCount = useVillageStore((state) => state.cartCount());
+
+  const { data, isLoading, isFetching } = useProductSearchQuery(
+    debouncedQuery,
+    activeCategoryId ?? undefined,
+  );
+
+  const results = data?.products ?? [];
 
   return {
     query,
@@ -37,9 +35,9 @@ export const useSearchViewModel = () => {
     categoryName: activeCategoryId ? (params.categoryName ?? activeCategoryId) : null,
     clearCategory: () => setActiveCategoryId(null),
     results,
+    total: data?.total ?? 0,
+    isLoading,
+    isFetching,
     cartCount,
-    variantProduct,
-    openVariants: (product: Product) => setVariantProduct(product),
-    closeVariants: () => setVariantProduct(null),
   };
 };
