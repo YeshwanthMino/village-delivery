@@ -29,9 +29,12 @@ export function mapVillage(raw: any): Village | null {
   const def =
     node.defaultLocation && typeof node.defaultLocation === 'object' ? node.defaultLocation : null;
 
+  const secondaryName = pick(node, ['subtitle', 'locality', 'mandal', 'district', 'area']);
+
   return {
     id: id ? String(id) : 'unknown',
     name: name ? String(name) : 'Your location',
+    secondaryName: secondaryName ? String(secondaryName) : undefined,
     pincode: pick(node, ['pincode', 'pinCode', 'postalCode']),
     latitude: pick(node, ['latitude', 'lat']) ?? def?.latitude,
     longitude: pick(node, ['longitude', 'lng', 'long']) ?? def?.longitude,

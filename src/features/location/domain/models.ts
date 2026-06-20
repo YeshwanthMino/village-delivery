@@ -18,6 +18,7 @@ export interface LatLng {
 export interface Village {
   id: string;
   name: string;
+  secondaryName?: string; // optional finer label (locality/mandal/district) from backend
   pincode?: string;
   latitude?: number;
   longitude?: number;
