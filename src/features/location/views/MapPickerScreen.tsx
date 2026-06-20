@@ -3,14 +3,14 @@
 // Full-screen Google Maps location picker. The map moves under a fixed center
 // pin; every settle resolves to a serviceable village via the view model.
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, LocateFixed } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { useMapPickerViewModel } from '../viewmodel/useMapPickerViewModel';
+import { DEFAULT_REGION, useMapPickerViewModel } from '../viewmodel/useMapPickerViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
 import { LocationInfoSheet } from './components/LocationInfoSheet';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
@@ -20,6 +20,7 @@ export const MapPickerScreen = () => {
   const router = useRouter();
   const vm = useMapPickerViewModel();
   const mapRef = useRef<MapView | null>(null);
+  const suppressSettle = useRef(false);
 
   useEffect(() => {
     void vm.initialDetect();
@@ -27,12 +28,26 @@ export const MapPickerScreen = () => {
   }, []);
 
   // Once the VM produces a region (GPS or fallback), point the camera at it.
+  // Suppress the resulting onRegionChangeComplete so programmatic moves don't
+  // trigger a redundant resolve (initialDetect / fallbackRegion resolve directly).
   useEffect(() => {
     if (vm.region && mapRef.current) {
+      suppressSettle.current = true;
       mapRef.current.animateToRegion(vm.region, 350);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vm.region?.latitude, vm.region?.longitude]);
+
+  const handleRegionChangeComplete = useCallback(
+    (next: Region) => {
+      if (suppressSettle.current) {
+        suppressSettle.current = false;
+        return;
+      }
+      vm.onRegionSettled(next);
+    },
+    [vm],
+  );
 
   const goHome = () => {
     if (router.canGoBack()) router.back();
@@ -48,12 +63,7 @@ export const MapPickerScreen = () => {
     if (region && mapRef.current) mapRef.current.animateToRegion(region, 350);
   };
 
-  const initialRegion: Region = vm.region ?? {
-    latitude: 13.6288,
-    longitude: 79.4192,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  };
+  const initialRegion: Region = vm.region ?? DEFAULT_REGION;
 
   return (
     <View className="flex-1 bg-slate-100">
@@ -62,7 +72,7 @@ export const MapPickerScreen = () => {
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
         initialRegion={initialRegion}
-        onRegionChangeComplete={vm.onRegionSettled}
+        onRegionChangeComplete={handleRegionChangeComplete}
         showsMyLocationButton={false}
         showsUserLocation
       />

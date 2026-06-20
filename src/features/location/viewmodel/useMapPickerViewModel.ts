@@ -19,7 +19,7 @@ export type PinState = 'resolving' | 'serviceable' | 'not_serviceable' | 'error'
 const DEBOUNCE_MS = 450;
 const DEFAULT_DELTA = { latitudeDelta: 0.01, longitudeDelta: 0.01 };
 // Fallback region used when there is no prior village and no GPS fix.
-const DEFAULT_REGION: Region = { latitude: 13.6288, longitude: 79.4192, ...DEFAULT_DELTA };
+export const DEFAULT_REGION: Region = { latitude: 13.6288, longitude: 79.4192, ...DEFAULT_DELTA };
 
 function regionFor(coords: LatLng): Region {
   return { latitude: coords.latitude, longitude: coords.longitude, ...DEFAULT_DELTA };
