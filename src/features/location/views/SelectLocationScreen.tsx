@@ -8,7 +8,7 @@ import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Clock, MapPin, Search } from 'lucide-react-native';
+import { ArrowLeft, Clock, MapPin, Search } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { AddressTag } from '../domain/models';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
@@ -38,7 +38,16 @@ export const SelectLocationScreen = () => {
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* Header + search */}
         <View className="bg-white px-5 pt-2 pb-5">
-          <Text className="text-slate-900 font-bold text-2xl mb-5">{t('select_location')}</Text>
+          <View className="flex-row items-center gap-3 mb-5">
+            <TouchableOpacity
+              onPress={goHome}
+              hitSlop={8}
+              className="w-10 h-10 -ml-2 rounded-full items-center justify-center"
+            >
+              <ArrowLeft size={24} color="#0f172a" />
+            </TouchableOpacity>
+            <Text className="text-slate-900 font-bold text-2xl">{t('select_location')}</Text>
+          </View>
 
           {/* Search Address — visual placeholder (behavior deferred) */}
           <View className="flex-row items-center border border-slate-200 rounded-2xl px-4 py-3.5">
@@ -54,6 +63,20 @@ export const SelectLocationScreen = () => {
             loading={vm.detecting}
             onPress={() => run(vm.detectCurrentLocation())}
           />
+
+          {/* Set location on map */}
+          <TouchableOpacity
+            onPress={() => router.push('/location/map' as any)}
+            activeOpacity={0.7}
+            className="flex-row items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 mt-3"
+          >
+            <View className="w-9 h-9 rounded-full bg-rose-50 items-center justify-center">
+              <MapPin size={18} color="#e11d48" />
+            </View>
+            <Text className="flex-1 text-slate-900 font-extrabold text-[14px]">
+              {t('set_location_on_map')}
+            </Text>
+          </TouchableOpacity>
 
           {/* Saved addresses (auth only) */}
           {book.isAuthenticated && book.addresses.length > 0 ? (
