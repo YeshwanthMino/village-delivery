@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { Bell, Mic, Search } from 'lucide-react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Bell, Mic, Search, ShoppingCart } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -14,6 +14,8 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { LocationBar } from '@/src/features/location/views/components/LocationBar';
 import { LocationPermissionSheet } from '@/src/features/location/views/LocationPermissionSheet';
+import { NotServiceableView } from '@/src/features/location/views/components/NotServiceableView';
+import { LocationService } from '@/src/features/location/data/LocationService';
 import { LocationSheet } from '@/src/features/location/views/LocationSheet';
 
 export const HomeScreen = () => {
@@ -26,18 +28,67 @@ export const HomeScreen = () => {
   const status = useLocationStore((s) => s.status);
   const hydrated = useLocationStore((s) => s.hydrated);
   const layout = useHomeLayoutViewModel();
+  const detectCurrentLocation = useLocationStore((s) => s.detectCurrentLocation);
 
   const [permSheetOpen, setPermSheetOpen] = React.useState(false);
   const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
+  // Auto-GPS-detect fires at most once per session. Re-focusing must NOT re-fire
+  // it — that re-shows the OS "Location Accuracy" dialog every time. After the
+  // first attempt the permission sheet handles manual retry.
+  const autoDetectedRef = React.useRef(false);
 
   const detecting = status === 'locating' || status === 'checking';
+
+  // Once a location resolves (auto-detect, recent, or search), close any open
+  // location sheet — the home feed takes over.
+  React.useEffect(() => {
+    if (village) {
+      setPermSheetOpen(false);
+      setChangeSheetOpen(false);
+    }
+  }, [village]);
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
-  // First open with no saved location → prompt for it (Zepto/Blinkit).
-  React.useEffect(() => {
-    if (hydrated && !village) setPermSheetOpen(true);
-  }, [hydrated, village]);
+  // Location bootstrap (Zepto/Blinkit). With no saved village:
+  //   • permission already granted → auto-detect (GPS → find-by-location), no sheet
+  //   • permission not granted     → prompt with the permission sheet
+  // not_serviceable → close the sheet so the full-screen NotServiceableView shows.
+  //
+  // Runs on every screen focus (not just mount): Home is a tab that stays mounted,
+  // so a round-trip to /location and back wouldn't otherwise re-evaluate. Without
+  // this, a dismissed sheet + no village leaves a bare "finding location" gate.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!hydrated || village) return;
+      if (status === 'not_serviceable') {
+        setPermSheetOpen(false);
+        return;
+      }
+      if (status === 'error') {
+        setPermSheetOpen(true);
+        return;
+      }
+      if (status !== 'idle') return; // already locating/checking
+
+      let cancelled = false;
+      void (async () => {
+        const perm = await LocationService.getPermissionState();
+        if (cancelled) return;
+        // Auto-detect only on the first attempt; afterwards show the sheet so the
+        // user retries manually (avoids re-prompting the OS location dialog).
+        if (perm === 'granted' && !autoDetectedRef.current) {
+          autoDetectedRef.current = true;
+          void detectCurrentLocation();
+        } else {
+          setPermSheetOpen(true);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [hydrated, village, status, detectCurrentLocation]),
+  );
 
   const goToCart = () => router.push('/cart');
 
@@ -52,9 +103,22 @@ export const HomeScreen = () => {
             detecting={detecting}
             onPress={() => (village ? setChangeSheetOpen(true) : setPermSheetOpen(true))}
           />
-          <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
-            <Bell size={18} color="#475569" />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={goToCart}
+              className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center relative"
+            >
+              <ShoppingCart size={18} color="#475569" />
+              {vm.cartCount > 0 && (
+                <View className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-green-600 items-center justify-center">
+                  <Text className="text-white text-[10px] font-bold">{vm.cartCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
+              <Bell size={18} color="#475569" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search bar + mic */}
@@ -78,7 +142,9 @@ export const HomeScreen = () => {
       </View>
 
       {/* Body */}
-      {!village ? (
+      {status === 'not_serviceable' ? (
+        <NotServiceableView onUseAnotherPincode={() => router.push('/location')} />
+      ) : !village ? (
         // No location yet → loading gate (the permission sheet is open over this).
         <View className="flex-1 items-center justify-center px-8">
           <View className="w-16 h-16 rounded-full border-4 border-green-100 border-t-green-600 items-center justify-center">
@@ -117,7 +183,11 @@ export const HomeScreen = () => {
       {vm.cartCount > 0 && <FloatingCartPill count={vm.cartCount} onPress={goToCart} />}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
 
-      <LocationPermissionSheet visible={permSheetOpen} onClose={() => setPermSheetOpen(false)} />
+      <LocationPermissionSheet
+        visible={permSheetOpen}
+        onClose={() => setPermSheetOpen(false)}
+        dismissable={!!village}
+      />
       <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} />
     </SafeAreaView>
   );
