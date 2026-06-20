@@ -235,7 +235,7 @@ No pincode entry anywhere in the sheet.
   `[LOC]` logs behind `__DEV__`; `FIX_TIMEOUT_MS = 20000`.
 - `src/features/location/lifecycle/useLocationLifecycle.ts` — **new**; single
   `AppState` listener; called once in the root layout.
-- `src/app/_layout` (root layout) — call `useLocationLifecycle()` once.
+- `app/_layout.tsx` (root layout) — call `useLocationLifecycle()` once.
 - `src/features/location/views/LocationPermissionSheet.tsx` — add error + blocked
   states, Retry, inline error banner; remove any pincode UI; keep search/saved/recent.
 - `src/features/home/views/home/HomeScreen.tsx` — simplify bootstrap to the
