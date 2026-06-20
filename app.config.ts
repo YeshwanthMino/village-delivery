@@ -18,4 +18,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       googleMaps: { apiKey: GOOGLE_MAPS_API_KEY },
     },
   },
+  plugins: [
+    ...(Array.isArray(config.plugins) ? config.plugins : []),
+    ['react-native-maps', { googleMapsApiKey: GOOGLE_MAPS_API_KEY }],
+  ],
 });
