@@ -20,6 +20,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     ...(Array.isArray(config.plugins) ? config.plugins : []),
-    ['react-native-maps', { googleMapsApiKey: GOOGLE_MAPS_API_KEY }],
+    // The react-native-maps plugin reads androidGoogleMapsApiKey / iosGoogleMapsApiKey.
+    // If the android prop is absent it REMOVES the com.google.android.geo.API_KEY
+    // meta-data, so the prop names must match exactly.
+    [
+      'react-native-maps',
+      {
+        androidGoogleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        iosGoogleMapsApiKey: GOOGLE_MAPS_API_KEY,
+      },
+    ],
   ],
 });
