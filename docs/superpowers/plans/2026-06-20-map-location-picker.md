@@ -57,8 +57,9 @@ Expected: `react-native-maps` added to `package.json` dependencies, no peer-dep 
 
 Create `.env` (repo root):
 ```
-GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY_REDACTED
+GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
 ```
+(Use the real key value the user provided — do NOT commit the real key anywhere, including this plan.)
 
 - [ ] **Step 3: Gitignore the env file**
 
