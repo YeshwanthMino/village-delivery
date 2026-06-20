@@ -1,6 +1,7 @@
 import { useAuthStore, useLocationStore } from '@/src/core/store';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { useLocationLifecycle } from '@/src/features/location/lifecycle/useLocationLifecycle';
 import { useFonts } from 'expo-font';
 import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
   const setLocale = useVillageStore((s) => s.setLocale);
   const hydrateLocation = useLocationStore((s) => s.hydrate);
+  useLocationLifecycle();
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
