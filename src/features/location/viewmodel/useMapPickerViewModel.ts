@@ -83,6 +83,18 @@ export function useMapPickerViewModel() {
     }, DEBOUNCE_MS);
   }, [resolve]);
 
+  const fallbackRegion = useCallback(() => {
+    if (!mounted.current) return;
+    if (savedVillage?.latitude != null && savedVillage?.longitude != null) {
+      const coords = { latitude: savedVillage.latitude, longitude: savedVillage.longitude };
+      setRegion(regionFor(coords));
+      void resolve(coords);
+    } else {
+      setRegion(DEFAULT_REGION);
+      void resolve({ latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude });
+    }
+  }, [resolve, savedVillage]);
+
   // Initial camera: auto-detect GPS, fall back to saved village, then default.
   const initialDetect = useCallback(async () => {
     setDetectingGps(true);
@@ -107,18 +119,7 @@ export function useMapPickerViewModel() {
     } finally {
       if (mounted.current) setDetectingGps(false);
     }
-  }, [resolve]);
-
-  const fallbackRegion = useCallback(() => {
-    if (savedVillage?.latitude != null && savedVillage?.longitude != null) {
-      const coords = { latitude: savedVillage.latitude, longitude: savedVillage.longitude };
-      setRegion(regionFor(coords));
-      void resolve(coords);
-    } else {
-      setRegion(DEFAULT_REGION);
-      void resolve({ latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude });
-    }
-  }, [resolve, savedVillage]);
+  }, [resolve, fallbackRegion]);
 
   // "Use my current location" pill. Returns the GPS region so the screen can
   // animate the camera to it; the resulting settle drives the resolve path.
