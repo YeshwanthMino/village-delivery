@@ -211,7 +211,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     if (address.latitude == null || address.longitude == null) return false;
     const token = ++seq;
     const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
-    set({ detecting: true, lastError: null });
+    set({ status: 'locating', detecting: true, lastError: null });
     return resolveCoords(
       set,
       get,
