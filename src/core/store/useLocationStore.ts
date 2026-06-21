@@ -6,6 +6,7 @@ import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
 import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
+import { seedSelectedId } from '@/src/features/location/domain/addressSelection';
 
 const RECENT_LIMIT = 5;
 
@@ -19,6 +20,7 @@ interface LocationState {
   lastError: LocationErrorKind | null;
   serviceableVillage: Village | null;
   savedAddresses: Address[];
+  selectedAddressId: string | null;
   recentLocations: RecentLocation[];
   hydrated: boolean;
 }
@@ -29,6 +31,7 @@ interface LocationActions {
   setServiceable: (village: Village) => Promise<void>;
   setNotServiceable: () => void;
   setSavedAddresses: (addresses: Address[]) => void;
+  setSelectedAddress: (address: Address) => Promise<void>;
   addRecent: (recent: RecentLocation) => Promise<void>;
   clearLocation: () => Promise<void>;
   refreshPermission: () => Promise<PermissionState>;
@@ -51,6 +54,7 @@ const initialState: LocationState = {
   lastError: null,
   serviceableVillage: null,
   savedAddresses: [],
+  selectedAddressId: null,
   recentLocations: [],
   hydrated: false,
 };
@@ -135,13 +139,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   ...initialState,
 
   hydrate: async () => {
-    const [village, recents] = await Promise.all([
+    const [village, recents, selectedAddressId] = await Promise.all([
       StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
       StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
+      StoredPrefs.getCustomData<string>(StorageKeys.SELECTED_ADDRESS_ID),
     ]);
     set({
       serviceableVillage: village ?? null,
       recentLocations: Array.isArray(recents) ? recents : [],
+      selectedAddressId: selectedAddressId ?? null,
       status: village ? 'serviceable' : 'idle',
       hydrated: true,
     });
@@ -156,7 +162,14 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   setNotServiceable: () => set({ status: 'not_serviceable' }),
 
-  setSavedAddresses: (addresses) => set({ savedAddresses: addresses }),
+  setSavedAddresses: (addresses) => {
+    const prev = get().selectedAddressId;
+    const seeded = seedSelectedId(addresses, prev);
+    set({ savedAddresses: addresses, selectedAddressId: seeded });
+    if (seeded !== prev) {
+      void StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, seeded);
+    }
+  },
 
   addRecent: async (recent) => {
     const next = [
@@ -212,13 +225,26 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     const token = ++seq;
     const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
     set({ status: 'locating', detecting: true, lastError: null });
-    return resolveCoords(
+    const ok = await resolveCoords(
       set,
       get,
       { latitude: address.latitude, longitude: address.longitude },
       label,
       token,
     );
+    if (ok) {
+      set({ selectedAddressId: address.id });
+      await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+    }
+    return ok;
+  },
+
+  setSelectedAddress: async (address) => {
+    set({ selectedAddressId: address.id });
+    await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+    // Switch the active store/serviceability to the address's location when it
+    // carries coords. No-op (id still set) when coords are absent.
+    await get().selectAddress(address);
   },
 
   selectRecent: async (r) => {
