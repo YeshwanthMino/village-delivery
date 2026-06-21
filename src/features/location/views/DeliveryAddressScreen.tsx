@@ -195,7 +195,7 @@ export const DeliveryAddressScreen = () => {
 
       <View
         className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl px-5 pt-5 pb-8"
-        style={{ shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 12 }}
+        style={{ shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 12, maxHeight: '85%' }}
       >
         {!showForm ? (
           <>
@@ -255,7 +255,7 @@ export const DeliveryAddressScreen = () => {
               ))}
             </View>
 
-            <TouchableOpacity onPress={() => vm.setIsDefault(!vm.isDefault)} accessibilityRole="checkbox" accessibilityState={{ checked: vm.isDefault }} className="flex-row items-center gap-2 mb-4">
+            <TouchableOpacity onPress={() => vm.setIsDefault(!vm.isDefault)} accessibilityRole="checkbox" accessibilityState={{ checked: vm.isDefault }} accessibilityLabel={t('set_as_default')} className="flex-row items-center gap-2 mb-4">
               <View className={`w-5 h-5 rounded border items-center justify-center ${vm.isDefault ? 'bg-green-600 border-green-600' : 'border-slate-300'}`}>
                 {vm.isDefault ? <Check size={14} color="#fff" /> : null}
               </View>
