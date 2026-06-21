@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, ShieldCheck } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -8,10 +8,8 @@ import {
   BillSummaryCard,
   CartItemRow,
   CheckoutBar,
-  CouponRow,
   DeliveryETACard,
   EmptyCart,
-  MiniProductCard,
   SavingsStrip,
   VariantBottomSheet,
 } from '@/src/shared/components';
@@ -21,6 +19,8 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
+import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
+import { DeliveryAddressCard } from './components/DeliveryAddressCard';
 
 export const CartScreen = () => {
   const router = useRouter();
@@ -31,6 +31,14 @@ export const CartScreen = () => {
   const { t } = useTranslation();
   const scrollPadding = insets.bottom + 16;
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const addr = useCartAddressViewModel();
+  const [addressLoginVisible, setAddressLoginVisible] = React.useState(false);
+
+  const openAddressScreen = () => router.push('/address/add' as any);
+  const handleAddressPress = () => {
+    if (addr.isAuthenticated) openAddressScreen();
+    else setAddressLoginVisible(true);
+  };
 
   const goToHome = () => router.push('/(dashboard)/home');
 
@@ -46,7 +54,15 @@ export const CartScreen = () => {
 
   if (vm.cartCount === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
+        <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+              <ArrowLeft size={22} color="#0f172a" />
+            </TouchableOpacity>
+            <Text className="text-slate-900 font-black text-xl">{t('my_cart')}</Text>
+          </View>
+        </View>
         <EmptyCart onStartShopping={goToHome} />
       </SafeAreaView>
     );
@@ -98,51 +114,11 @@ export const CartScreen = () => {
             </View>
           </View>
 
-          {/* Coupon */}
-          <CouponRow
-            applied={vm.couponApplied}
-            savings={vm.bill.couponDiscount}
-            onToggle={vm.toggleCoupon}
-          />
-
-          {/* Frequently Bought Together */}
-          {vm.fbtProducts.length > 0 && (
-            <View>
-              <Text className="text-slate-500 text-[10px] font-bold tracking-widest mb-2 uppercase">
-                {t('fbt')}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 10 }}
-              >
-                {vm.fbtProducts.map(product => (
-                  <MiniProductCard
-                    key={product.id}
-                    product={product}
-                    openVariants={vm.openVariants}
-                  />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
           {/* Bill summary */}
           <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
 
           {/* Delivery address */}
-          <View className="bg-white border border-slate-200 rounded-2xl p-4 flex-row items-start gap-3">
-            <MapPin size={18} color="#16a34a" className="mt-0.5" />
-            <View className="flex-1">
-              <Text className="text-slate-900 font-bold text-sm">{t('delivering_to_home')}</Text>
-              <Text className="text-slate-500 text-xs mt-0.5">
-                221B Baker Street, Apartment 4B, Mumbai 400001
-              </Text>
-            </View>
-            <TouchableOpacity>
-              <Text className="text-green-600 font-bold text-sm">{t('change')}</Text>
-            </TouchableOpacity>
-          </View>
+          <DeliveryAddressCard address={addr.selectedAddress} onPress={handleAddressPress} />
 
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">
@@ -172,6 +148,17 @@ export const CartScreen = () => {
         initialStep={isAuthenticated ? 'placing' : 'phone'}
         itemCount={vm.bill.totalCount}
         grandTotal={Math.round(vm.bill.grandTotal)}
+      />
+
+      {/* Auth gate for the address flow */}
+      <LoginBottomSheet
+        visible={addressLoginVisible}
+        onClose={() => setAddressLoginVisible(false)}
+        onComplete={() => {
+          setAddressLoginVisible(false);
+          openAddressScreen();
+        }}
+        mode="auth"
       />
     </SafeAreaView>
   );
