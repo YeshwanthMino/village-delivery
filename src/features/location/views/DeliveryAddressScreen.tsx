@@ -31,7 +31,9 @@ export const DeliveryAddressScreen = () => {
   const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
   const setSelectedAddress = useLocationStore((s) => s.setSelectedAddress);
 
-  const [mode, setMode] = useState<'list' | 'add'>('list');
+  // Land straight on the map when there is nothing to pick from (e.g. right
+  // after first login); returning users with saved addresses see the list.
+  const [mode, setMode] = useState<'list' | 'add'>(savedAddresses.length === 0 ? 'add' : 'list');
   const [showForm, setShowForm] = useState(false);
 
   const mapRef = useRef<MapView | null>(null);
