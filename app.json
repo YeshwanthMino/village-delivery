@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.villagedelivery"
+      "bundleIdentifier": "in.villagedelivery.consumer"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +20,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
-      "package": "com.anonymous.villagedelivery"
+      "package": "in.villagedelivery.consumer"
     },
     "web": {
       "output": "static",
