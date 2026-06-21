@@ -179,6 +179,7 @@ export function useMapPickerViewModel() {
     pinState,
     primary,
     secondary,
+    village,
     detectingGps,
     blocked,
     initialDetect,
