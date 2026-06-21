@@ -57,7 +57,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.10",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
