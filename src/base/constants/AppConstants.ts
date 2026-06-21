@@ -17,9 +17,9 @@ export const WebService = {
 
 // AppAuth (customer app) endpoint paths — joined onto WebService.villageBaseURL.
 export const AppAuthRoutes = {
-  loginOtp: '/app/auth/login-otp',
-  loginVerify: '/app/auth/login-verify',
-  loginSignup: '/app/auth/login-signup',
+  loginOtp: '/app/auth/login',
+  loginVerify: '/app/auth/verify-otp',
+  loginSignup: '/app/auth/signup',
   me: '/app/auth/me',
   refresh: '/app/auth/refresh',
 };
