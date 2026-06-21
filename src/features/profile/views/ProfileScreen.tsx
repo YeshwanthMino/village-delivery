@@ -11,7 +11,12 @@ import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 function displayName(user: any): string | null {
   if (!user) return null;
   const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-  return full || user.name || user.mobileNumber || user.phoneNumber || null;
+  return full || user.name || null;
+}
+
+/** Best-effort phone, preferring the profile then the persisted login number. */
+function displayPhone(user: any, fallback: string | null): string | null {
+  return user?.mobileNumber || user?.phoneNumber || fallback || null;
 }
 
 export const ProfileScreen = () => {
@@ -24,6 +29,7 @@ export const ProfileScreen = () => {
 
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const user = useAuthStore(s => s.user);
+  const storeMobile = useAuthStore(s => s.mobileNumber);
   const logout = useAuthStore(s => s.logout);
   const [loginVisible, setLoginVisible] = useState(false);
 
@@ -35,6 +41,7 @@ export const ProfileScreen = () => {
   };
 
   const name = displayName(user);
+  const phone = displayPhone(user, storeMobile);
 
   const openWhatsApp = async () => {
     const message = encodeURIComponent('నమస్కారం, నాకు సహాయం కావాలి.');
@@ -60,9 +67,13 @@ export const ProfileScreen = () => {
           <Text className="text-slate-900 font-black text-xl mb-1 text-center" style={teFont}>
             {t('profile_greeting')}{name ? `, ${name}` : ''}
           </Text>
-          <Text className="text-slate-500 text-sm text-center mb-8" style={teRegular}>
-            {t('sign_in_subtitle')}
-          </Text>
+          {phone ? (
+            <Text className="text-slate-500 text-sm text-center mb-8" style={teRegular}>
+              {phone}
+            </Text>
+          ) : (
+            <View className="mb-8" />
+          )}
           <TouchableOpacity
             onPress={handleLogout}
             className="flex-row items-center gap-2 border border-slate-200 rounded-2xl px-10 py-3"

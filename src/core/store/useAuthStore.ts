@@ -73,6 +73,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
     let profile: any = null;
     try {
       profile = await appAuth.getMe(requireStoreId());
+      await StoredPrefs.setUserProfile(profile);
     } catch (e) {
       console.warn('getMe failed after auth:', e);
     }
@@ -84,6 +85,25 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       isLoading: false,
       error: null,
     });
+  };
+
+  // Background refresh of the cached profile. Needs a store id (from the
+  // hydrated location); if none yet, or the call fails, the cached value is
+  // kept silently — never throws.
+  const refreshProfile = async () => {
+    let storeId: string;
+    try {
+      storeId = requireStoreId();
+    } catch {
+      return; // location not hydrated yet — keep cached profile
+    }
+    try {
+      const profile = await appAuth.getMe(storeId);
+      await StoredPrefs.setUserProfile(profile);
+      set({ user: profile });
+    } catch (e) {
+      console.warn('Background profile refresh failed:', e);
+    }
   };
 
   return {
@@ -119,13 +139,18 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       // Check for access token only (refresh token might be empty for now)
       if (accessToken) {
         console.log('Found existing access token - Setting authenticated to TRUE');
+        // Restore the cached profile immediately so the name shows on launch
+        // (even offline); then refresh it from the server in the background.
+        const cachedProfile = await StoredPrefs.getUserProfile();
         set({
           isAuthenticated: true,
           accessToken,
           refreshToken: refreshToken || null,
           mobileNumber: mobileNumber || null,
+          user: cachedProfile ?? null,
           isLoading: false,
         });
+        void refreshProfile();
       } else {
         console.log('No existing access token found - User NOT authenticated');
         set({
@@ -192,9 +217,10 @@ export const useAuthStore = create<AuthStore>((set, get) => {
     set({ isLoading: true, error: null });
 
     try {
-      await StoredPrefs.setAccessToken(null);
-      await StoredPrefs.setRefreshToken(null);
-      await StoredPrefs.clearAll();
+      // Clear only auth data (tokens + cached profile). Locale and the selected
+      // location must survive sign-out, so do NOT clearAll().
+      await StoredPrefs.clearCredentials();
+      await StoredPrefs.setUsername(null);
 
       console.log('Logged out successfully');
       set({ ...initialState });

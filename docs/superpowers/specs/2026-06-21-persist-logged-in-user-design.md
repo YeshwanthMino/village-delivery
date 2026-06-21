@@ -52,6 +52,13 @@ Replace `StoredPrefs.clearAll()` in `logout()` with `StoredPrefs.clearCredential
 (clears access/refresh token, token type, and user profile only), then reset the auth
 store. Locale and selected location survive sign-out.
 
+## Implementation note
+The auth store gained a top-level `mobileNumber` field (persisted via
+`StoredPrefs.getUsername/setUsername`) during implementation. `ProfileScreen` uses it as
+the phone fallback (`user.mobileNumber || user.phoneNumber || mobileNumber`), and the
+signed-in view now shows the phone number as the detail line in place of the generic
+marketing subtitle. Logout also clears the saved username alongside `clearCredentials()`.
+
 ## Out of scope
 - No UI/visual changes to `ProfileScreen`.
 - No change to the login/OTP flow itself.
