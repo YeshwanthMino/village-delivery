@@ -32,12 +32,18 @@ export function parseTokens(resp: any): AuthTokens | null {
   };
 }
 
-export async function requestOtp(storeId: string, mobileNumber: string): Promise<void> {
-  await apiClient.postWithoutAuth(
+/**
+ * Send the login OTP. The server replies with a `requestId` that must be echoed
+ * back on verify-otp / signup. Returns null if the response carries none.
+ */
+export async function requestOtp(storeId: string, mobileNumber: string): Promise<string | null> {
+  const resp = await apiClient.postWithoutAuth<any>(
     `${BASE}${AppAuthRoutes.loginOtp}`,
     { mobileNumber },
     storeOpts(storeId),
   );
+  const data = resp?.data ?? resp;
+  return data?.requestId ?? null;
 }
 
 export type VerifyResult =
@@ -48,11 +54,12 @@ export async function verifyLogin(
   storeId: string,
   mobileNumber: string,
   otp: string,
+  requestId: string | null,
 ): Promise<VerifyResult> {
   try {
     const resp = await apiClient.postWithoutAuth<any>(
       `${BASE}${AppAuthRoutes.loginVerify}`,
-      { mobileNumber, otp },
+      { mobileNumber, otp, requestId },
       storeOpts(storeId),
     );
     console.log('[appAuth] login-verify raw:', JSON.stringify(resp));
@@ -74,6 +81,7 @@ export interface SignupInput {
   otp: string;
   firstName: string;
   lastName: string;
+  requestId: string | null;
 }
 
 export async function signup(storeId: string, input: SignupInput): Promise<AuthTokens> {

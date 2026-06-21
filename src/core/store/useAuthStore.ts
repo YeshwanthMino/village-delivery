@@ -16,6 +16,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   error: string | null;
+  requestId: string | null;
 }
 
 interface AuthActions {
@@ -51,6 +52,7 @@ const initialState: AuthState = {
   accessToken: null,
   refreshToken: null,
   error: null,
+  requestId: null,
 };
 
 function requireStoreId(): string {
@@ -140,8 +142,8 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   requestOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      await appAuth.requestOtp(requireStoreId(), phoneNumber);
-      set({ isLoading: false });
+      const requestId = await appAuth.requestOtp(requireStoreId(), phoneNumber);
+      set({ isLoading: false, requestId });
     } catch (error) {
       set({ isLoading: false, error: errMessage(error) });
       throw error;
@@ -151,7 +153,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   verifyOtp: async (phoneNumber: string, otp: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp);
+      const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp, get().requestId);
       if (result.status === 'ok') {
         await finalizeAuth(result.tokens);
         return 'ok';
@@ -172,6 +174,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
         otp,
         firstName,
         lastName,
+        requestId: get().requestId,
       });
       await finalizeAuth(tokens);
     } catch (error) {
