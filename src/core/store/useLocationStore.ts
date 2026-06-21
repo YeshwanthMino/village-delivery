@@ -164,6 +164,9 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   setSavedAddresses: (addresses) => {
     const prev = get().selectedAddressId;
+    // Seeding only records which saved address is selected (a persistence hint
+    // for the cart). It deliberately does NOT switch the active serviceable
+    // village — that is hydrated/resolved separately.
     const seeded = seedSelectedId(addresses, prev);
     set({ savedAddresses: addresses, selectedAddressId: seeded });
     if (seeded !== prev) {
@@ -240,6 +243,9 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   setSelectedAddress: async (address) => {
+    // Optimistically record the selection so the cart reflects it instantly;
+    // the following selectAddress() then re-confirms serviceability and switches
+    // the active store for addresses that carry coords.
     set({ selectedAddressId: address.id });
     await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
     // Switch the active store/serviceability to the address's location when it
