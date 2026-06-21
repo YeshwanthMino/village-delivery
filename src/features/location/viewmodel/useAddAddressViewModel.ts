@@ -6,6 +6,7 @@
 
 import { useCallback, useState } from 'react';
 import { useMapPickerViewModel } from './useMapPickerViewModel';
+import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { createAddress, listAddresses, type CreateAddressInput } from '../data/locationApi';
 import { saveNewAddress } from '../data/saveNewAddress';
@@ -15,6 +16,7 @@ export function useAddAddressViewModel() {
   const map = useMapPickerViewModel();
   const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
   const setSelectedAddress = useLocationStore((s) => s.setSelectedAddress);
+  const mobileNumber = useAuthStore((s) => s.mobileNumber ?? s.user?.mobileNumber ?? '');
 
   const [addressLine1, setAddressLine1] = useState('');
   const [landmark, setLandmark] = useState('');
@@ -43,6 +45,7 @@ export function useAddAddressViewModel() {
       longitude: map.region.longitude,
       isDefault,
       tag,
+      mobileNumber,
     };
     try {
       await saveNewAddress(input, {
@@ -58,7 +61,7 @@ export function useAddAddressViewModel() {
     } finally {
       setSaving(false);
     }
-  }, [map.pinState, map.village, map.region, addressLine1, landmark, tag, isDefault, setSelectedAddress, setSavedAddresses]);
+  }, [map.pinState, map.village, map.region, addressLine1, landmark, tag, isDefault, mobileNumber, setSelectedAddress, setSavedAddresses]);
 
   return {
     map,

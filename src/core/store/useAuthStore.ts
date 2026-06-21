@@ -17,6 +17,7 @@ interface AuthState {
   refreshToken: string | null;
   error: string | null;
   requestId: string | null;
+  mobileNumber: string | null;
 }
 
 interface AuthActions {
@@ -53,6 +54,7 @@ const initialState: AuthState = {
   refreshToken: null,
   error: null,
   requestId: null,
+  mobileNumber: null,
 };
 
 function requireStoreId(): string {
@@ -106,6 +108,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
     try {
       const accessToken = await StoredPrefs.getAccessToken();
       const refreshToken = await StoredPrefs.getRefreshToken();
+      const mobileNumber = await StoredPrefs.getUsername();
 
       console.log('checkExistingAuth: Retrieved tokens', {
         hasAccessToken: !!accessToken,
@@ -120,6 +123,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
           isAuthenticated: true,
           accessToken,
           refreshToken: refreshToken || null,
+          mobileNumber: mobileNumber || null,
           isLoading: false,
         });
       } else {
@@ -143,7 +147,8 @@ export const useAuthStore = create<AuthStore>((set, get) => {
     set({ isLoading: true, error: null });
     try {
       const requestId = await appAuth.requestOtp(requireStoreId(), phoneNumber);
-      set({ isLoading: false, requestId });
+      await StoredPrefs.setUsername(phoneNumber);
+      set({ isLoading: false, requestId, mobileNumber: phoneNumber });
     } catch (error) {
       set({ isLoading: false, error: errMessage(error) });
       throw error;

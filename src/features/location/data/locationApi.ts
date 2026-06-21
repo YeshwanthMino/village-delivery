@@ -4,7 +4,7 @@ import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService, StorageKeys } from '@/src/base/constants/AppConstants';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { LatLng, ServiceabilityResult, Address, AddressTag } from '../domain/models';
-import { mapVillage, mapAddressList, mapAddress, encodeTag } from './mappers';
+import { mapVillage, mapAddressList, mapAddress } from './mappers';
 
 const BASE = WebService.villageBaseURL;
 
@@ -21,26 +21,38 @@ async function storeOpts(): Promise<{ headers: Record<string, string> } | undefi
 export interface CreateAddressInput {
   villageId: string;
   addressLine1: string;
-  addressLine2?: string;
   landmark?: string;
-  pincode?: string;
   latitude?: number;
   longitude?: number;
   isDefault: boolean;
   tag: AddressTag;
+  mobileNumber: string;
 }
 
+function tagToLabel(tag: AddressTag): string {
+  return tag.charAt(0).toUpperCase() + tag.slice(1);
+}
+
+/**
+ * The /app/address API wants a single `addressLine`, a `label` (tag), the
+ * customer's `mobileNumber`, and a nested `location`.
+ */
 function toDto(input: CreateAddressInput) {
-  return {
+  const addressLine = [input.addressLine1, input.landmark]
+    .map((s) => s?.trim())
+    .filter(Boolean)
+    .join(', ');
+  const dto: Record<string, any> = {
+    label: tagToLabel(input.tag),
+    addressLine,
     villageId: input.villageId,
-    addressLine1: input.addressLine1,
-    addressLine2: encodeTag(input.tag, input.addressLine2),
-    landmark: input.landmark,
-    pincode: input.pincode,
-    latitude: input.latitude,
-    longitude: input.longitude,
     isDefault: input.isDefault,
+    mobileNumber: input.mobileNumber,
   };
+  if (input.latitude != null && input.longitude != null) {
+    dto.location = { latitude: input.latitude, longitude: input.longitude };
+  }
+  return dto;
 }
 
 /** True when the find-by-location body carries a non-empty `title`. */
@@ -79,20 +91,20 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
 }
 
 export async function listAddresses(): Promise<Address[]> {
-  const data = await apiClient.get<any>(`${BASE}/address?limit=50&sort=_id:desc`, await storeOpts());
+  const data = await apiClient.get<any>(`${BASE}/app/address`, await storeOpts());
   return mapAddressList(data);
 }
 
 export async function createAddress(input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.post<any>(`${BASE}/address`, toDto(input), await storeOpts());
+  const data = await apiClient.post<any>(`${BASE}/app/address`, toDto(input), await storeOpts());
   return mapAddress(data);
 }
 
 export async function updateAddress(id: string, input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.patch<any>(`${BASE}/address/${id}`, toDto(input), await storeOpts());
+  const data = await apiClient.patch<any>(`${BASE}/app/address/${id}`, toDto(input), await storeOpts());
   return mapAddress(data);
 }
 
 export async function deleteAddress(id: string): Promise<void> {
-  await apiClient.delete(`${BASE}/address/${id}`, await storeOpts());
+  await apiClient.delete(`${BASE}/app/address/${id}`, await storeOpts());
 }

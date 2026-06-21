@@ -8,6 +8,7 @@ const input: CreateAddressInput = {
   addressLine1: '12 Main St',
   isDefault: true,
   tag: 'home',
+  mobileNumber: '9999999999',
 };
 
 const created: Address = {

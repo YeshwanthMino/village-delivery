@@ -42,42 +42,34 @@ export function mapVillage(raw: any): Village | null {
   };
 }
 
-/** Encode the local-only tag as a prefix on addressLine2 so it round-trips. */
-export function encodeTag(tag: AddressTag, addressLine2?: string): string {
-  const rest = addressLine2?.trim() ?? '';
-  return rest ? `[${tag}] ${rest}` : `[${tag}]`;
+/** Map the server's `label` (e.g. "Home") to our lowercase tag union. */
+export function labelToTag(label?: string): AddressTag {
+  const l = (label ?? '').trim().toLowerCase();
+  return (TAG_VALUES as string[]).includes(l) ? (l as AddressTag) : 'other';
 }
 
-/** Extract { tag, addressLine2 } from a possibly tag-prefixed addressLine2. */
-export function decodeTag(addressLine2?: string): { tag: AddressTag; addressLine2?: string } {
-  if (!addressLine2) return { tag: 'home' };
-  const match = addressLine2.match(/^\[(home|work|other)\]\s?(.*)$/i);
-  if (match) {
-    const tag = match[1].toLowerCase() as AddressTag;
-    const rest = match[2]?.trim();
-    return { tag: TAG_VALUES.includes(tag) ? tag : 'other', addressLine2: rest || undefined };
-  }
-  return { tag: 'home', addressLine2 };
-}
-
-/** Map an address API object into the domain Address. */
+/**
+ * Map an address API object into the domain Address. The /app/address API uses
+ * `label` (tag), a single `addressLine` string, and a nested `location`.
+ */
 export function mapAddress(raw: any): Address {
   const node = raw?.data ?? raw;
-  const { tag, addressLine2 } = decodeTag(pick(node, ['addressLine2']));
   const villageRaw = pick(node, ['village']);
   const villageObj = villageRaw && typeof villageRaw === 'object' ? villageRaw : null;
   const villageStr = typeof villageRaw === 'string' ? villageRaw : undefined;
+  const loc = node?.location && typeof node.location === 'object' ? node.location : null;
   return {
     id: String(pick(node, ['_id', 'id']) ?? ''),
     villageId: String(pick(node, ['villageId']) ?? villageObj?._id ?? villageStr ?? ''),
-    villageName: String(pick(node, ['villageName']) ?? villageObj?.name ?? villageStr ?? pick(node, ['name']) ?? ''),
-    addressLine1: String(pick(node, ['addressLine1']) ?? ''),
-    addressLine2,
+    villageName: String(
+      pick(node, ['villageName']) ?? villageObj?.name ?? villageObj?.title ?? villageStr ?? pick(node, ['name']) ?? '',
+    ),
+    addressLine1: String(pick(node, ['addressLine', 'addressLine1']) ?? ''),
     landmark: pick(node, ['landmark']),
     pincode: pick(node, ['pincode']),
-    latitude: pick(node, ['latitude', 'lat']),
-    longitude: pick(node, ['longitude', 'lng']),
-    tag,
+    latitude: pick(node, ['latitude', 'lat']) ?? loc?.latitude,
+    longitude: pick(node, ['longitude', 'lng', 'long']) ?? loc?.longitude,
+    tag: labelToTag(pick(node, ['label'])),
     isDefault: Boolean(pick(node, ['isDefault'])),
   };
 }
