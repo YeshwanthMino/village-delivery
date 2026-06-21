@@ -51,10 +51,16 @@ selected delivery address and the Cart reflects it immediately.
   truth: an address picked anywhere (home or cart) is the one the Cart shows.
 - A selector derives the active `Address` object from
   `savedAddresses.find(a => a.id === selectedAddressId)`.
-- **Server sync**: server `isDefault` is the source of truth; the local id is an
-  instant-render cache. Adds-from-cart send `isDefault: true`. When
-  `listAddresses()` returns and no local `selectedAddressId` is set, the address
-  with `isDefault === true` seeds the selection.
+- **Server sync**: server `isDefault` is the source of truth for the default; the
+  local id is an instant-render cache. When `listAddresses()` returns and no
+  local `selectedAddressId` is set, the selection is seeded from the default
+  address. If **multiple** addresses are marked `isDefault === true`, pick the
+  **first** one in `listAddresses()` order (the API sorts `_id:desc`, i.e. newest
+  first); if none are default, no seeding occurs.
+- **Auto-select on add is independent of `isDefault`**: an address added from the
+  Cart is always set as the selected delivery address locally
+  (`setSelectedAddress(new)`), whether or not the user marked it default. The
+  `isDefault` toggle only controls the server-side default flag.
 
 A location set on home via GPS/map (serviceable village, but no saved `Address`)
 sets `serviceableVillage` only — it does **not** set `selectedAddressId`. The
@@ -98,12 +104,14 @@ manager (Blinkit/Zepto style) with two bottom-sheet modes over a single map.
   (reusing `useMapPickerViewModel`).
 - "Confirm location" (enabled only when the pin is serviceable) reveals the
   details form: flat/house no. → `addressLine1`, landmark, tag selector
-  (home/work/other), "set as default" (defaulted on for cart adds).
+  (home/work/other), and a **"Set as default" toggle the user chooses** (no
+  forced value).
 - **Save** (enabled only when serviceable **and** `addressLine1` non-empty):
   `createAddress({ villageId: village.id, latitude/longitude from region
-  center, addressLine1, landmark, tag, isDefault: true })` →
-  `setSelectedAddress(newAddress)` → refresh `savedAddresses` via
-  `listAddresses()` → `router.back()` to Cart. Cart shows the new address
+  center, addressLine1, landmark, tag, isDefault: <user toggle> })` →
+  `setSelectedAddress(newAddress)` (always — the just-added address becomes the
+  selected delivery address regardless of the toggle) → refresh `savedAddresses`
+  via `listAddresses()` → `router.back()` to Cart. Cart shows the new address
   immediately.
 
 ### 4. Components and responsibilities
@@ -131,7 +139,8 @@ manager (Blinkit/Zepto style) with two bottom-sheet modes over a single map.
 ### 6. Testing
 
 - Unit-test the store selection logic: set/persist/hydrate `selectedAddressId`,
-  derive the selected `Address` from the list, server-`isDefault` seeding, and
+  derive the selected `Address` from the list, server-`isDefault` seeding
+  (including multiple-defaults → pick first, and none-default → no seeding), and
   that `selectAddress` sets the id.
 - Unit-test `useAddAddressViewModel`'s save sequence (createAddress →
   setSelectedAddress → refresh → back).
@@ -157,6 +166,7 @@ reconciliation when the delivery store changes. The flow is strictly: auth gate
   OTP, new user signs up then verifies → returns and continues into the address
   screen.
 - Address screen: pick a saved address (→ selected, back to cart) or add a new
-  one on the map (→ saved with `isDefault: true`, selected, back to cart).
+  one on the map (→ saved with the user's chosen `isDefault` value, always
+  selected, back to cart).
 - Cart reflects the selected delivery address immediately; cart state is
   preserved throughout.
