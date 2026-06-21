@@ -118,7 +118,7 @@ export const CartScreen = () => {
           <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
 
           {/* Delivery address */}
-          <DeliveryAddressCard address={addr.selectedAddress} onPress={handleAddressPress} />
+          <DeliveryAddressCard address={addr.selectedAddress} loading={addr.loading} onPress={handleAddressPress} />
 
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">
