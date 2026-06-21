@@ -1,11 +1,22 @@
 // src/features/location/data/locationApi.ts
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
-import { WebService } from '@/src/base/constants/AppConstants';
+import { WebService, StorageKeys } from '@/src/base/constants/AppConstants';
+import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { LatLng, ServiceabilityResult, Address, AddressTag } from '../domain/models';
 import { mapVillage, mapAddressList, mapAddress, encodeTag } from './mappers';
 
 const BASE = WebService.villageBaseURL;
+
+/**
+ * The village API is multi-tenant: authed endpoints need the active store's
+ * `x-store-id` header (same requirement as the AppAuth endpoints). Read it from
+ * the persisted serviceable village. Returns undefined when none is set.
+ */
+async function storeOpts(): Promise<{ headers: Record<string, string> } | undefined> {
+  const village = await StoredPrefs.getCustomData<{ storeId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
+  return village?.storeId ? { headers: { 'x-store-id': village.storeId } } : undefined;
+}
 
 export interface CreateAddressInput {
   villageId: string;
@@ -46,15 +57,19 @@ function hasTitle(raw: any): boolean {
  */
 export async function findByLocation(coords: LatLng): Promise<ServiceabilityResult> {
   try {
+    console.log('[LOC] findByLocation: POST', `${BASE}/villages/find-by-location`, coords);
     const data = await apiClient.postWithoutAuth<any>(`${BASE}/villages/find-by-location`, {
       latitude: coords.latitude,
       longitude: coords.longitude,
     });
+    console.log('[LOC] findByLocation: response', JSON.stringify(data)?.slice(0, 500));
     if (hasTitle(data)) {
       return { serviceable: true, village: mapVillage(data) };
     }
+    console.log('[LOC] findByLocation: no title → not serviceable');
     return { serviceable: false, village: null };
   } catch (err: any) {
+    console.log('[LOC] findByLocation: ERROR status=', err?.statusCode, 'msg=', err?.message ?? err);
     const status = err?.statusCode;
     if (status && status >= 400 && status < 500) {
       return { serviceable: false, village: null };
@@ -64,20 +79,20 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
 }
 
 export async function listAddresses(): Promise<Address[]> {
-  const data = await apiClient.get<any>(`${BASE}/address?limit=50&sort=_id:desc`);
+  const data = await apiClient.get<any>(`${BASE}/address?limit=50&sort=_id:desc`, await storeOpts());
   return mapAddressList(data);
 }
 
 export async function createAddress(input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.post<any>(`${BASE}/address`, toDto(input));
+  const data = await apiClient.post<any>(`${BASE}/address`, toDto(input), await storeOpts());
   return mapAddress(data);
 }
 
 export async function updateAddress(id: string, input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.patch<any>(`${BASE}/address/${id}`, toDto(input));
+  const data = await apiClient.patch<any>(`${BASE}/address/${id}`, toDto(input), await storeOpts());
   return mapAddress(data);
 }
 
 export async function deleteAddress(id: string): Promise<void> {
-  await apiClient.delete(`${BASE}/address/${id}`);
+  await apiClient.delete(`${BASE}/address/${id}`, await storeOpts());
 }
