@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import type { PinState } from '../../viewmodel/useMapPickerViewModel';
 
@@ -18,12 +19,20 @@ interface Props {
 
 export const LocationInfoSheet = ({ pinState, primary, secondary, onConfirm, onRetry }: Props) => {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const canConfirm = pinState === 'serviceable';
 
   return (
     <View
-      className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl px-5 pt-5 pb-8"
-      style={{ shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: -4 }, elevation: 12 }}
+      className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl px-5 pt-5"
+      style={{
+        paddingBottom: insets.bottom + 20,
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: -4 },
+        elevation: 12,
+      }}
     >
       {pinState === 'resolving' ? (
         <>
