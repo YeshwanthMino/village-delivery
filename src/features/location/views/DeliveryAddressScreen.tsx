@@ -5,18 +5,19 @@
 // creates the address, selects it, and returns to the Cart.
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check, LocateFixed, Plus } from 'lucide-react-native';
+import { ArrowLeft, Check, LocateFixed, Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { DEFAULT_REGION } from '../viewmodel/useMapPickerViewModel';
 import { useAddAddressViewModel } from '../viewmodel/useAddAddressViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
-import type { AddressTag } from '../domain/models';
+import { deleteAddress } from '../data/locationApi';
+import type { Address, AddressTag } from '../domain/models';
 
 const TAG_EMOJI: Record<AddressTag, string> = { home: '🏠', work: '🏢', other: '📍' };
 const TAGS: AddressTag[] = ['home', 'work', 'other'];
@@ -30,6 +31,7 @@ export const DeliveryAddressScreen = () => {
   const savedAddresses = useLocationStore((s) => s.savedAddresses);
   const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
   const setSelectedAddress = useLocationStore((s) => s.setSelectedAddress);
+  const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
 
   // Land straight on the map when there is nothing to pick from (e.g. right
   // after first login); returning users with saved addresses see the list.
@@ -41,7 +43,7 @@ export const DeliveryAddressScreen = () => {
 
   // Initialize the camera once when entering add mode.
   useEffect(() => {
-    if (mode === 'add') void map.initialDetect();
+    if (mode === 'add' && !vm.editingId) void map.initialDetect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -69,7 +71,7 @@ export const DeliveryAddressScreen = () => {
   };
 
   const goBack = () => {
-    if (mode === 'add') { setMode('list'); setShowForm(false); return; }
+    if (mode === 'add') { setMode('list'); setShowForm(false); vm.reset(); return; }
     backToCart();
   };
 
@@ -87,8 +89,36 @@ export const DeliveryAddressScreen = () => {
 
   const onConfirmPin = () => { if (map.pinState === 'serviceable') setShowForm(true); };
 
+  const onEdit = (a: Address) => {
+    vm.beginEdit(a);
+    setShowForm(true);
+    setMode('add');
+  };
+
+  const onDelete = (a: Address) => {
+    Alert.alert(t('delete_address_confirm'), '', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: t('delete_address'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAddress(a.id);
+            setSavedAddresses(savedAddresses.filter((x) => x.id !== a.id));
+          } catch {
+            Alert.alert('Error', 'Could not delete address.');
+          }
+        },
+      },
+    ]);
+  };
+
   const onSave = async () => {
-    if (await vm.save()) backToCart();
+    const editing = !!vm.editingId;
+    if (await vm.save()) {
+      if (editing) { setMode('list'); setShowForm(false); vm.reset(); }
+      else backToCart();
+    }
   };
 
   // ── List mode ──────────────────────────────────────────────────────────────
@@ -121,20 +151,42 @@ export const DeliveryAddressScreen = () => {
               {savedAddresses.map((a) => {
                 const active = a.id === selectedAddressId;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={a.id}
-                    onPress={() => onSelectExisting(a.id)}
-                    accessibilityRole="button"
-                    className={`flex-row items-center rounded-2xl px-4 py-4 mb-3 border ${active ? 'border-green-600 bg-green-50' : 'border-slate-100 bg-white'}`}
+                    className={`flex-row items-center rounded-2xl px-3 py-3 mb-3 border ${active ? 'border-green-600 bg-green-50' : 'border-slate-100 bg-white'}`}
                   >
-                    <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
-                      <Text className="text-xl leading-none">{TAG_EMOJI[a.tag]}</Text>
-                    </View>
-                    <Text className="flex-1 ml-3 text-slate-900 text-base" numberOfLines={2}>
-                      {[a.addressLine1, a.villageName].filter(Boolean).join(', ')}
-                    </Text>
-                    {active ? <Check size={18} color="#16a34a" /> : null}
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => onSelectExisting(a.id)}
+                      accessibilityRole="button"
+                      className="flex-1 flex-row items-center"
+                    >
+                      <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
+                        <Text className="text-xl leading-none">{TAG_EMOJI[a.tag]}</Text>
+                      </View>
+                      <Text className="flex-1 ml-3 text-slate-900 text-base" numberOfLines={2}>
+                        {[a.addressLine1, a.villageName].filter(Boolean).join(', ')}
+                      </Text>
+                      {active ? <Check size={18} color="#16a34a" /> : null}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => onEdit(a)}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('edit_address')}
+                      className="w-9 h-9 ml-1 rounded-lg bg-slate-100 items-center justify-center"
+                    >
+                      <Pencil size={15} color="#0f172a" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => onDelete(a)}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('delete_address')}
+                      className="w-9 h-9 ml-1 rounded-lg bg-red-50 items-center justify-center"
+                    >
+                      <Trash2 size={15} color="#dc2626" />
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </>
@@ -177,7 +229,9 @@ export const DeliveryAddressScreen = () => {
             className="bg-white rounded-full px-4 py-2"
             style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
           >
-            <Text className="text-slate-900 font-bold text-base">{t('add_new_address')}</Text>
+            <Text className="text-slate-900 font-bold text-base">
+              {vm.editingId ? t('edit_address_title') : t('add_new_address')}
+            </Text>
           </View>
         </View>
       </SafeAreaView>
