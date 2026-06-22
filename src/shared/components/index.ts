@@ -15,6 +15,8 @@ export { SavingsStrip } from './SavingsStrip';
 export { CouponRow } from './CouponRow';
 export { BillSummaryCard } from './BillSummaryCard';
 export { CheckoutBar } from './CheckoutBar';
+export { PaymentMethodSection } from './PaymentMethodSection';
+export type { PaymentMethod } from './PaymentMethodSection';
 export { FloatingCartPill } from './FloatingCartPill';
 export { EmptyCart } from './EmptyCart';
 export { Skeleton } from './Skeleton';
