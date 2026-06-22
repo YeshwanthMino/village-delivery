@@ -59,8 +59,10 @@ export const MapPickerScreen = () => {
   };
 
   const onUseCurrent = async () => {
-    const region = await vm.useCurrentLocation();
-    if (region && mapRef.current) mapRef.current.animateToRegion(region, 350);
+    // Recenter + serviceability are handled inside useCurrentLocation: setRegion
+    // drives the camera via the vm.region effect (settle suppressed) and resolve
+    // runs directly. No manual animate here, or it would double the camera move.
+    await vm.useCurrentLocation();
   };
 
   const initialRegion: Region = vm.region ?? DEFAULT_REGION;
@@ -80,13 +82,24 @@ export const MapPickerScreen = () => {
       {/* Fixed center pin overlay */}
       <MapPinMarker />
 
-      {/* Header */}
+      {/* Floating header controls — kept off an opaque bar so the map stays
+          edge-to-edge behind the status bar. */}
       <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0">
-        <View className="bg-white/95 flex-row items-center gap-3 px-4 py-3">
-          <TouchableOpacity onPress={goHome} hitSlop={8} className="w-9 h-9 -ml-1 rounded-full items-center justify-center">
-            <ArrowLeft size={24} color="#0f172a" />
+        <View className="flex-row items-center gap-3 px-4 py-3">
+          <TouchableOpacity
+            onPress={goHome}
+            hitSlop={8}
+            className="w-10 h-10 rounded-full bg-white items-center justify-center"
+            style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
+          >
+            <ArrowLeft size={22} color="#0f172a" />
           </TouchableOpacity>
-          <Text className="text-slate-900 font-bold text-lg">{t('location_information')}</Text>
+          <View
+            className="bg-white rounded-full px-4 py-2"
+            style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
+          >
+            <Text className="text-slate-900 font-bold text-base">{t('location_information')}</Text>
+          </View>
         </View>
       </SafeAreaView>
 

@@ -121,8 +121,11 @@ export function useMapPickerViewModel() {
     }
   }, [resolve, fallbackRegion]);
 
-  // "Use my current location" pill. Returns the GPS region so the screen can
-  // animate the camera to it; the resulting settle drives the resolve path.
+  // "Use my current location" pill. Mirrors initialDetect: it resolves
+  // serviceability DIRECTLY rather than relying on the camera settle — that
+  // settle never fires when the GPS fix equals the current center (no camera
+  // move) or when the map isn't emitting region events. Returns the region so
+  // the screen can recenter; the programmatic move's settle is suppressed.
   const useCurrentLocation = useCallback(async (): Promise<Region | null> => {
     setDetectingGps(true);
     try {
@@ -136,13 +139,16 @@ export function useMapPickerViewModel() {
       }
       const fix = await LocationService.getCurrentPosition();
       if (!mounted.current) return null;
-      return regionFor(fix);
+      const r = regionFor(fix);
+      setRegion(r);
+      void resolve(fix);
+      return r;
     } catch {
       return null;
     } finally {
       if (mounted.current) setDetectingGps(false);
     }
-  }, []);
+  }, [resolve]);
 
   // Re-run resolve for the current center (error-state Retry).
   const retry = useCallback(() => {
