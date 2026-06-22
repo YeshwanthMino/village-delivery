@@ -1,7 +1,17 @@
 # Cart Checkout CTA + Inline Payment — Design
 
-Date: 2026-06-22
-Status: Draft (pending user review)
+Date: 2026-06-22 (revised 2026-06-23)
+Status: Implemented
+
+> **2026-06-23 revision.** After review against the live Blinkit-style reference
+> the design changed in three ways: (a) the delivery address now lives **in the
+> sticky bottom bar** as a "Delivering to <tag> · Change" strip (the in-scroll
+> `DeliveryAddressCard` is removed); (b) payment is **no longer a gate** — Cash on
+> delivery is preselected by default so the bar is ready to place the order as
+> soon as an address exists, and the user switches method in the inline section
+> below the bill; (c) CTA labels carry **no trailing arrow**. The state machine
+> is therefore three states (`login` → `address` → `place`). Sections below are
+> updated to match.
 
 ## Problem
 
@@ -37,30 +47,33 @@ cleaner, selected-as-filled-card treatment.
 
 ### 1. Bottom-bar state machine (refactored `CheckoutBar`)
 
-The bar derives one of four states from three inputs: `isAuthenticated`,
-`hasAddress` (`selectedAddress != null`), and `paymentMethod`.
+The bar derives one of **three** states from two inputs: `isAuthenticated` and
+`hasAddress` (`selectedAddress != null`). Payment is not an input because a
+method is always preselected (see §2).
 
 | State | Condition | Bar contents | Tap action |
 |-------|-----------|--------------|------------|
-| 1 `login` | `!isAuthenticated` | Full-width green **"Login to proceed ›"** | Open `LoginBottomSheet` (`mode='auth'`). On success the bar re-evaluates to state 2 or 3. |
-| 2 `address` | authed, `!hasAddress` | Full-width green **"Select address to proceed ›"** | `router.push('/address/add')`. On return with a selected address → state 3. |
-| 3 `payment` | authed, `hasAddress`, `!paymentMethod` | Grey, non-tappable **"Select a payment method"** | none (the inline payment section above is where the user picks) |
-| 4 `place` | authed, `hasAddress`, `paymentMethod` | Green bar: left = `₹grandTotal` + `saving ₹savings`; right = **"Place order ›"** | Existing checkout flow (`handleCheckout` → `LoginBottomSheet` `'placing'`). |
+| `login` | `!isAuthenticated` | Full-width green **"Login to proceed"** | Open `LoginBottomSheet` (`mode='auth'`). On success the bar re-evaluates to `address` or `place`. |
+| `address` | authed, `!hasAddress` | Full-width green **"Select address to proceed"** | `router.push('/address/add')`. On return with a selected address → `place`. |
+| `place` | authed, `hasAddress` | Two-row card: **address strip** ("Delivering to <tag>" + one-line address + **"Change"**) above the **Place order** button (left = `₹grandTotal` + "TOTAL" label; right = **"Place order"**). | "Change" → address screen; button → checkout flow (`handleCheckout` → `LoginBottomSheet` `'placing'`). |
 
 The derivation is a **pure function** `deriveCheckoutState({ isAuthenticated,
-hasAddress, paymentMethod }) → 'login' | 'address' | 'payment' | 'place'`,
-extracted so it can be unit-tested without rendering. `CheckoutBar` becomes
-presentational: it receives the derived state (or the three inputs) plus the
-bill figures and the relevant callbacks (`onLogin`, `onSelectAddress`,
-`onPlaceOrder`), and renders the matching layout. The inline COD/UPI selector
-markup is **removed** from `CheckoutBar`.
+hasAddress }) → 'login' | 'address' | 'place'`, extracted so it can be
+unit-tested without rendering. `CheckoutBar` is presentational: it receives the
+derived `state`, `grandTotal`, the selected `addressTag` + one-line
+`addressLine`, and callbacks (`onLogin`, `onSelectAddress`, `onPlaceOrder`), and
+renders the matching layout. The address strip uses the lucide `Home` icon and
+the `delivering_to_<tag>` / `change` translation keys. CTA labels carry **no
+trailing arrow**.
 
 ### 2. Inline payment section (new `PaymentMethodSection`)
 
 A new presentational component rendered in the Cart scroll content **directly
-below `BillSummaryCard`**, shown only when `isAuthenticated && hasAddress`
-(states 3 and 4). Hidden otherwise so the earlier states match the reference
-(just the single full-width CTA).
+below `BillSummaryCard`**, shown only when `isAuthenticated && hasAddress` (the
+`place` state). Hidden otherwise so the gated states match the reference (just
+the single full-width CTA). **Cash on delivery is preselected** (`paymentMethod`
+defaults to `'cod'`), so this section is never an empty/required gate — it lets
+the user switch to UPI, and Place Order is always enabled.
 
 - Section header: "Payment method".
 - Two selectable rows, COD/UPI only:
@@ -76,43 +89,49 @@ below `BillSummaryCard`**, shown only when `isAuthenticated && hasAddress`
   - **Unselected** — empty grey-bordered radio, plain card.
 - Props: `selected: PaymentMethod`, `onSelect: (m) => void`.
 
-Selection state stays in `CartScreen` (reuse the existing `paymentMethod`
-`useState`). Picking a row sets it, moving the bar from state 3 → 4.
+Selection state stays in `CartScreen` — `paymentMethod` `useState` defaults to
+`'cod'`. Picking a row switches the method; it never returns the bar to a
+non-`place` state.
 
 ### 3. CartScreen wiring
 
-- Compute `hasAddress = addr.selectedAddress != null` (and the bar can also use
-  `addr.isAuthenticated`).
+- Compute `hasAddress = addr.selectedAddress != null` and a one-line
+  `addressLine` (`[addressLine1, villageName].filter(Boolean).join(', ')`).
 - Render `PaymentMethodSection` after `BillSummaryCard` guarded by
-  `addr.isAuthenticated && hasAddress`.
-- Pass the three inputs + callbacks to `CheckoutBar`:
-  - `onLogin` (state 1) → open a `LoginBottomSheet` with `mode='auth'` whose
+  `addr.isAuthenticated && hasAddress`. The in-scroll `DeliveryAddressCard` is
+  **removed** (address now lives in the bar).
+- Pass to `CheckoutBar`: `state`, `grandTotal`, `addressTag`
+  (`addr.selectedAddress?.tag`), `addressLine`, and callbacks:
+  - `onLogin` (`login` state) → open a `LoginBottomSheet` with `mode='auth'` whose
     `onComplete` simply closes the sheet. After auth, `isAuthenticated` flips and
-    the bar advances on its own to state 2 (or 3 if an address is already
-    selected) — no navigation needed. This is the **pure login** path; it does
-    **not** reuse the `'placing'`-step checkout sheet.
-  - `onSelectAddress` (state 2) → `handleAddressPress` (existing: authed → address
-    screen).
-  - `onPlaceOrder` (state 4) → `handleCheckout` (existing `'placing'` flow).
-- Note there are two distinct sheets: the **auth-mode** sheet used by the state-1
-  login CTA and the existing address auth gate, vs. the **placing** sheet used by
+    the bar advances on its own — no navigation needed. This is the **pure login**
+    path; it does **not** reuse the `'placing'`-step checkout sheet.
+  - `onSelectAddress` (`address` state button **and** the `place`-state "Change"
+    link) → `handleAddressPress` (authed → address screen; else the address auth
+    gate).
+  - `onPlaceOrder` (`place` state) → `handleCheckout` (existing `'placing'` flow).
+- Note there are two distinct sheets: the **auth-mode** sheet used by the login
+  CTA and the existing address auth gate, vs. the **placing** sheet used by
   "Place order". Keep them separate.
 
 ### 4. Components and responsibilities
 
-- `deriveCheckoutState` (pure helper, e.g. `src/features/cart/domain/`) — maps
-  the three inputs to a state string. Unit-tested.
+- `deriveCheckoutState` (pure helper, `src/features/cart/domain/`) — maps the two
+  inputs to `'login' | 'address' | 'place'`. Unit-tested.
 - `CheckoutBar` (refactored, presentational) — renders the bar for the derived
-  state; no payment selector, no internal business logic.
-- `PaymentMethodSection` (new, presentational) — the two-row COD/UPI selector
-  with the filled-selected-card treatment.
-- `CartScreen` — owns `paymentMethod`, derives `hasAddress`, composes the
-  section + bar, owns the sheets/navigation callbacks.
+  state, including the `place`-state address strip; no payment selector, no
+  internal business logic.
+- `PaymentMethodSection` (presentational) — the two-row COD/UPI selector with the
+  radio-selection treatment.
+- `CartScreen` — owns `paymentMethod` (default `'cod'`), derives `hasAddress` +
+  `addressLine`, composes the section + bar, owns the sheets/navigation
+  callbacks.
 
 ### 5. Error and loading handling
 
-- Address loading: `addr.loading` is already handled by `DeliveryAddressCard`;
-  the payment section simply does not render until `hasAddress` is true.
+- Address loading: the payment section and the `place`-state bar simply do not
+  render until `hasAddress` is true; while authed addresses load, the bar shows
+  "Select address to proceed".
 - Auth errors: handled inside `LoginBottomSheet` (existing).
 - No new network calls are introduced (payment is still a local selection feeding
   the existing placing flow).
@@ -120,14 +139,15 @@ Selection state stays in `CartScreen` (reuse the existing `paymentMethod`
 ### 6. Testing
 
 - Unit-test `deriveCheckoutState` across the truth table: unauth → `login`;
-  authed+noaddr → `address`; authed+addr+nopay → `payment`; authed+addr+pay →
-  `place`.
-- Manually verify the four transitions end-to-end:
-  1. Logged out cart → "Login to proceed" → auth → bar shows "Select address".
+  authed+noaddr → `address`; authed+addr → `place`.
+- Manually verify the transitions end-to-end:
+  1. Logged out cart → "Login to proceed" → auth → bar shows "Select address to
+     proceed".
   2. Authed, no address → "Select address to proceed" → add/select address →
-     payment section appears, bar shows "Select a payment method".
-  3. Pick COD or UPI → row fills green, bar shows "₹… Place order".
-  4. "Place order" → existing placing flow runs.
+     payment section appears (COD preselected); bar shows the address strip +
+     "₹… / TOTAL / Place order".
+  3. Switch COD ↔ UPI in the inline section (Place order stays enabled).
+  4. "Place order" → existing placing flow runs. "Change" → address screen.
 - Match the existing jest patterns used for the address-flow tests.
 
 ## Scope guardrails (YAGNI)
@@ -143,7 +163,8 @@ bottom-bar state machine + the inline COD/UPI selector and their wiring.
 A shopper opens the cart. If logged out, one green button says "Login to
 proceed"; tapping it authenticates in place. The button then reads "Select
 address to proceed"; tapping opens the address screen and returns with a chosen
-address. A "Payment method" section now appears below the bill summary with two
-rows — Cash on delivery and UPI — the picked one filling solid green. The bottom
-bar, grey until a method is chosen, turns green and reads "₹176 — Place order".
-Tapping it runs the existing order-placement flow.
+address. The bottom bar now shows a "Delivering to Home … Change" strip above a
+"₹176 / TOTAL / Place order" button, and a "Payment method" section appears
+below the bill summary with two radio rows — Cash on delivery (preselected) and
+UPI. Place Order is enabled throughout; tapping it runs the existing
+order-placement flow, and "Change" reopens the address screen.

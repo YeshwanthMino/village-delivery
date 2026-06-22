@@ -22,12 +22,13 @@ import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
-import { DeliveryAddressCard } from './components/DeliveryAddressCard';
 
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(null);
+  // Cash on delivery is preselected so Place Order is always available; the
+  // user can switch to UPI in the inline payment section below the bill.
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('cod');
   const [loginSheetVisible, setLoginSheetVisible] = React.useState(false);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -41,8 +42,10 @@ export const CartScreen = () => {
   const checkoutState = deriveCheckoutState({
     isAuthenticated: addr.isAuthenticated,
     hasAddress,
-    paymentMethod,
   });
+  const addressLine = addr.selectedAddress
+    ? [addr.selectedAddress.addressLine1, addr.selectedAddress.villageName].filter(Boolean).join(', ')
+    : undefined;
 
   const openAddressScreen = () => router.push('/address/add' as any);
   const handleAddressPress = () => {
@@ -132,9 +135,6 @@ export const CartScreen = () => {
             <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
           )}
 
-          {/* Delivery address */}
-          <DeliveryAddressCard address={addr.selectedAddress} loading={addr.loading} onPress={handleAddressPress} />
-
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">
             <ShieldCheck size={16} color="#22c55e" />
@@ -147,7 +147,8 @@ export const CartScreen = () => {
       <CheckoutBar
         state={checkoutState}
         grandTotal={vm.bill.grandTotal}
-        savings={vm.bill.totalSavings}
+        addressTag={addr.selectedAddress?.tag}
+        addressLine={addressLine}
         onLogin={() => setPureLoginVisible(true)}
         onSelectAddress={handleAddressPress}
         onPlaceOrder={handleCheckout}
