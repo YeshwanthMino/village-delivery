@@ -25,3 +25,23 @@ export async function saveNewAddress(
   deps.setSaved(fresh);
   return created;
 }
+
+export interface UpdateAddressDeps {
+  update: (id: string, input: CreateAddressInput) => Promise<Address>;
+  list: () => Promise<Address[]>;
+  setSelected: (address: Address) => void | Promise<void>;
+  setSaved: (addresses: Address[]) => void;
+}
+
+/** Update + select + refresh. Returns the updated address. */
+export async function updateExistingAddress(
+  id: string,
+  input: CreateAddressInput,
+  deps: UpdateAddressDeps,
+): Promise<Address> {
+  const updated = await deps.update(id, input);
+  await deps.setSelected(updated);
+  const fresh = await deps.list();
+  deps.setSaved(fresh);
+  return updated;
+}
