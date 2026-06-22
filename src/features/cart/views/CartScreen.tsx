@@ -10,11 +10,13 @@ import {
   CheckoutBar,
   DeliveryETACard,
   EmptyCart,
+  PaymentMethodSection,
   SavingsStrip,
   VariantBottomSheet,
 } from '@/src/shared/components';
+import type { PaymentMethod } from '@/src/shared/components';
+import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
-import { PaymentMethod } from '@/src/shared/components/CheckoutBar';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
@@ -33,6 +35,14 @@ export const CartScreen = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const addr = useCartAddressViewModel();
   const [addressLoginVisible, setAddressLoginVisible] = React.useState(false);
+  const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
+
+  const hasAddress = addr.selectedAddress != null;
+  const checkoutState = deriveCheckoutState({
+    isAuthenticated: addr.isAuthenticated,
+    hasAddress,
+    paymentMethod,
+  });
 
   const openAddressScreen = () => router.push('/address/add' as any);
   const handleAddressPress = () => {
@@ -117,6 +127,11 @@ export const CartScreen = () => {
           {/* Bill summary */}
           <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
 
+          {/* Payment method — only once authed and an address is selected */}
+          {addr.isAuthenticated && hasAddress && (
+            <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
+          )}
+
           {/* Delivery address */}
           <DeliveryAddressCard address={addr.selectedAddress} loading={addr.loading} onPress={handleAddressPress} />
 
@@ -130,11 +145,12 @@ export const CartScreen = () => {
 
       {/* Checkout bar */}
       <CheckoutBar
+        state={checkoutState}
         grandTotal={vm.bill.grandTotal}
         savings={vm.bill.totalSavings}
-        paymentMethod={paymentMethod}
-        onSelectPayment={setPaymentMethod}
-        onCheckout={handleCheckout}
+        onLogin={() => setPureLoginVisible(true)}
+        onSelectAddress={handleAddressPress}
+        onPlaceOrder={handleCheckout}
       />
 
       {/* Variant sheet */}
@@ -158,6 +174,15 @@ export const CartScreen = () => {
           setAddressLoginVisible(false);
           openAddressScreen();
         }}
+        mode="auth"
+      />
+
+      {/* Pure login from the bottom CTA (state 1). On success the bar advances
+          on its own because isAuthenticated flips — no navigation. */}
+      <LoginBottomSheet
+        visible={pureLoginVisible}
+        onClose={() => setPureLoginVisible(false)}
+        onComplete={() => setPureLoginVisible(false)}
         mode="auth"
       />
     </SafeAreaView>
