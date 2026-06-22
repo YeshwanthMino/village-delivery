@@ -223,6 +223,26 @@ export const TRANSLATIONS: TranslationMap = {
   detect_via_gps:         { te: 'GPS ద్వారా ఆటోమేటిక్‌గా గుర్తించండి', en: 'Detect via GPS automatically' },
   finding_location:       { te: 'మీ లొకేషన్ కనుగొంటోంది',          en: 'Finding your location' },
   getting_ready:          { te: 'షాపింగ్ కోసం సిద్ధం చేస్తోంది',    en: "We're getting you ready to shop" },
+
+  // Profile menu
+  profile_orders:         { te: 'నా ఆర్డర్లు',            en: 'Your orders' },
+  profile_address_book:   { te: 'చిరునామా పుస్తకం',       en: 'Address book' },
+  profile_share_app:      { te: 'యాప్‌ను షేర్ చేయండి',     en: 'Share the app' },
+  profile_about:          { te: 'మా గురించి',              en: 'About us' },
+  profile_version_label:  { te: 'వెర్షన్',                  en: 'Version' },
+  share_message:          { te: 'విలేజ్ డెలివరీ యాప్‌ను డౌన్‌లోడ్ చేసుకోండి: https://village.app', en: 'Check out Village Delivery — fresh groceries to your door: https://village.app' },
+
+  // About screen
+  about_title:            { te: 'మా గురించి',              en: 'About us' },
+  about_tagline:          { te: 'మీ ఊరికి తాజా డెలివరీ',    en: 'Fresh delivery to your village' },
+  about_body:             { te: 'విలేజ్ డెలివరీ మీ స్థానిక దుకాణాల నుండి తాజా కిరాణా సామాగ్రిని మీ ఇంటి వద్దకు వేగంగా, నమ్మకంగా చేరుస్తుంది.', en: 'Village Delivery brings fresh groceries from your local stores straight to your door, fast and reliably.' },
+  about_contact_label:    { te: 'మమ్మల్ని సంప్రదించండి',   en: 'Contact us' },
+
+  // Address edit / delete
+  edit_address:           { te: 'సవరించు',                 en: 'Edit' },
+  delete_address:         { te: 'తొలగించు',                en: 'Delete' },
+  delete_address_confirm: { te: 'ఈ చిరునామాను తొలగించాలా?', en: 'Delete this address?' },
+  edit_address_title:     { te: 'చిరునామా సవరించండి',       en: 'Edit address' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
