@@ -67,12 +67,13 @@ below `BillSummaryCard`**, shown only when `isAuthenticated && hasAddress`
   - **Cash on delivery** — lucide `Banknote` icon, subtitle "Pay when it
     arrives".
   - **UPI** — lucide `Smartphone` icon, subtitle "GPay, PhonePe, Paytm".
-- Each row: a rounded icon tile on the left, name + subtitle, and a trailing
-  status icon.
-- **Selected** row = filled **brand-green** (`#16a34a`) card, white text/icon,
-  lucide `Check` trailing.
-- **Unselected** row = plain white card with subtle shadow, slate text, lucide
-  `Circle` trailing.
+- Each row: a neutral rounded icon tile on the left, name + subtitle, and a
+  trailing **radio button**.
+- All rows are **plain white cards** with a subtle shadow (the card is never
+  filled). Selection is shown only by the radio:
+  - **Selected** — filled brand-green (`#16a34a`) radio with a white center dot,
+    plus a thin green ring (`box-shadow` outline) around the card.
+  - **Unselected** — empty grey-bordered radio, plain card.
 - Props: `selected: PaymentMethod`, `onSelect: (m) => void`.
 
 Selection state stays in `CartScreen` (reuse the existing `paymentMethod`
