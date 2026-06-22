@@ -5,12 +5,12 @@
 // address-details form fields and the save sequence.
 
 import { useCallback, useState } from 'react';
-import { useMapPickerViewModel } from './useMapPickerViewModel';
+import { useMapPickerViewModel, DEFAULT_REGION } from './useMapPickerViewModel';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
-import { createAddress, listAddresses, type CreateAddressInput } from '../data/locationApi';
-import { saveNewAddress } from '../data/saveNewAddress';
-import type { AddressTag } from '../domain/models';
+import { createAddress, listAddresses, updateAddress, type CreateAddressInput } from '../data/locationApi';
+import { saveNewAddress, updateExistingAddress } from '../data/saveNewAddress';
+import type { AddressTag, Address } from '../domain/models';
 
 export function useAddAddressViewModel() {
   const map = useMapPickerViewModel();
@@ -24,6 +24,7 @@ export function useAddAddressViewModel() {
   const [isDefault, setIsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const canSave =
     map.pinState === 'serviceable' &&
@@ -31,6 +32,32 @@ export function useAddAddressViewModel() {
     !!map.region &&
     addressLine1.trim().length > 0 &&
     !saving;
+
+  const beginEdit = useCallback((address: Address) => {
+    setEditingId(address.id);
+    setAddressLine1(address.addressLine1 ?? '');
+    setLandmark(address.landmark ?? '');
+    setTag(address.tag);
+    setIsDefault(address.isDefault);
+    setError(null);
+    if (address.latitude != null && address.longitude != null) {
+      map.onRegionSettled({
+        latitude: address.latitude,
+        longitude: address.longitude,
+        latitudeDelta: DEFAULT_REGION.latitudeDelta,
+        longitudeDelta: DEFAULT_REGION.longitudeDelta,
+      });
+    }
+  }, [map]);
+
+  const reset = useCallback(() => {
+    setEditingId(null);
+    setAddressLine1('');
+    setLandmark('');
+    setTag('home');
+    setIsDefault(false);
+    setError(null);
+  }, []);
 
   const save = useCallback(async (): Promise<boolean> => {
     if (map.pinState !== 'serviceable' || !map.village || !map.region) return false;
@@ -48,12 +75,21 @@ export function useAddAddressViewModel() {
       mobileNumber,
     };
     try {
-      await saveNewAddress(input, {
-        create: createAddress,
-        list: listAddresses,
-        setSelected: setSelectedAddress,
-        setSaved: setSavedAddresses,
-      });
+      if (editingId) {
+        await updateExistingAddress(editingId, input, {
+          update: updateAddress,
+          list: listAddresses,
+          setSelected: setSelectedAddress,
+          setSaved: setSavedAddresses,
+        });
+      } else {
+        await saveNewAddress(input, {
+          create: createAddress,
+          list: listAddresses,
+          setSelected: setSelectedAddress,
+          setSaved: setSavedAddresses,
+        });
+      }
       return true;
     } catch (e: any) {
       setError(e?.fullMessage || e?.message || 'Could not save address. Try again.');
@@ -61,7 +97,7 @@ export function useAddAddressViewModel() {
     } finally {
       setSaving(false);
     }
-  }, [map.pinState, map.village, map.region, addressLine1, landmark, tag, isDefault, mobileNumber, setSelectedAddress, setSavedAddresses]);
+  }, [map.pinState, map.village, map.region, addressLine1, landmark, tag, isDefault, mobileNumber, setSelectedAddress, setSavedAddresses, editingId]);
 
   return {
     map,
@@ -70,5 +106,6 @@ export function useAddAddressViewModel() {
     tag, setTag,
     isDefault, setIsDefault,
     saving, error, canSave, save,
+    editingId, beginEdit, reset,
   };
 }
