@@ -33,6 +33,13 @@ export const TRANSLATIONS: TranslationMap = {
   cod:              { te: 'నగదు చెల్లింపు', en: 'Cash on Delivery' },
   upi:              { te: 'UPI చెల్లింపు', en: 'UPI Payment' },
   proceed_checkout: { te: 'చెక్అవుట్ కు వెళ్ళండి →', en: 'PROCEED TO CHECKOUT →' },
+  login_to_proceed:        { te: 'కొనసాగడానికి లాగిన్ చేయండి →', en: 'Login to proceed →' },
+  select_address_to_proceed: { te: 'చిరునామా ఎంచుకోండి →', en: 'Select address to proceed →' },
+  select_payment_method:   { te: 'చెల్లింపు పద్ధతిని ఎంచుకోండి', en: 'Select a payment method' },
+  place_order:             { te: 'ఆర్డర్ చేయండి →', en: 'Place order →' },
+  choose_payment_method:   { te: 'మీకు నచ్చిన చెల్లింపు పద్ధతిని ఎంచుకోండి.', en: "Choose the payment method you'd like to use." },
+  cod_subtitle:            { te: 'వచ్చినప్పుడు చెల్లించండి', en: 'Pay when it arrives' },
+  upi_subtitle:            { te: 'GPay, PhonePe, Paytm', en: 'GPay, PhonePe, Paytm' },
   item_count:       { te: '{n} వస్తువు', en: '{n} item' },
   discount_badge:   { te: '{n}% తగ్గింపు', en: '{n}% OFF' },
   // Category names keyed by category id
