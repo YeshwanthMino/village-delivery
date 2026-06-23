@@ -69,11 +69,11 @@ trailing arrow**.
 ### 2. Inline payment section (new `PaymentMethodSection`)
 
 A new presentational component rendered in the Cart scroll content **directly
-below `BillSummaryCard`**, shown only when `isAuthenticated && hasAddress` (the
-`place` state). Hidden otherwise so the gated states match the reference (just
-the single full-width CTA). **Cash on delivery is preselected** (`paymentMethod`
-defaults to `'cod'`), so this section is never an empty/required gate — it lets
-the user switch to UPI, and Place Order is always enabled.
+below `BillSummaryCard`**, **always shown** (including when logged out, per the
+"payment always visible" requirement). **Cash on delivery is preselected**
+(`paymentMethod` defaults to `'cod'`), so this section is never an empty/required
+gate — it lets the user switch to UPI, and the bottom-bar CTA still follows the
+auth/address state machine independently.
 
 - Section header: "Payment method".
 - Two selectable rows, COD/UPI only:
@@ -97,9 +97,9 @@ non-`place` state.
 
 - Compute `hasAddress = addr.selectedAddress != null` and a one-line
   `addressLine` (`[addressLine1, villageName].filter(Boolean).join(', ')`).
-- Render `PaymentMethodSection` after `BillSummaryCard` guarded by
-  `addr.isAuthenticated && hasAddress`. The in-scroll `DeliveryAddressCard` is
-  **removed** (address now lives in the bar).
+- Render `PaymentMethodSection` after `BillSummaryCard`, **unguarded** (always
+  visible). The in-scroll `DeliveryAddressCard` is **removed** (address now lives
+  in the bar).
 - Pass to `CheckoutBar`: `state`, `grandTotal`, `addressTag`
   (`addr.selectedAddress?.tag`), `addressLine`, and callbacks:
   - `onLogin` (`login` state) → open a `LoginBottomSheet` with `mode='auth'` whose

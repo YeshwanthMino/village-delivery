@@ -130,10 +130,8 @@ export const CartScreen = () => {
           {/* Bill summary */}
           <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
 
-          {/* Payment method — only once authed and an address is selected */}
-          {addr.isAuthenticated && hasAddress && (
-            <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
-          )}
+          {/* Payment method — always shown (COD preselected) */}
+          <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
 
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">
