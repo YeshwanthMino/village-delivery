@@ -6,7 +6,7 @@ import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
 import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
-import { seedSelectedId } from '@/src/features/location/domain/addressSelection';
+import { reconcileSelectedId } from '@/src/features/location/domain/addressSelection';
 
 const RECENT_LIMIT = 5;
 
@@ -164,13 +164,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   setSavedAddresses: (addresses) => {
     const prev = get().selectedAddressId;
-    // Seeding only records which saved address is selected (a persistence hint
-    // for the cart). It deliberately does NOT switch the active serviceable
-    // village — that is hydrated/resolved separately.
-    const seeded = seedSelectedId(addresses, prev);
-    set({ savedAddresses: addresses, selectedAddressId: seeded });
-    if (seeded !== prev) {
-      void StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, seeded);
+    // Keep an existing explicit selection only while that address still exists;
+    // a stale id (e.g. the selected address was deleted) is cleared. We never
+    // auto-select the default — the cart shows an address only when the user
+    // explicitly picked one. This deliberately does NOT switch the active
+    // serviceable village — that is hydrated/resolved separately.
+    const reconciled = reconcileSelectedId(addresses, prev);
+    set({ savedAddresses: addresses, selectedAddressId: reconciled });
+    if (reconciled !== prev) {
+      void StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, reconciled);
     }
   },
 
