@@ -146,7 +146,6 @@ const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error,
       <View style={s.trustRow}>
         {[
           { icon: <ShieldCheck size={13} color="#94a3b8" />, label: 'Secure' },
-          { icon: <Truck size={13} color="#94a3b8" />, label: '12 min delivery' },
           { icon: <Lock size={13} color="#94a3b8" />, label: 'No spam' },
         ].map(({ icon, label }) => (
           <View key={label} style={s.trustItem}>
