@@ -6,7 +6,7 @@ import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
 import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
-import { reconcileSelectedId } from '@/src/features/location/domain/addressSelection';
+import { reconcileSelectedId, villageFromAddress } from '@/src/features/location/domain/addressSelection';
 
 const RECENT_LIMIT = 5;
 
@@ -245,14 +245,18 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   setSelectedAddress: async (address) => {
-    // Optimistically record the selection so the cart reflects it instantly;
-    // the following selectAddress() then re-confirms serviceability and switches
-    // the active store for addresses that carry coords.
+    // Record the selection so the cart reflects it instantly.
     set({ selectedAddressId: address.id });
     await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
-    // Switch the active store/serviceability to the address's location when it
-    // carries coords. No-op (id still set) when coords are absent.
-    await get().selectAddress(address);
+    // The address payload already carries its village + storeId, so switch the
+    // active store directly — no find-by-location round-trip. Fall back to the
+    // coords-based resolve only for legacy addresses without a storeId.
+    const village = villageFromAddress(address);
+    if (village) {
+      await get().setServiceable(village);
+    } else {
+      await get().selectAddress(address);
+    }
   },
 
   selectRecent: async (r) => {
