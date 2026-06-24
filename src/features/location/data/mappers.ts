@@ -49,26 +49,46 @@ export function labelToTag(label?: string): AddressTag {
 }
 
 /**
- * Map an address API object into the domain Address. The /app/address API uses
- * `label` (tag), a single `addressLine` string, and a nested `location`.
+ * Map an address API object into the domain Address. The /app/address API nests
+ * the village as an object under `villageId` (with `_id`, `title`, `storeId`,
+ * `defaultLocation`, `pincode`), and carries a top-level `storeId` plus a
+ * `location` object. Older/flat shapes (a `village` key, or string ids) still
+ * parse via fallbacks.
  */
 export function mapAddress(raw: any): Address {
   const node = raw?.data ?? raw;
-  const villageRaw = pick(node, ['village']);
-  const villageObj = villageRaw && typeof villageRaw === 'object' ? villageRaw : null;
-  const villageStr = typeof villageRaw === 'string' ? villageRaw : undefined;
+  const villageIdRaw = pick(node, ['villageId']);
+  const villageKeyRaw = pick(node, ['village']);
+  const villageObj =
+    villageIdRaw && typeof villageIdRaw === 'object'
+      ? villageIdRaw
+      : villageKeyRaw && typeof villageKeyRaw === 'object'
+        ? villageKeyRaw
+        : null;
+  const villageStr =
+    typeof villageIdRaw === 'string'
+      ? villageIdRaw
+      : typeof villageKeyRaw === 'string'
+        ? villageKeyRaw
+        : undefined;
   const loc = node?.location && typeof node.location === 'object' ? node.location : null;
+  const def =
+    villageObj?.defaultLocation && typeof villageObj.defaultLocation === 'object'
+      ? villageObj.defaultLocation
+      : null;
+  const storeId = pick(node, ['storeId']) ?? villageObj?.storeId;
   return {
     id: String(pick(node, ['_id', 'id']) ?? ''),
-    villageId: String(pick(node, ['villageId']) ?? villageObj?._id ?? villageStr ?? ''),
+    villageId: String(villageObj?._id ?? villageStr ?? ''),
     villageName: String(
-      pick(node, ['villageName']) ?? villageObj?.name ?? villageObj?.title ?? villageStr ?? pick(node, ['name']) ?? '',
+      villageObj?.title ?? villageObj?.name ?? pick(node, ['villageName']) ?? villageStr ?? pick(node, ['name']) ?? '',
     ),
+    storeId: storeId != null ? String(storeId) : undefined,
     addressLine1: String(pick(node, ['addressLine', 'addressLine1']) ?? ''),
     landmark: pick(node, ['landmark']),
-    pincode: pick(node, ['pincode']),
-    latitude: pick(node, ['latitude', 'lat']) ?? loc?.latitude,
-    longitude: pick(node, ['longitude', 'lng', 'long']) ?? loc?.longitude,
+    pincode: pick(node, ['pincode']) ?? villageObj?.pincode,
+    latitude: pick(node, ['latitude', 'lat']) ?? loc?.latitude ?? def?.latitude,
+    longitude: pick(node, ['longitude', 'lng', 'long']) ?? loc?.longitude ?? def?.longitude,
     tag: labelToTag(pick(node, ['label'])),
     isDefault: Boolean(pick(node, ['isDefault'])),
   };
