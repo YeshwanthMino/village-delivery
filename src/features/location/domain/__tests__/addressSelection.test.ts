@@ -3,6 +3,7 @@ import {
   findAddressById,
   deriveSelectedAddress,
   reconcileSelectedId,
+  villageFromAddress,
 } from '../addressSelection';
 import type { Address } from '../models';
 
@@ -49,5 +50,39 @@ describe('reconcileSelectedId', () => {
   });
   it('never seeds from isDefault', () => {
     expect(reconcileSelectedId([make('a', true), make('b', true)], null)).toBeNull();
+  });
+});
+
+const fullAddress: Address = {
+  id: 'a1',
+  villageId: 'v1',
+  villageName: 'Errepalli',
+  storeId: 'store1',
+  addressLine1: '1-127',
+  pincode: '123456',
+  latitude: 13.36,
+  longitude: 79.02,
+  tag: 'home',
+  isDefault: true,
+};
+
+describe('villageFromAddress', () => {
+  it('builds a Village carrying name, storeId, coords, pincode', () => {
+    expect(villageFromAddress(fullAddress)).toEqual({
+      id: 'v1',
+      name: 'Errepalli',
+      storeId: 'store1',
+      pincode: '123456',
+      latitude: 13.36,
+      longitude: 79.02,
+    });
+  });
+
+  it('returns null when the address has no storeId', () => {
+    expect(villageFromAddress({ ...fullAddress, storeId: undefined })).toBeNull();
+  });
+
+  it('falls back to storeId for the village id when villageId is empty', () => {
+    expect(villageFromAddress({ ...fullAddress, villageId: '' })?.id).toBe('store1');
   });
 });
