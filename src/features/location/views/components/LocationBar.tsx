@@ -13,10 +13,12 @@ interface Props {
   village: Village | null;
   detecting: boolean;
   deliveryEta?: string;
+  /** Full-address label to show instead of the village name (selected saved address). */
+  primaryLabel?: string | null;
   onPress: () => void;
 }
 
-export const LocationBar = ({ village, detecting, deliveryEta = '1 Hour', onPress }: Props) => {
+export const LocationBar = ({ village, detecting, deliveryEta = '1 Hour', primaryLabel, onPress }: Props) => {
   const { t } = useTranslation();
 
   return (
@@ -35,8 +37,8 @@ export const LocationBar = ({ village, detecting, deliveryEta = '1 Hour', onPres
         <View>
           <View className="flex-row items-center gap-1">
             <MapPin size={14} color="#16a34a" />
-            <Text className="text-slate-900 font-black text-base" numberOfLines={1} style={{ maxWidth: 200 }}>
-              {village?.name ?? t('select_delivery_location')}
+            <Text className="text-slate-900 font-black text-base" numberOfLines={1} style={{ maxWidth: 220 }}>
+              {primaryLabel || village?.name || t('select_delivery_location')}
             </Text>
             <ChevronDown size={15} color="#64748b" />
           </View>

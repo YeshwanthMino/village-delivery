@@ -55,3 +55,20 @@ export function villageFromAddress(address: Address): Village | null {
     longitude: address.longitude,
   };
 }
+
+/**
+ * The full-address label the Home toolbar should show for the selected address
+ * ("addressLine, village"). Returns null when there is no selection, no active
+ * village, or the selection belongs to a different store than the active village
+ * (e.g. the user later switched location via GPS/search without re-selecting an
+ * address) — in which case the toolbar falls back to the village name.
+ */
+export function selectedAddressLabel(
+  address: Address | null,
+  village: Village | null,
+): string | null {
+  if (!address || !village) return null;
+  if (address.storeId && village.storeId && address.storeId !== village.storeId) return null;
+  const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
+  return label || null;
+}

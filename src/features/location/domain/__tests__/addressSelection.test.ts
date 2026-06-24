@@ -4,7 +4,9 @@ import {
   deriveSelectedAddress,
   reconcileSelectedId,
   villageFromAddress,
+  selectedAddressLabel,
 } from '../addressSelection';
+import type { Village } from '../models';
 import type { Address } from '../models';
 
 const make = (id: string, isDefault = false): Address => ({
@@ -84,5 +86,27 @@ describe('villageFromAddress', () => {
 
   it('falls back to storeId for the village id when villageId is empty', () => {
     expect(villageFromAddress({ ...fullAddress, villageId: '' })?.id).toBe('store1');
+  });
+});
+
+describe('selectedAddressLabel', () => {
+  const village: Village = { id: 'v1', name: 'Errepalli', storeId: 'store1' };
+
+  it('joins address line and village name when the store matches', () => {
+    expect(selectedAddressLabel(fullAddress, village)).toBe('1-127, Errepalli');
+  });
+
+  it('returns null when the address store differs from the active village', () => {
+    expect(selectedAddressLabel({ ...fullAddress, storeId: 'other' }, village)).toBeNull();
+  });
+
+  it('returns null when there is no selected address or no village', () => {
+    expect(selectedAddressLabel(null, village)).toBeNull();
+    expect(selectedAddressLabel(fullAddress, null)).toBeNull();
+  });
+
+  it('shows the label when storeId correlation is unavailable', () => {
+    const noStoreVillage: Village = { id: 'v1', name: 'Errepalli' };
+    expect(selectedAddressLabel(fullAddress, noStoreVillage)).toBe('1-127, Errepalli');
   });
 });

@@ -1,5 +1,5 @@
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Bell, Mic, Search, ShoppingCart } from 'lucide-react-native';
+import { Bell, Search, ShoppingCart } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -13,6 +13,7 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { LocationBar } from '@/src/features/location/views/components/LocationBar';
+import { deriveSelectedAddress, selectedAddressLabel } from '@/src/features/location/domain/addressSelection';
 import { LocationPermissionSheet } from '@/src/features/location/views/LocationPermissionSheet';
 import { NotServiceableView } from '@/src/features/location/views/components/NotServiceableView';
 import { LocationService } from '@/src/features/location/data/LocationService';
@@ -25,6 +26,9 @@ export const HomeScreen = () => {
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
   const village = useLocationStore((s) => s.serviceableVillage);
+  const savedAddresses = useLocationStore((s) => s.savedAddresses);
+  const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
+  const selectedAddress = deriveSelectedAddress(savedAddresses, selectedAddressId);
   const status = useLocationStore((s) => s.status);
   const hydrated = useLocationStore((s) => s.hydrated);
   const layout = useHomeLayoutViewModel();
@@ -101,6 +105,7 @@ export const HomeScreen = () => {
           <LocationBar
             village={village}
             detecting={detecting}
+            primaryLabel={selectedAddressLabel(selectedAddress, village)}
             onPress={() => (village ? setChangeSheetOpen(true) : setPermSheetOpen(true))}
           />
           <View className="flex-row items-center gap-2">
@@ -121,7 +126,7 @@ export const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Search bar + mic */}
+        {/* Search bar */}
         <View className="flex-row items-center bg-slate-100 rounded-xl px-3 h-11 gap-2">
           <Search size={16} color="#94a3b8" />
           <TouchableOpacity activeOpacity={0.7} style={{ flex: 1 }} onPress={() => router.push('/search')}>
@@ -131,12 +136,6 @@ export const HomeScreen = () => {
             >
               {t('search_placeholder')}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="w-8 h-8 bg-green-600 rounded-xl items-center justify-center"
-            onPress={() => router.push('/search')}
-          >
-            <Mic size={15} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
