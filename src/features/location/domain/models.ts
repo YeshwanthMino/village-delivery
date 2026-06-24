@@ -29,6 +29,7 @@ export interface Address {
   id: string;
   villageId: string;
   villageName: string;
+  storeId?: string; // village's x-store-id, carried so selection can switch the active store without find-by-location
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
