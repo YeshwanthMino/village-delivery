@@ -63,13 +63,18 @@ const initialState: LocationState = {
 let inflight: Promise<boolean> | null = null;
 let seq = 0;
 
-/** Coords → serviceability. Drops its result if a newer detect/search started. */
+/**
+ * Coords → serviceability. Drops its result if a newer detect/search started.
+ * `addToRecents` defaults true (GPS detect / search); pass false when resolving
+ * a saved address, which must never pollute the recent-locations list.
+ */
 async function resolveCoords(
   set: SetState,
   get: GetState,
   coords: LatLng,
   label: string | undefined,
   token: number,
+  opts?: { addToRecents?: boolean },
 ): Promise<boolean> {
   set({ status: 'checking' });
   try {
@@ -78,7 +83,7 @@ async function resolveCoords(
     if (result.serviceable && result.village) {
       const v = result.village;
       await get().setServiceable(v);
-      if (v.storeId) {
+      if (v.storeId && opts?.addToRecents !== false) {
         await get().addRecent({
           storeId: v.storeId,
           villageName: v.name,
@@ -226,6 +231,18 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   selectAddress: async (address) => {
+    // The address payload already carries its village + storeId, so switch the
+    // active store directly — no find-by-location round-trip. Selecting a saved
+    // address never adds a recent location (recents are for ad-hoc GPS/search).
+    const village = villageFromAddress(address);
+    if (village) {
+      await get().setServiceable(village);
+      set({ selectedAddressId: address.id });
+      await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+      return true;
+    }
+    // Legacy fallback: an address without a storeId — resolve serviceability
+    // from its coords, but skip the recents write.
     if (address.latitude == null || address.longitude == null) return false;
     const token = ++seq;
     const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
@@ -236,6 +253,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       { latitude: address.latitude, longitude: address.longitude },
       label,
       token,
+      { addToRecents: false },
     );
     if (ok) {
       set({ selectedAddressId: address.id });
@@ -245,18 +263,12 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   setSelectedAddress: async (address) => {
-    // Record the selection so the cart reflects it instantly.
+    // Record the selection so the cart reflects it instantly, then switch the
+    // active store. selectAddress handles the store switch without find-by-
+    // location (when the address has a storeId) and never adds a recent.
     set({ selectedAddressId: address.id });
     await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
-    // The address payload already carries its village + storeId, so switch the
-    // active store directly — no find-by-location round-trip. Fall back to the
-    // coords-based resolve only for legacy addresses without a storeId.
-    const village = villageFromAddress(address);
-    if (village) {
-      await get().setServiceable(village);
-    } else {
-      await get().selectAddress(address);
-    }
+    await get().selectAddress(address);
   },
 
   selectRecent: async (r) => {
