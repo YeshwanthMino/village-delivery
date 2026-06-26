@@ -37,6 +37,7 @@ export default function RootLayout() {
               <Stack.Screen name="onboarding/language" />
               <Stack.Screen name="search" />
               <Stack.Screen name="category-details" />
+              <Stack.Screen name="product" />
               <Stack.Screen name="cart" />
               <Stack.Screen name="order-detail" />
               <Stack.Screen name="top-picks" />
