@@ -7,8 +7,10 @@ import {
   Lock,
   Pencil,
   Phone,
+  RotateCcw,
   ShieldCheck,
   Truck,
+  TriangleAlert,
   X,
 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
@@ -31,7 +33,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-type Step = 'phone' | 'otp' | 'signup' | 'placing' | 'success';
+type Step = 'phone' | 'otp' | 'signup' | 'placing' | 'placing_error' | 'success';
 
 const OTP_LEN = 6;
 
@@ -515,6 +517,35 @@ const SuccessStep = ({ phone, onDone, grandTotal, itemCount }: SuccessStepProps)
   );
 };
 
+// ─── Placing Error Step ───────────────────────────────────────────────────────
+
+interface PlacingErrorStepProps {
+  message: string;
+  onRetry: () => void;
+  onClose: () => void;
+}
+
+const PlacingErrorStep = ({ message, onRetry, onClose }: PlacingErrorStepProps) => (
+  <View style={s.centeredStep}>
+    <View style={s.errorCircleBg}>
+      <TriangleAlert size={34} color="#dc2626" strokeWidth={2.4} />
+    </View>
+    <Text style={s.centeredTitle}>Order not placed</Text>
+    <Text style={[s.centeredSubtitle, { textAlign: 'center', maxWidth: 260 }]}>{message}</Text>
+    <TouchableOpacity
+      onPress={onRetry}
+      style={[s.cta, s.ctaActive, { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 20 }]}
+      activeOpacity={0.85}
+    >
+      <RotateCcw size={18} color="#fff" strokeWidth={2.6} />
+      <Text style={[s.ctaText, s.ctaTextActive]}>Try again</Text>
+    </TouchableOpacity>
+    <TouchableOpacity onPress={onClose} style={{ paddingVertical: 12 }} activeOpacity={0.7}>
+      <Text style={{ color: '#64748b', fontWeight: '700', fontSize: 14 }}>Back to cart</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 // ─── LoginBottomSheet ─────────────────────────────────────────────────────────
 
 export interface LoginBottomSheetProps {
@@ -530,6 +561,12 @@ export interface LoginBottomSheetProps {
    * onComplete immediately without the order steps.
    */
   mode?: 'checkout' | 'auth';
+  /**
+   * Places the real order when the flow reaches the 'placing' step (checkout
+   * mode). Resolve advances to 'success'; reject surfaces a retryable error. If
+   * omitted, the placing step is a pure animation (legacy behaviour).
+   */
+  onPlaceOrder?: () => Promise<void>;
 }
 
 export const LoginBottomSheet = ({
@@ -540,8 +577,10 @@ export const LoginBottomSheet = ({
   itemCount = 0,
   grandTotal = 0,
   mode = 'checkout',
+  onPlaceOrder,
 }: LoginBottomSheetProps) => {
   const [step, setStep] = useState<Step>(initialStep);
+  const [placeError, setPlaceError] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
@@ -564,11 +603,30 @@ export const LoginBottomSheet = ({
       setPhoneError(null);
       setOtpError(null);
       setSignupError(null);
+      setPlaceError(null);
       if (initialStep === 'placing') {
-        setTimeout(() => setStep('success'), 1200);
+        goPlacing();
       }
     }
   }, [visible]);
+
+  // Runs the placing animation while the real order request is in flight. The
+  // animation has a floor (~1.2s) so it never flashes; on success it advances to
+  // 'success', on failure to a retryable error step. With no onPlaceOrder it
+  // degrades to the original pure-animation behaviour.
+  const goPlacing = async () => {
+    setPlaceError(null);
+    setStep('placing');
+    const floor = new Promise<void>((r) => setTimeout(r, 1200));
+    try {
+      await Promise.all([onPlaceOrder?.(), floor]);
+      setStep('success');
+    } catch (e) {
+      await floor;
+      setPlaceError(errText(e, 'Could not place your order. Try again.'));
+      setStep('placing_error');
+    }
+  };
 
   const handlePhoneSubmit = async () => {
     if (phone.length !== 10) return;
@@ -594,8 +652,7 @@ export const LoginBottomSheet = ({
         if (mode === 'auth') {
           onComplete();
         } else {
-          setStep('placing');
-          setTimeout(() => setStep('success'), 1200);
+          goPlacing();
         }
       } else {
         setStep('signup');
@@ -615,8 +672,7 @@ export const LoginBottomSheet = ({
       if (mode === 'auth') {
         onComplete();
       } else {
-        setStep('placing');
-        setTimeout(() => setStep('success'), 1200);
+        goPlacing();
       }
     } catch (e) {
       setSignupError(errText(e, 'Could not create account. Try again.'));
@@ -663,6 +719,13 @@ export const LoginBottomSheet = ({
         />
       )}
       {step === 'placing' && <PlacingStep />}
+      {step === 'placing_error' && (
+        <PlacingErrorStep
+          message={placeError ?? 'Could not place your order. Try again.'}
+          onRetry={goPlacing}
+          onClose={onClose}
+        />
+      )}
       {step === 'success' && (
         <SuccessStep
           phone={phone}
@@ -1005,6 +1068,16 @@ const s = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: '#16a34a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorCircleBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1.5,
+    borderColor: '#fecaca',
     alignItems: 'center',
     justifyContent: 'center',
   },
