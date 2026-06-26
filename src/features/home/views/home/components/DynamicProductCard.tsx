@@ -1,6 +1,7 @@
 // src/features/home/views/home/components/DynamicProductCard.tsx
 
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
@@ -18,6 +19,8 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
   const { locale } = useTranslation();
+  const router = useRouter();
+  const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } } as any);
 
   const count = cart[product.id] ?? 0;
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
@@ -39,7 +42,7 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
 
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width }}>
-      <View style={{ position: 'relative' }}>
+      <TouchableOpacity activeOpacity={0.9} onPress={openDetail} style={{ position: 'relative' }}>
         <Image
           source={{ uri: product.image }}
           style={{ width: '100%', aspectRatio: 1, backgroundColor: '#f8fafc' }}
@@ -56,16 +59,18 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
             <Text className="text-slate-700 font-bold text-xs">Out of stock</Text>
           </View>
         ) : null}
-      </View>
+      </TouchableOpacity>
 
       <View className="p-2.5">
-        <Text
-          className="text-slate-800 text-sm font-semibold"
-          numberOfLines={2}
-          style={[{ minHeight: 36 }, teFont]}
-        >
-          {displayTitle}
-        </Text>
+        <TouchableOpacity activeOpacity={0.9} onPress={openDetail}>
+          <Text
+            className="text-slate-800 text-sm font-semibold"
+            numberOfLines={2}
+            style={[{ minHeight: 36 }, teFont]}
+          >
+            {displayTitle}
+          </Text>
+        </TouchableOpacity>
 
         <View className="flex-row items-center mt-1.5">
           <Text className="text-slate-900 font-bold text-sm">₹{Math.round(product.price)}</Text>
