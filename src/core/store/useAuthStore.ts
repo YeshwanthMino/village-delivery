@@ -237,6 +237,14 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   };
 });
 
+// When a token refresh fails (refresh token expired/invalid), the base-layer
+// apiClient cannot import this store without a circular dependency, so it calls
+// back through this registered handler to perform a real logout (resets state to
+// signed-out; screens reading isAuthenticated re-render accordingly).
+apiClient.setOnSessionExpired(() => {
+  void useAuthStore.getState().logout();
+});
+
 // Selectors
 export const authSelectors = {
   selectIsAuthenticated: (state: AuthStore) => state.isAuthenticated,
