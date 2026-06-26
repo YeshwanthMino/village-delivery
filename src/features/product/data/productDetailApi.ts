@@ -4,6 +4,8 @@
 // mapProductDetail is a pure transform (unit-tested); getProductDetail wraps
 // it with the network call.
 
+import { apiClient } from '@/src/base/services/remote/apiClient';
+import { WebService } from '@/src/base/constants/AppConstants';
 import { mapProduct, isProductActive } from '@/src/features/home/data/homeLayoutMapper';
 import { ProductDetail } from './productDetail.types';
 
@@ -34,4 +36,12 @@ export function mapProductDetail(p: any): ProductDetail {
     categoryTitle: p?.categoryId?.title || undefined,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
   };
+}
+
+export async function getProductDetail(storeId: string, id: string): Promise<ProductDetail> {
+  const data = await apiClient.get<any>(
+    `${WebService.villageBaseURL}/app/product/${id}`,
+    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+  );
+  return mapProductDetail(data);
 }
