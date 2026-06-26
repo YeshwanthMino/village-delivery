@@ -6,7 +6,7 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { HomeProduct } from './homeLayout.types';
-import { mapProduct } from './homeLayoutMapper';
+import { mapProduct, isProductActive } from './homeLayoutMapper';
 
 export interface CategoryProductsResult {
   products: HomeProduct[];
@@ -26,7 +26,7 @@ export async function getCategoryProducts(
   );
 
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];
-  const products = rawProducts.map((p) => {
+  const products = rawProducts.filter(isProductActive).map((p) => {
     const mapped = mapProduct(p);
     // Payload omits `stock`; treat absent stock as in-stock.
     return p?.stock === undefined ? { ...mapped, inStock: true } : mapped;

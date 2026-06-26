@@ -22,6 +22,15 @@ function byId(arr: any[], id: string): any {
   return arr.find((x) => String(x?._id) === String(id));
 }
 
+/**
+ * Inactive products (`active: false`) are hidden everywhere — feed, search, and
+ * category listings — so they can never be added to the cart or ordered. A
+ * missing `active` flag is treated as active.
+ */
+export function isProductActive(p: any): boolean {
+  return p?.active !== false;
+}
+
 export function mapProduct(p: any): HomeProduct {
   const mrp = num(p?.mrp);
   const price = num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
@@ -83,7 +92,7 @@ function mapProductCarousel(pc: any): ProductCarouselSection {
     id: String(pc?._id ?? ''),
     title: String(pc?.title ?? ''),
     hideTitle: Boolean(pc?.hideTitle),
-    products: (Array.isArray(pc?.products) ? pc.products : []).map(mapProduct),
+    products: (Array.isArray(pc?.products) ? pc.products : []).filter(isProductActive).map(mapProduct),
   };
 }
 
