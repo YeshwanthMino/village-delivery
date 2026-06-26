@@ -157,6 +157,10 @@ class ApiClient {
       if (response.status === 401 && withAuth && !_retry) {
         try {
           const tokens = await this.refreshAccessToken();
+          // Deliberately NOT awaited: a failure of the *retried* request must
+          // propagate to the outer catch (network/5xx handling), not this
+          // refresh-failure catch — awaiting here would misclassify a retry
+          // error as an expired session and wrongly log the user out.
           return this.request<T>(url, {
             ...options,
             _retry: true,
