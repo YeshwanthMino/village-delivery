@@ -1,9 +1,10 @@
 import { AuthTokens } from './apiTypes';
-import { WebService, AppConfig, StorageKeys } from '../../constants/AppConstants';
+import { WebService, AppConfig, StorageKeys, AppAuthRoutes } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
 import { IS_WEB } from '@/src/core/utils/platform';
 import { ErrorMapper } from './errorMapper';
+import { StoredPrefs } from './storage/StoredPrefs';
 
 interface FetchOptions extends RequestInit {
   withAuth?: boolean;
@@ -87,9 +88,28 @@ class ApiClient {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      // The village API's nginx 403s any User-Agent lacking "Mozilla", which
+      // blocks native fetch (CFNetwork/okhttp). Keep the token until the server
+      // relaxes that filter.
+      'User-Agent': `Mozilla/5.0 ${AppConfig.name}/${AppConfig.version}`,
       'Village-App-Version': `${AppConfig.name} (v${AppConfig.version})`,
       ...this.platformHeaders,
     };
+  }
+
+  // The village API is multi-tenant: every authed endpoint needs the active
+  // store's `x-store-id` header. Inject it centrally from the persisted
+  // serviceable village so individual endpoints never have to remember — a
+  // missing header makes the server reply 401 "Store could not be resolved".
+  // Callers that target a *specific* store (login, catalog probes) still pass
+  // their own `x-store-id`, which overrides this one (merged later).
+  private async getStoreId(): Promise<string | null> {
+    try {
+      const village = await StoredPrefs.getCustomData<{ storeId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
+      return village?.storeId ?? null;
+    } catch {
+      return null;
+    }
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -110,9 +130,13 @@ class ApiClient {
     const { withAuth = true, _retry = false, ...fetchOptions } = options;
 
     const authHeaders = withAuth ? await this.getAuthHeaders() : {};
+    // Authed requests carry the active store's id by default; a per-call
+    // `x-store-id` (spread last) still wins for endpoints targeting another store.
+    const storeId = withAuth ? await this.getStoreId() : null;
     const headers: Record<string, string> = {
       ...this.getBaseHeaders(),
       ...authHeaders,
+      ...(storeId ? { 'x-store-id': storeId } : {}),
       ...(fetchOptions.headers as Record<string, string> ?? {}),
     };
 
@@ -183,17 +207,24 @@ class ApiClient {
 
     if (!refreshToken) throw ErrorMapper.createNetworkError('AUTHENTICATION', 'No refresh token available');
 
+    // The customer-app refresh endpoint takes the refresh token via header (not
+    // a body) and must NOT carry the expired access token. withAuth:false keeps
+    // the 401 interceptor from recursing into itself.
+    const storeId = await this.getStoreId();
+    const headers: Record<string, string> = { 'X-Refresh-Token': refreshToken };
+    if (storeId) headers['X-Store-Id'] = storeId;
+
     const response = await this.post<any>(
-      `${WebService.villageService}v1/refresh-token`,
-      { refreshToken },
-      { withAuth: false }
+      `${WebService.villageBaseURL}${AppAuthRoutes.refresh}`,
+      undefined,
+      { withAuth: false, headers },
     );
 
     const tokenData = response?.data ?? response;
     const tokens: AuthTokens = {
       accessToken: tokenData.accessToken,
       refreshToken: tokenData.refreshToken,
-      tokenType: tokenData.tokenType,
+      tokenType: tokenData.tokenType ?? 'Bearer',
       expiresIn: tokenData.expiresIn,
       userId: tokenData.userId,
     };
