@@ -28,7 +28,7 @@ interface LocationState {
 interface LocationActions {
   hydrate: () => Promise<void>;
   setStatus: (status: ServiceabilityStatus) => void;
-  setServiceable: (village: Village) => Promise<void>;
+  setServiceable: (village: Village, opts?: { keepSelectedAddress?: boolean }) => Promise<void>;
   setNotServiceable: () => void;
   setSavedAddresses: (addresses: Address[]) => void;
   setSelectedAddress: (address: Address) => Promise<void>;
@@ -160,8 +160,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   setStatus: (status) => set({ status }),
 
-  setServiceable: async (village) => {
+  setServiceable: async (village, opts) => {
     set({ serviceableVillage: village, status: 'serviceable' });
+    // Switching the active store from a non-address source (GPS, search, recent,
+    // map picker) deselects the saved delivery address, so the toolbar shows the
+    // new village name. selectAddress passes keepSelectedAddress to re-select.
+    if (!opts?.keepSelectedAddress) {
+      set({ selectedAddressId: null });
+      await StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID);
+    }
     await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
   },
 
@@ -236,7 +243,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     // address never adds a recent location (recents are for ad-hoc GPS/search).
     const village = villageFromAddress(address);
     if (village) {
-      await get().setServiceable(village);
+      await get().setServiceable(village, { keepSelectedAddress: true });
       set({ selectedAddressId: address.id });
       await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
       return true;
