@@ -129,6 +129,8 @@ export const TRANSLATIONS: TranslationMap = {
   sign_in_btn:         { te: 'సైన్ ఇన్',                                          en: 'Sign In' },
   profile_greeting:    { te: 'నమస్కారం',                                          en: 'Hello' },
   profile_logout_btn:  { te: 'సైన్ అవుట్',                                        en: 'Sign Out' },
+  logout_confirm_title:{ te: 'సైన్ అవుట్ చేయాలా?',                                en: 'Sign out?' },
+  logout_confirm_body: { te: 'ఆర్డర్లు ట్రాక్ చేయడానికి, చిరునామాలు నిర్వహించడానికి మళ్ళీ సైన్ ఇన్ చేయాలి.', en: "You'll need to sign in again to track orders and manage your addresses." },
 
   // Orders screen
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
@@ -179,7 +181,7 @@ export const TRANSLATIONS: TranslationMap = {
   not_serviceable_sub:    { te: 'మీ లొకేషన్‌కు 10 నిమిషాల డెలివరీ తీసుకురావడానికి మా బృందం కృషి చేస్తోంది', en: 'Our team is working tirelessly to bring 10 minute deliveries to your location' },
   use_another_pincode:    { te: 'వేరే పిన్‌కోడ్ వాడండి',             en: 'Use another pincode' },
   select_delivery_address:{ te: 'డెలివరీ చిరునామా ఎంచుకోండి',        en: 'Select delivery address' },
-  add_new_address:        { te: '+ కొత్త చిరునామా జోడించండి',        en: '+ Add New Address' },
+  add_new_address:        { te: 'కొత్త చిరునామా జోడించండి',        en: 'Add New Address' },
   deliver_here:           { te: 'ఇక్కడ డెలివరీ చేయండి',             en: 'Deliver Here' },
   no_saved_addresses:     { te: 'సేవ్ చేసిన చిరునామాలు లేవు',        en: 'No saved addresses' },
   tag_home:               { te: 'ఇల్లు',                            en: 'Home' },
@@ -250,6 +252,7 @@ export const TRANSLATIONS: TranslationMap = {
   edit_address:           { te: 'సవరించు',                 en: 'Edit' },
   delete_address:         { te: 'తొలగించు',                en: 'Delete' },
   delete_address_confirm: { te: 'ఈ చిరునామాను తొలగించాలా?', en: 'Delete this address?' },
+  delete_address_body:    { te: 'ఈ చిరునామా మీ సేవ్ చేసిన జాబితా నుండి శాశ్వతంగా తొలగించబడుతుంది.', en: 'This address will be permanently removed from your saved list.' },
   edit_address_title:     { te: 'చిరునామా సవరించండి',       en: 'Edit address' },
 };
 
