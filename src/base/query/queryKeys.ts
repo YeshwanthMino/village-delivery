@@ -4,6 +4,7 @@ export const queryKeys = {
     list: () => [...queryKeys.products.all, 'list'] as const,
     byCategory: (categoryId: string) => [...queryKeys.products.list(), { categoryId }] as const,
     search: (term: string) => [...queryKeys.products.list(), 'search', { term }] as const,
+    detail: (id: string) => [...queryKeys.products.list(), 'detail', { id }] as const,
   },
   categories: {
     all: ['categories'] as const,
