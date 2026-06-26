@@ -63,3 +63,43 @@ describe('apiClient 401 interceptor — refresh contract', () => {
     expect(init.body).toBeUndefined();
   });
 });
+
+describe('apiClient 401 interceptor — session expiry', () => {
+  it('retries successfully without firing onSessionExpired', async () => {
+    const { apiClient } = require('../apiClient');
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(jsonResponse(401))
+      .mockResolvedValueOnce(jsonResponse(200, { accessToken: 'new-access', refreshToken: 'refresh-2', tokenType: 'Bearer' }))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+    const onExpired = jest.fn();
+    apiClient.setOnSessionExpired(onExpired);
+
+    await apiClient.get('https://api.test/thing');
+
+    expect(onExpired).not.toHaveBeenCalled();
+    expect((global.fetch as jest.Mock)).toHaveBeenCalledTimes(3);
+  });
+
+  it('fires onSessionExpired when the refresh also fails', async () => {
+    const { apiClient } = require('../apiClient');
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(jsonResponse(401))   // original
+      .mockResolvedValueOnce(jsonResponse(401));  // refresh fails
+    const onExpired = jest.fn();
+    apiClient.setOnSessionExpired(onExpired);
+
+    await expect(apiClient.get('https://api.test/thing')).rejects.toBeDefined();
+    expect(onExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not attempt refresh for withAuth:false requests', async () => {
+    const { apiClient } = require('../apiClient');
+    (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(401));
+    const onExpired = jest.fn();
+    apiClient.setOnSessionExpired(onExpired);
+
+    await expect(apiClient.getWithoutAuth('https://api.test/public')).rejects.toBeDefined();
+    expect((global.fetch as jest.Mock)).toHaveBeenCalledTimes(1);
+    expect(onExpired).not.toHaveBeenCalled();
+  });
+});

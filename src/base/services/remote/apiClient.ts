@@ -13,6 +13,10 @@ interface FetchOptions extends RequestInit {
 
 class ApiClient {
   private refreshTokenPromise: Promise<AuthTokens> | null = null;
+  // Invoked when a refresh fails (refresh token expired/invalid). Registered by
+  // useAuthStore so the base layer can trigger a real logout without importing
+  // the store (which would create a circular dependency).
+  private onSessionExpired: (() => void) | null = null;
   private storageService: IStorageService | null = null;
   private storageInitPromise: Promise<IStorageService> | null = null;
   private platformService: IPlatformService | null = null;
@@ -162,7 +166,14 @@ class ApiClient {
             },
           });
         } catch {
-          await this.clearTokens();
+          // Refresh failed → the session is dead. Hand off to the registered
+          // logout (resets the auth store); fall back to wiping tokens if no
+          // handler is registered. Then reject the original call.
+          if (this.onSessionExpired) {
+            this.onSessionExpired();
+          } else {
+            await this.clearTokens();
+          }
           throw await ErrorMapper.mapFetchResponse(response);
         }
       }
@@ -252,6 +263,10 @@ class ApiClient {
       storage.removeItem(StorageKeys.TOKEN_TYPE),
       storage.removeItem(StorageKeys.USER_ID),
     ]);
+  }
+
+  setOnSessionExpired(cb: () => void): void {
+    this.onSessionExpired = cb;
   }
 
   async initializeUserId(): Promise<void> {
