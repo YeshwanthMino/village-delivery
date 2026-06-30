@@ -25,7 +25,7 @@ export const ProductCartBar = ({ count, inStock = true, onAdd, onDec, onViewCart
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <View className="bg-slate-100 rounded-2xl h-14 items-center justify-center">
-          <Text className="text-slate-400 font-extrabold text-base">Out of Stock</Text>
+          <Text className="text-slate-400 font-extrabold text-base">{t('out_of_stock')}</Text>
         </View>
       </View>
     );

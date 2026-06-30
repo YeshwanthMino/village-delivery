@@ -54,6 +54,7 @@ describe('mapHomeLayout category filtering', () => {
           menuItems: [
             { docId: 'c-a', title: 'Active Cat', active: true, imageUrl: 'a.png' },
             { docId: 'c-b', title: 'Inactive Cat', active: false, imageUrl: 'b.png' },
+            { docId: 'c-c', title: 'No Flag Cat', imageUrl: 'c.png' },
           ],
         },
       ],
@@ -61,7 +62,7 @@ describe('mapHomeLayout category filtering', () => {
     };
     const layout = mapHomeLayout(raw);
     const section = layout.sections.find((sec) => sec.kind === 'category') as any;
-    expect(section.items.map((i: any) => i.id)).toEqual(['c-a']);
+    expect(section.items.map((i: any) => i.id)).toEqual(['c-a', 'c-c']);
   });
 
   it('drops a whole category section when the menu is inactive', () => {

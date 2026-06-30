@@ -13,7 +13,7 @@ import { ProductCartBar } from './components/ProductCartBar';
 export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
   const insets = useSafeAreaInsets();
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
   const header = (
@@ -55,18 +55,19 @@ export const ProductDetailScreen = () => {
   }
 
   const d = vm.detail;
-  const displayTitle = locale === 'te' && d.teluguTitle ? d.teluguTitle : d.title;
 
   if (!d.active) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         {header}
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-slate-500 text-center">This product is no longer available.</Text>
+          <Text className="text-slate-500 text-center">{t('product_unavailable')}</Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  const displayTitle = locale === 'te' && d.teluguTitle ? d.teluguTitle : d.title;
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>

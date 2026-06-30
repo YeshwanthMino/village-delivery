@@ -18,7 +18,7 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
   const cart = useVillageStore((s) => s.cart);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } } as any);
 
@@ -56,7 +56,7 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
         ) : null}
         {!product.inStock ? (
           <View className="absolute inset-0 bg-white/60 items-center justify-center">
-            <Text className="text-slate-700 font-bold text-xs">Out of stock</Text>
+            <Text className="text-slate-700 font-bold text-xs">{t('out_of_stock')}</Text>
           </View>
         ) : null}
       </TouchableOpacity>

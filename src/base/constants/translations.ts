@@ -21,6 +21,8 @@ export const TRANSLATIONS: TranslationMap = {
   continue_btn:     { te: 'కొనసాగించు →', en: 'Continue →' },
   add_to_cart:      { te: 'కార్ట్‌లో చేర్చండి', en: 'Add to cart' },
   view_cart:        { te: 'కార్ట్ చూడండి',       en: 'View cart' },
+  out_of_stock:     { te: 'స్టాక్‌లో లేదు',       en: 'Out of Stock' },
+  product_unavailable: { te: 'ఈ ఉత్పత్తి ఇకపై అందుబాటులో లేదు', en: 'This product is no longer available' },
   nav_home:         { te: 'హోమ్', en: 'Home' },
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },
