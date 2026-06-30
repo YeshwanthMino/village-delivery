@@ -31,6 +31,15 @@ export function isProductActive(p: any): boolean {
   return p?.active !== false;
 }
 
+/**
+ * Inactive categories (`active: false`) are hidden everywhere — the home page,
+ * the Categories page, and the Category Details rail (all driven by the same
+ * page-layout). A missing `active` flag is treated as active.
+ */
+export function isCategoryActive(c: any): boolean {
+  return c?.active !== false;
+}
+
 export function mapProduct(p: any): HomeProduct {
   const mrp = num(p?.mrp);
   const price = num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
@@ -77,7 +86,7 @@ function mapCategory(m: any): CategorySection {
     id: String(m?._id ?? ''),
     title: String(m?.title ?? ''),
     hideTitle: Boolean(m?.hideTitle),
-    items: (Array.isArray(m?.menuItems) ? m.menuItems : []).map((it: any) => ({
+    items: (Array.isArray(m?.menuItems) ? m.menuItems : []).filter(isCategoryActive).map((it: any) => ({
       id: String(it?.docId ?? it?.uniqueId ?? ''),
       title: String(it?.title ?? ''),
       imageUrl: String(it?.imageUrl ?? ''),
@@ -111,7 +120,7 @@ export function mapHomeLayout(raw: any): HomeLayout {
       if (b) sections.push(mapBanner(b));
     } else if (c?.collection === 'FeaturedMenu') {
       const m = byId(menus, id);
-      if (m) sections.push(mapCategory(m));
+      if (m && isCategoryActive(m)) sections.push(mapCategory(m));
     } else if (c?.collection === 'ProductCarousel') {
       const pc = byId(carousels, id);
       if (pc) sections.push(mapProductCarousel(pc));
