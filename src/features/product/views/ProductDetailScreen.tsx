@@ -57,6 +57,17 @@ export const ProductDetailScreen = () => {
   const d = vm.detail;
   const displayTitle = locale === 'te' && d.teluguTitle ? d.teluguTitle : d.title;
 
+  if (!d.active) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
+        {header}
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-slate-500 text-center">This product is no longer available.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
       {header}
