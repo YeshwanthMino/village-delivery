@@ -108,7 +108,7 @@ export const ProductDetailScreen = () => {
         ) : null}
       </ScrollView>
 
-      <ProductCartBar count={vm.count} onAdd={vm.onAdd} onDec={vm.onDec} onViewCart={vm.onViewCart} />
+      <ProductCartBar count={vm.count} inStock={d.inStock} onAdd={vm.onAdd} onDec={vm.onDec} onViewCart={vm.onViewCart} />
     </SafeAreaView>
   );
 };

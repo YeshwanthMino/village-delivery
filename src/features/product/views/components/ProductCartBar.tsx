@@ -8,14 +8,28 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 
 interface Props {
   count: number;
+  inStock?: boolean;
   onAdd: () => void;
   onDec: () => void;
   onViewCart: () => void;
 }
 
-export const ProductCartBar = ({ count, onAdd, onDec, onViewCart }: Props) => {
+export const ProductCartBar = ({ count, inStock = true, onAdd, onDec, onViewCart }: Props) => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+
+  if (!inStock) {
+    return (
+      <View
+        className="bg-white border-t border-slate-100 px-4 pt-3"
+        style={{ paddingBottom: insets.bottom + 12 }}
+      >
+        <View className="bg-slate-100 rounded-2xl h-14 items-center justify-center">
+          <Text className="text-slate-400 font-extrabold text-base">Out of Stock</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
