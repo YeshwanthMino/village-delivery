@@ -33,6 +33,8 @@ export function mapProductDetail(p: any): ProductDetail {
     mrp,
     price,
     discountPct,
+    inStock: p?.stock === undefined ? true : num(p?.stock) > 0,
+    active: p?.active !== false,
     categoryTitle: p?.categoryId?.title || undefined,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
   };

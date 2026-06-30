@@ -63,4 +63,19 @@ describe('mapProductDetail', () => {
     const d = mapProductDetail({ ...RAW, mrp: 20, listPrice: 20, dealPrice: 20 });
     expect(d.discountPct).toBe(0);
   });
+
+  it('treats absent stock as in-stock and active by default', () => {
+    const d = mapProductDetail(RAW);
+    expect(d.inStock).toBe(true);
+    expect(d.active).toBe(true);
+  });
+
+  it('maps inStock from stock count', () => {
+    expect(mapProductDetail({ ...RAW, stock: 0 }).inStock).toBe(false);
+    expect(mapProductDetail({ ...RAW, stock: 3 }).inStock).toBe(true);
+  });
+
+  it('maps active:false to inactive', () => {
+    expect(mapProductDetail({ ...RAW, active: false }).active).toBe(false);
+  });
 });

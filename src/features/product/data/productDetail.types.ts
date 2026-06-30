@@ -16,6 +16,8 @@ export interface ProductDetail {
   mrp: number;
   price: number;          // dealPrice ?? listPrice ?? mrp
   discountPct: number;    // 0 when no discount
+  inStock: boolean;       // false when stock is 0; absent stock => true
+  active: boolean;        // p.active !== false (missing flag => active)
   categoryTitle?: string; // categoryId.title
   similarProducts: HomeProduct[];
 }
