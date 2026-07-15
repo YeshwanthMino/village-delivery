@@ -1,7 +1,7 @@
-import { ArrowLeft, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, AlertCircle, Loader, ShieldCheck, RotateCcw } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -21,7 +21,7 @@ import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
-import { useAuthStore } from '@/src/core/store/useAuthStore';
+import { useAuthStore, useCartStockStore } from '@/src/core/store';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { createOrder } from '../data/orderApi';
 
@@ -41,6 +41,29 @@ export const CartScreen = () => {
   const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
   const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
 
+  // Stock verification
+  const { stockStatus, isLoading: isVerifyingStock, error: stockError } = useCartStockStore(state => ({
+    stockStatus: state.stockStatus,
+    isLoading: state.isLoading,
+    error: state.error,
+  }));
+  const verifyCartStock = useCartStockStore(state => state.verifyCartStock);
+  const retryStockVerification = useCartStockStore(state => state.verifyCartStock);
+  const clearStockError = useCartStockStore(state => state.setError);
+
+  // Verify stock when cart items change
+  React.useEffect(() => {
+    if (vm.cartItems.length > 0) {
+      const itemsToCheck = vm.cartItems.map(item => ({
+        productId: item.productId,
+        quantity: item.count,
+      }));
+      void verifyCartStock(itemsToCheck).catch(error => {
+        console.warn('[CartScreen] Stock verification failed:', error);
+      });
+    }
+  }, [vm.cartItems.length]); // Re-check when cart items count changes
+
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
     isAuthenticated: addr.isAuthenticated,
@@ -57,6 +80,30 @@ export const CartScreen = () => {
   };
 
   const goToHome = () => router.push('/(dashboard)/home');
+
+  const handleOutOfStockPress = (productId: string) => {
+    const stock = stockStatus[productId];
+    if (stock && !stock.inStock) {
+      // Create a StockInfo object for the out-of-stock item
+      setStockConflictInfo([{
+        productId,
+        availableStock: stock.availableQuantity ?? 0,
+      }]);
+    }
+  };
+
+  const handleRetryStockVerification = () => {
+    clearStockError(null);
+    if (vm.cartItems.length > 0) {
+      const itemsToCheck = vm.cartItems.map(item => ({
+        productId: item.productId,
+        quantity: item.count,
+      }));
+      void retryStockVerification(itemsToCheck).catch(error => {
+        console.warn('[CartScreen] Stock verification retry failed:', error);
+      });
+    }
+  };
 
   const handleCheckout = () => {
     setLoginSheetVisible(true);
@@ -173,6 +220,35 @@ export const CartScreen = () => {
         overScrollMode="always"
       >
         <View className="px-4 py-3 gap-3">
+          {/* Stock verification error banner */}
+          {stockError && (
+            <View className="bg-red-50 border border-red-200 rounded-lg p-3 flex-row items-center gap-2">
+              <AlertCircle size={20} color="#dc2626" />
+              <View className="flex-1">
+                <Text className="text-red-700 font-semibold text-sm">{t('unable_to_verify_stock') || 'Unable to verify stock'}</Text>
+                <Text className="text-red-600 text-xs mt-1">{stockError}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleRetryStockVerification}
+                className="bg-red-600 px-3 py-1 rounded"
+              >
+                <Text className="text-white text-xs font-semibold flex-row items-center">
+                  {isVerifyingStock ? '...' : 'Retry'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Stock verification loading indicator */}
+          {isVerifyingStock && !stockError && (
+            <View className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex-row items-center gap-2">
+              <ActivityIndicator size="small" color="#2563eb" />
+              <Text className="text-blue-700 text-sm flex-1">
+                {t('verifying_stock') || 'Verifying stock availability...'}
+              </Text>
+            </View>
+          )}
+
           {/* Delivery ETA */}
           <DeliveryETACard />
 
@@ -186,7 +262,12 @@ export const CartScreen = () => {
             </Text>
             <View className="gap-2">
               {vm.cartItems.map(item => (
-                <CartItemRow key={item.key} item={item} />
+                <CartItemRow
+                  key={item.key}
+                  item={item}
+                  stockStatus={stockStatus[item.productId]}
+                  onOutOfStockPress={() => handleOutOfStockPress(item.productId)}
+                />
               ))}
             </View>
           </View>
