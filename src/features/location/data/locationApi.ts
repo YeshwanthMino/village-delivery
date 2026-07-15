@@ -84,17 +84,22 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
 }
 
 /**
- * Village-directory search. Public (no auth), like find-by-location — the app's
- * platform headers are attached centrally by apiClient. Used pre-serviceability
- * so a user can pick their village by name.
+ * Village-directory search. Token-free (no Bearer), like find-by-location — the
+ * app's platform headers are attached centrally by apiClient. Used pre-service-
+ * ability so a user can pick their village by name. When a serviceable village
+ * is already active, its `storeId` is forwarded as `x-store-id` (getWithoutAuth
+ * omits it otherwise, since unauthed requests don't inject the active store).
  */
 export async function searchVillages(
   query: string,
-  opts: { skip?: number; limit?: number } = {},
+  opts: { skip?: number; limit?: number; storeId?: string } = {},
 ): Promise<Village[]> {
-  const { skip = 0, limit = 24 } = opts;
+  const { skip = 0, limit = 24, storeId } = opts;
   const qs = `search=${encodeURIComponent(query)}&sort=_id%3Adesc&skip=${skip}&limit=${limit}`;
-  const data = await apiClient.getWithoutAuth<any>(`${BASE}/app/villages?${qs}`);
+  const data = await apiClient.getWithoutAuth<any>(
+    `${BASE}/app/villages?${qs}`,
+    storeId ? { headers: { 'x-store-id': storeId } } : undefined,
+  );
   return mapVillageList(data);
 }
 
