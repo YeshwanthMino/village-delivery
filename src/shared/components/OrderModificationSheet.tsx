@@ -46,7 +46,12 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   const [state, setState] = useState<'conflicts' | 'all-sorted'>('conflicts');
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      console.log('[OrderModificationSheet] Sheet closed or hidden');
+      return;
+    }
+
+    console.log('[OrderModificationSheet] Sheet opened with stockInfo:', stockInfo);
 
     // Build localQuantities based on stockInfo
     const quantities: Record<string, number> = {};
@@ -120,7 +125,14 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                   Some items in your cart are sold out or running low. Update your order to continue.
                 </Text>
               </View>
-              <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center ml-2" testID="close-button-conflicts">
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[OrderModificationSheet] Close button (X) pressed');
+                  onClose();
+                }}
+                className="w-8 h-8 items-center justify-center ml-2"
+                testID="close-button-conflicts"
+              >
                 <X size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
