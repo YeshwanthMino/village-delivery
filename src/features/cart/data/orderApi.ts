@@ -57,6 +57,17 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
   const resp = await apiClient.post<any>(`${BASE}/app/orders`, body);
   const data = resp?.data ?? resp;
+
+  // Check for stock conflict response (API returns stockInfo instead of success/error)
+  if (data?.stockInfo && Array.isArray(data.stockInfo) && data.stockInfo.length > 0) {
+    return {
+      orderId: null,
+      raw: resp,
+      stockInfo: data.stockInfo,
+    };
+  }
+
+  // Existing success path
   const orderId = data?._id ?? data?.id ?? data?.orderId ?? null;
   return { orderId: orderId != null ? String(orderId) : null, raw: resp };
 }
