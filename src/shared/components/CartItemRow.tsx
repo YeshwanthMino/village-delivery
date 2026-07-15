@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { AlertCircle } from 'lucide-react-native';
+import { AlertCircle, Trash2 } from 'lucide-react-native';
 import { CartLineItem } from '@/src/base/types/village.types';
 import { rupees } from '@/src/features/home/data/static/villageData';
 import { useVillageStore } from '@/src/core/store';
@@ -88,13 +88,22 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
 
       <View className="items-end gap-1 relative" style={{ width: 96 }}>
         {isOutOfStock ? (
-          <TouchableOpacity
-            onPress={onOutOfStockPress}
-            className="bg-red-100 rounded-lg px-2 py-1 flex-row items-center gap-1"
-          >
-            <AlertCircle size={14} color="#dc2626" />
-            <Text className="text-red-700 text-xs font-semibold">Out of stock</Text>
-          </TouchableOpacity>
+          <View className="gap-1 w-full">
+            <TouchableOpacity
+              onPress={onOutOfStockPress}
+              className="bg-red-100 rounded-lg px-2 py-1 flex-row items-center gap-1 justify-center"
+            >
+              <AlertCircle size={14} color="#dc2626" />
+              <Text className="text-red-700 text-xs font-semibold">Out of stock</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => decFromCart(item.key)}
+              className="bg-red-50 rounded-lg px-2 py-1 flex-row items-center justify-center border border-red-200"
+            >
+              <Trash2 size={12} color="#dc2626" />
+              <Text className="text-red-600 text-xs font-semibold ml-1">Remove</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
             <FullWidthStepper
