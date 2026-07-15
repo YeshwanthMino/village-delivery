@@ -1,22 +1,15 @@
 // src/features/location/data/locationApi.ts
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
-import { WebService, StorageKeys } from '@/src/base/constants/AppConstants';
-import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
-import { LatLng, ServiceabilityResult, Address, AddressTag } from '../domain/models';
-import { mapVillage, mapAddressList, mapAddress } from './mappers';
+import { WebService } from '@/src/base/constants/AppConstants';
+import { LatLng, ServiceabilityResult, Address, AddressTag, Village } from '../domain/models';
+import { mapVillage, mapVillageList, mapAddressList, mapAddress } from './mappers';
 
 const BASE = WebService.villageBaseURL;
 
-/**
- * The village API is multi-tenant: authed endpoints need the active store's
- * `x-store-id` header (same requirement as the AppAuth endpoints). Read it from
- * the persisted serviceable village. Returns undefined when none is set.
- */
-async function storeOpts(): Promise<{ headers: Record<string, string> } | undefined> {
-  const village = await StoredPrefs.getCustomData<{ storeId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
-  return village?.storeId ? { headers: { 'x-store-id': village.storeId } } : undefined;
-}
+// The village API is multi-tenant: authed endpoints need the active store's
+// `x-store-id` header. apiClient injects it centrally from the persisted
+// serviceable village, so these endpoints no longer pass it themselves.
 
 export interface CreateAddressInput {
   villageId: string;
@@ -34,7 +27,7 @@ function tagToLabel(tag: AddressTag): string {
 }
 
 /**
- * The /app/address API wants a single `addressLine`, a `label` (tag), the
+ * The /app/addresses API wants a single `addressLine`, a `label` (tag), the
  * customer's `mobileNumber`, and a nested `location`.
  */
 function toDto(input: CreateAddressInput) {
@@ -90,21 +83,36 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
   }
 }
 
+/**
+ * Village-directory search. Public (no auth), like find-by-location — the app's
+ * platform headers are attached centrally by apiClient. Used pre-serviceability
+ * so a user can pick their village by name.
+ */
+export async function searchVillages(
+  query: string,
+  opts: { skip?: number; limit?: number } = {},
+): Promise<Village[]> {
+  const { skip = 0, limit = 24 } = opts;
+  const qs = `search=${encodeURIComponent(query)}&sort=_id%3Adesc&skip=${skip}&limit=${limit}`;
+  const data = await apiClient.getWithoutAuth<any>(`${BASE}/app/villages?${qs}`);
+  return mapVillageList(data);
+}
+
 export async function listAddresses(): Promise<Address[]> {
-  const data = await apiClient.get<any>(`${BASE}/app/address`, await storeOpts());
+  const data = await apiClient.get<any>(`${BASE}/app/addresses`);
   return mapAddressList(data);
 }
 
 export async function createAddress(input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.post<any>(`${BASE}/app/address`, toDto(input), await storeOpts());
+  const data = await apiClient.post<any>(`${BASE}/app/addresses`, toDto(input));
   return mapAddress(data);
 }
 
 export async function updateAddress(id: string, input: CreateAddressInput): Promise<Address> {
-  const data = await apiClient.patch<any>(`${BASE}/app/address/${id}`, toDto(input), await storeOpts());
+  const data = await apiClient.patch<any>(`${BASE}/app/addresses/${id}`, toDto(input));
   return mapAddress(data);
 }
 
 export async function deleteAddress(id: string): Promise<void> {
-  await apiClient.delete(`${BASE}/app/address/${id}`, await storeOpts());
+  await apiClient.delete(`${BASE}/app/addresses/${id}`);
 }
