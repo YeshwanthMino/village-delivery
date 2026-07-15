@@ -12,9 +12,10 @@ import {
   EmptyCart,
   PaymentMethodSection,
   SavingsStrip,
+  StockConflictDialog,
   VariantBottomSheet,
 } from '@/src/shared/components';
-import type { PaymentMethod } from '@/src/shared/components';
+import type { PaymentMethod, StockConflict } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
@@ -22,6 +23,7 @@ import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
+import { createOrder } from '../data/orderApi';
 
 export const CartScreen = () => {
   const router = useRouter();
@@ -37,6 +39,8 @@ export const CartScreen = () => {
   const addr = useCartAddressViewModel();
   const [addressLoginVisible, setAddressLoginVisible] = React.useState(false);
   const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
+  const [stockConflictInfo, setStockConflictInfo] = React.useState<StockConflict[] | null>(null);
+  const [stockConflictLoading, setStockConflictLoading] = React.useState(false);
 
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
@@ -57,6 +61,74 @@ export const CartScreen = () => {
 
   const handleCheckout = () => {
     setLoginSheetVisible(true);
+  };
+
+  // Places the real order once the checkout sheet reaches its 'placing' step.
+  // Rejecting here surfaces the retryable error inside the sheet and keeps the
+  // cart intact (clearing only happens on the success → onComplete path).
+  const handlePlaceOrder = async () => {
+    const addressId = addr.selectedAddress?.id;
+    if (!addressId) throw new Error('Select a delivery address first.');
+
+    const result = await createOrder({
+      products: vm.cartItems.map(item => ({
+        productId: item.productId,
+        quantity: item.count,
+      })),
+      address: addressId,
+      paymentMethod: paymentMethod ?? 'cod',
+      isPriority: false,
+    });
+
+    // Check for stock conflicts before treating as success
+    if (result.stockInfo && result.stockInfo.length > 0) {
+      setStockConflictInfo(result.stockInfo);
+      return;
+    }
+
+    // Existing success path
+    if (result.orderId) {
+      vm.clearCart();
+      router.replace('/(dashboard)/orders');
+    }
+  };
+
+  const handleUpdateCart = async () => {
+    if (!stockConflictInfo) return;
+
+    setStockConflictLoading(true);
+    try {
+      // Apply changes to cart store
+      for (const conflict of stockConflictInfo) {
+        const cartItem = vm.cartItems.find(i => i.productId === conflict.productId);
+        if (!cartItem) continue;
+
+        if (conflict.availableStock === 0) {
+          // Remove: decrement until quantity is 0
+          for (let i = 0; i < cartItem.count; i++) {
+            vm.decFromCart(conflict.productId);
+          }
+        } else if (conflict.availableStock < cartItem.count) {
+          // Reduce: decrement to available stock
+          const diff = cartItem.count - conflict.availableStock;
+          for (let i = 0; i < diff; i++) {
+            vm.decFromCart(conflict.productId);
+          }
+        }
+      }
+
+      // Clear conflict state before retry
+      setStockConflictInfo(null);
+
+      // Retry checkout
+      await handlePlaceOrder();
+    } finally {
+      setStockConflictLoading(false);
+    }
+  };
+
+  const handleCancelStockConflict = () => {
+    setStockConflictInfo(null);
   };
 
   const handleLoginComplete = () => {
@@ -155,6 +227,20 @@ export const CartScreen = () => {
       {/* Variant sheet */}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
 
+      {/* Stock conflict dialog */}
+      <StockConflictDialog
+        visible={stockConflictInfo !== null}
+        stockInfo={stockConflictInfo ?? []}
+        cartItems={vm.cartItems.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          image: item.imageUrl,
+          count: item.count,
+        }))}
+        onUpdateCart={handleUpdateCart}
+        onCancel={handleCancelStockConflict}
+      />
+
       {/* Deferred login / checkout sheet */}
       <LoginBottomSheet
         visible={loginSheetVisible}
@@ -163,6 +249,7 @@ export const CartScreen = () => {
         initialStep={isAuthenticated ? 'placing' : 'phone'}
         itemCount={vm.bill.totalCount}
         grandTotal={Math.round(vm.bill.grandTotal)}
+        onPlaceOrder={handlePlaceOrder}
       />
 
       {/* Auth gate for the address flow */}
