@@ -22,6 +22,7 @@ export function useLocationViewModel() {
   const searchLocation = useLocationStore((s) => s.searchLocation);
   const selectAddress = useLocationStore((s) => s.selectAddress);
   const selectRecent = useLocationStore((s) => s.selectRecent);
+  const selectVillage = useLocationStore((s) => s.selectVillage);
 
   // Local-only flag so the user can dismiss the "blocked → Settings" sheet
   // without changing the underlying OS permission.
@@ -51,6 +52,7 @@ export function useLocationViewModel() {
     searchLocation,
     selectAddress,
     selectRecent,
+    selectVillage,
     openSettings,
     dismissBlocked,
     retry,
