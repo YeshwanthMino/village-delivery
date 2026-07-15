@@ -6,6 +6,7 @@ import {
   View,
   Image,
 } from 'react-native';
+import { X } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { VillageBottomSheet } from './VillageBottomSheet';
 
@@ -68,19 +69,30 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
     <VillageBottomSheet visible={visible} onClose={onCancel}>
       <View className="pb-6">
         {/* Header */}
-        <View className="px-4 py-4 border-b border-slate-200">
-          <Text className="text-slate-900 font-bold text-lg">
-            {t('stock_conflict_title')}
-          </Text>
-          <Text className="text-slate-500 text-sm mt-1">
-            {t('stock_conflict_subtitle')}
-          </Text>
+        <View className="px-4 py-5 flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="text-slate-900 font-black text-xl">
+              {t('stock_conflict_title')}
+            </Text>
+            <Text className="text-slate-500 text-sm mt-2">
+              {t('stock_conflict_subtitle')}
+            </Text>
+          </View>
+          <Pressable
+            onPress={onCancel}
+            className="w-8 h-8 items-center justify-center ml-2"
+          >
+            <X size={24} color="#64748b" strokeWidth={2} />
+          </Pressable>
         </View>
+
+        {/* Divider */}
+        <View className="h-px bg-slate-100 my-2" />
 
         {/* Body */}
         {state === 'showing' && (
-          <View className="px-4 py-4">
-            {stockInfo.map((conflict) => {
+          <View className="px-4 py-4 gap-3">
+            {stockInfo.map((conflict, idx) => {
               const cartItem = cartItems.find(
                 (item) => item.productId === conflict.productId
               );
@@ -96,49 +108,54 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
               const badgeColor = isRemoval ? '#dc2626' : '#eab308';
 
               return (
-                <View
-                  key={conflict.productId}
-                  className="flex-row gap-3 mb-4 pb-4 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0"
-                >
-                  {/* Product thumbnail */}
-                  <View className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100">
-                    {cartItem.image ? (
-                      <Image
-                        source={{ uri: cartItem.image }}
-                        className="w-full h-full"
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View className="w-full h-full items-center justify-center bg-slate-100">
-                        <Text className="text-2xl">📦</Text>
-                      </View>
-                    )}
-                  </View>
+                <View key={conflict.productId}>
+                  <View className="flex-row gap-3 pb-4">
+                    {/* Product thumbnail */}
+                    <View className="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                      {cartItem.image ? (
+                        <Image
+                          source={{ uri: cartItem.image }}
+                          className="w-full h-full"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-full h-full items-center justify-center bg-slate-100">
+                          <Text className="text-2xl">📦</Text>
+                        </View>
+                      )}
+                    </View>
 
-                  {/* Product info */}
-                  <View className="flex-1">
-                    <Text
-                      className="text-slate-900 font-semibold text-sm"
-                      numberOfLines={2}
-                    >
-                      {cartItem.name}
-                    </Text>
-                    <View className="flex-row items-center gap-2 mt-2">
-                      <View
-                        style={{ backgroundColor: badgeColor }}
-                        className="px-2.5 py-1 rounded-full"
+                    {/* Product info */}
+                    <View className="flex-1">
+                      <Text
+                        className="text-slate-900 font-bold text-base"
+                        numberOfLines={1}
                       >
-                        <Text className="text-xs font-bold text-slate-900">
-                          {badgeText}
-                        </Text>
+                        {cartItem.name}
+                      </Text>
+                      <Text
+                        className="text-slate-500 text-sm mt-1"
+                        numberOfLines={1}
+                      >
+                        {t('stock_conflict_quantity_change')
+                          .replace('{current}', String(cartItem.count))
+                          .replace('{available}', String(conflict.availableStock))}
+                      </Text>
+                      <View className="flex-row items-center gap-2 mt-2">
+                        <View
+                          style={{ backgroundColor: badgeColor }}
+                          className="px-3 py-1 rounded-full"
+                        >
+                          <Text className="text-xs font-bold text-white">
+                            {badgeText}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                    <Text className="text-slate-400 text-xs mt-1">
-                      {t('stock_conflict_quantity_change')
-                        .replace('{current}', String(cartItem.count))
-                        .replace('{available}', String(conflict.availableStock))}
-                    </Text>
                   </View>
+                  {idx < stockInfo.length - 1 && (
+                    <View className="h-px bg-slate-100" />
+                  )}
                 </View>
               );
             })}
@@ -165,34 +182,34 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
 
         {state === 'error' && (
           <View className="px-4 py-8 items-center justify-center">
-            <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-3">
+            <View className="w-14 h-14 rounded-full bg-red-100 items-center justify-center mb-4">
               <Text className="text-2xl">⚠️</Text>
             </View>
-            <Text className="text-slate-900 font-semibold text-center">
+            <Text className="text-slate-900 font-semibold text-base text-center">
               {errorMessage}
             </Text>
           </View>
         )}
 
         {/* Footer with buttons */}
-        <View className="px-4 py-4 border-t border-slate-100 flex-row gap-3">
+        <View className="px-4 py-4 gap-3 border-t border-slate-100">
           {state === 'showing' && (
             <>
               <Pressable
                 onPress={onCancel}
-                className="flex-1 py-3 rounded-lg border border-slate-200 items-center"
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                className="py-4 rounded-2xl border border-slate-300 items-center active:bg-slate-50"
+                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
               >
-                <Text className="text-slate-600 font-semibold text-sm">
+                <Text className="text-slate-900 font-bold text-base">
                   {t('stock_conflict_cancel_button')}
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleUpdateCart}
-                className="flex-1 py-3 rounded-lg bg-green-600 items-center"
-                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                className="py-4 rounded-2xl bg-green-600 items-center active:bg-green-700"
+                style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
               >
-                <Text className="text-white font-semibold text-sm">
+                <Text className="text-white font-bold text-base">
                   {t('stock_conflict_update_button')}
                 </Text>
               </Pressable>
@@ -203,19 +220,19 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
             <>
               <Pressable
                 onPress={handleBackToCart}
-                className="flex-1 py-3 rounded-lg border border-slate-200 items-center"
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                className="py-4 rounded-2xl border border-slate-300 items-center active:bg-slate-50"
+                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
               >
-                <Text className="text-slate-600 font-semibold text-sm">
+                <Text className="text-slate-900 font-bold text-base">
                   {t('stock_conflict_back_to_cart')}
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleRetry}
-                className="flex-1 py-3 rounded-lg bg-green-600 items-center"
-                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                className="py-4 rounded-2xl bg-green-600 items-center active:bg-green-700"
+                style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
               >
-                <Text className="text-white font-semibold text-sm">
+                <Text className="text-white font-bold text-base">
                   {t('stock_conflict_try_again')}
                 </Text>
               </Pressable>
