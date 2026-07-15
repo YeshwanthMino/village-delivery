@@ -71,10 +71,8 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   }, [visible, stockInfo, cartItems]);
 
   const calculateSubtotal = () => {
-    return stockInfo.reduce((sum, conflict) => {
-      const cartItem = cartItems.find(i => i.productId === conflict.productId);
-      if (!cartItem) return sum;
-      const quantity = localQuantities[conflict.productId] ?? 0;
+    return cartItems.reduce((sum, cartItem) => {
+      const quantity = localQuantities[cartItem.productId] ?? cartItem.count;
       return sum + cartItem.price * quantity;
     }, 0);
   };
@@ -151,11 +149,15 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                           <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
                         ) : (
                           isOutOfStock ? (
-                            <Text className="text-red-600 text-xs font-semibold mt-0.5">Out of stock</Text>
+                            <View className="bg-red-50 px-2 py-1 rounded-full self-start mt-0.5">
+                              <Text className="text-red-600 text-xs font-semibold">Out of stock</Text>
+                            </View>
                           ) : (
-                            <Text className="text-orange-600 text-xs font-semibold mt-0.5">
-                              Only {conflict.availableStock} left
-                            </Text>
+                            <View className="bg-amber-50 px-2 py-1 rounded-full self-start mt-0.5">
+                              <Text className="text-amber-600 text-xs font-semibold">
+                                Only {conflict.availableStock} left
+                              </Text>
+                            </View>
                           )
                         )}
                       </View>
@@ -165,11 +167,15 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                     {/* Only show stock status here if weight was already shown */}
                     {cartItem.weight && (
                       isOutOfStock ? (
-                        <Text className="text-red-600 text-sm font-semibold mb-2">Out of stock</Text>
+                        <View className="bg-red-50 px-3 py-2 rounded-full self-start mb-2">
+                          <Text className="text-red-600 text-sm font-semibold">Out of stock</Text>
+                        </View>
                       ) : (
-                        <Text className="text-orange-600 text-sm font-semibold mb-2">
-                          Only {conflict.availableStock} left
-                        </Text>
+                        <View className="bg-amber-50 px-3 py-2 rounded-full self-start mb-2">
+                          <Text className="text-amber-600 text-sm font-semibold">
+                            Only {conflict.availableStock} left
+                          </Text>
+                        </View>
                       )
                     )}
 
@@ -306,7 +312,9 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
 
                     {/* Updated badge and quantity */}
                     <View className="flex-row items-center gap-2 mb-2">
-                      <Text className="text-green-600 text-sm font-semibold">Updated ✓</Text>
+                      <View className="bg-green-50 px-3 py-2 rounded-full">
+                        <Text className="text-green-600 text-sm font-semibold">Updated ✓</Text>
+                      </View>
                     </View>
 
                     <View className="flex-row items-center justify-between">
