@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
 import { CompactStepper } from './CompactStepper';
+import { rupees } from '@/src/features/home/data/static/villageData';
 
 export interface StockInfo {
   productId: string;
@@ -68,16 +69,6 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
     setRetryError(null);
     setState('conflicts');
   }, [visible, stockInfo, cartItems]);
-
-  const getStockStatus = (productId: string) => {
-    const conflict = stockInfo.find(s => s.productId === productId);
-    if (!conflict) return null;
-
-    return {
-      isOutOfStock: conflict.availableStock === 0,
-      availableCount: conflict.availableStock,
-    };
-  };
 
   const calculateSubtotal = () => {
     return stockInfo.reduce((sum, conflict) => {
@@ -148,7 +139,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                         <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
                         <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
                       </View>
-                      <Text className="text-slate-900 font-bold text-sm">₹{cartItem.price}</Text>
+                      <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
                     </View>
 
                     {/* Stock status badge */}
@@ -214,7 +205,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
             <View className="px-4 mt-4 border-t border-slate-100 pt-4">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-slate-600 text-sm">Subtotal</Text>
-                <Text className="text-slate-900 font-bold text-base">₹{calculateSubtotal()}</Text>
+                <Text className="text-slate-900 font-bold text-base">{rupees(calculateSubtotal())}</Text>
               </View>
 
               <View className="flex-row gap-3">
