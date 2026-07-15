@@ -155,22 +155,37 @@ export const CartScreen = () => {
   };
 
   const handleManualAdjustment = (adjustedQuantities: Record<string, number>) => {
+    console.log('[CartScreen] handleManualAdjustment called with:', adjustedQuantities);
+
     // Apply adjusted quantities to cart
     for (const [productId, newQuantity] of Object.entries(adjustedQuantities)) {
       const cartItem = vm.cartItems.find(i => i.productId === productId);
-      if (!cartItem) continue;
+      if (!cartItem) {
+        console.warn('[CartScreen] Cart item not found for productId:', productId);
+        continue;
+      }
+
+      console.log('[CartScreen] Adjusting item:', {
+        productId,
+        key: cartItem.key,
+        oldQuantity: cartItem.count,
+        newQuantity
+      });
 
       const diff = newQuantity - cartItem.count;
       if (diff > 0) {
         for (let i = 0; i < diff; i++) {
-          vm.addToCart(productId);
+          vm.addToCart(cartItem.key);
         }
       } else if (diff < 0) {
+        // Use cartItem.key instead of productId for decFromCart
         for (let i = 0; i < Math.abs(diff); i++) {
-          vm.decFromCart(productId);
+          console.log('[CartScreen] Calling decFromCart with key:', cartItem.key);
+          vm.decFromCart(cartItem.key);
         }
       }
     }
+    console.log('[CartScreen] Manual adjustment completed');
   };
 
   if (vm.cartCount === 0) {
