@@ -272,6 +272,20 @@ export const TRANSLATIONS: TranslationMap = {
   delete_address_confirm: { te: 'ఈ చిరునామాను తొలగించాలా?', en: 'Delete this address?' },
   delete_address_body:    { te: 'ఈ చిరునామా మీ సేవ్ చేసిన జాబితా నుండి శాశ్వతంగా తొలగించబడుతుంది.', en: 'This address will be permanently removed from your saved list.' },
   edit_address_title:     { te: 'చిరునామా సవరించండి',       en: 'Edit address' },
+
+  // Stock conflict dialog
+  stock_conflict_title:        { te: 'ఆర్డర్‌ను నవీకరించండి',                     en: 'Update your order' },
+  stock_conflict_subtitle:     { te: 'కొన్ని వస్తువులు పూర్తిగా అందుబాటులో లేవు',   en: 'Some items aren\'t fully available' },
+  stock_conflict_remove_badge: { te: 'తొలగించు',                                   en: 'Remove' },
+  stock_conflict_reduce_to:    { te: '{n}కు తగ్గించండి',                         en: 'Reduce to {n}' },
+  stock_conflict_quantity_change: { te: '{current} ఉండేది, ఇప్పుడు: {available}',  en: 'Had {current}, now: {available}' },
+  stock_conflict_update_button: { te: 'కార్ట్‌ను నవీకరించండి',                      en: 'Update Cart' },
+  stock_conflict_cancel_button: { te: 'రద్దు చేయండి',                            en: 'Cancel' },
+  stock_conflict_updating:     { te: 'మీ కార్ట్‌ను నవీకరిస్తోంది...',              en: 'Updating your cart...' },
+  stock_conflict_retrying:     { te: 'ఆర్డర్‌ను ఉంచుతోంది...',                   en: 'Placing your order...' },
+  stock_conflict_error:        { te: 'ఆర్డర్‌ను నవీకరించలేకపోయాం. మళ్ళీ ప్రయత్నించాలా?', en: 'Couldn\'t update your order. Try again?' },
+  stock_conflict_try_again:    { te: 'మళ్ళీ ప్రయత్నించండి',                      en: 'Try Again' },
+  stock_conflict_back_to_cart: { te: 'కార్ట్‌కు వెనుకకు',                        en: 'Back to Cart' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
