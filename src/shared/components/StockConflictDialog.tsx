@@ -145,7 +145,8 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
                 const statusText = isOutOfStock
                   ? t('stock_conflict_remove_badge')
                   : t('stock_conflict_reduce_to').replace('{n}', String(conflict.availableStock));
-                const statusColor = isOutOfStock ? '#ef4444' : '#f59e0b';
+                const statusColor = isOutOfStock ? '#dc2626' : '#d97706';
+                const statusBgColor = isOutOfStock ? '#fee2e2' : '#fef3c7';
 
                 return (
                   <View
@@ -190,7 +191,10 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
                     </View>
 
                     {/* Status badge */}
-                    <View>
+                    <View
+                      style={{ backgroundColor: statusBgColor }}
+                      className="px-3 py-2 rounded-full self-start"
+                    >
                       <Text style={{ color: statusColor }} className="text-sm font-bold">
                         {statusText}
                       </Text>
