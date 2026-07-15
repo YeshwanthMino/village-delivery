@@ -146,17 +146,31 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                       </View>
                       <View className="flex-1">
                         <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
+                        {/* Show weight/unit if available, otherwise show stock status */}
+                        {cartItem.weight ? (
+                          <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
+                        ) : (
+                          isOutOfStock ? (
+                            <Text className="text-red-600 text-xs font-semibold mt-0.5">Out of stock</Text>
+                          ) : (
+                            <Text className="text-orange-600 text-xs font-semibold mt-0.5">
+                              Only {conflict.availableStock} left
+                            </Text>
+                          )
+                        )}
                       </View>
                       <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
                     </View>
 
-                    {/* Stock status badge */}
-                    {isOutOfStock ? (
-                      <Text className="text-red-600 text-sm font-semibold mb-2">Out of stock</Text>
-                    ) : (
-                      <Text className="text-orange-600 text-sm font-semibold mb-2">
-                        Only {conflict.availableStock} left
-                      </Text>
+                    {/* Only show stock status here if weight was already shown */}
+                    {cartItem.weight && (
+                      isOutOfStock ? (
+                        <Text className="text-red-600 text-sm font-semibold mb-2">Out of stock</Text>
+                      ) : (
+                        <Text className="text-orange-600 text-sm font-semibold mb-2">
+                          Only {conflict.availableStock} left
+                        </Text>
+                      )
                     )}
 
                     {/* Action: Remove or Adjust */}
@@ -282,6 +296,10 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                       </View>
                       <View className="flex-1">
                         <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
+                        {/* Show weight/unit if available, otherwise show stock status */}
+                        {cartItem.weight && (
+                          <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
+                        )}
                       </View>
                       <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
                     </View>
