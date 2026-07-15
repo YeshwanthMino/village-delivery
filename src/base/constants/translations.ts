@@ -138,6 +138,9 @@ export const TRANSLATIONS: TranslationMap = {
   // Orders screen
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
   orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
+  orders_login_title:    { te: 'మీ ఆర్డర్లు చూడటానికి సైన్ ఇన్ చేయండి', en: 'Sign in to see your orders' },
+  orders_login_subtitle: { te: 'ప్రస్తుత ఆర్డర్లు ట్రాక్ చేయండి, గత ఆర్డర్లను మళ్ళీ ఆర్డర్ చేయండి.', en: 'Track current orders and reorder past ones.' },
+  orders_load_error:     { te: 'ఆర్డర్లు లోడ్ చేయలేకపోయాం.',   en: "Couldn't load your orders." },
 
   // Order list & detail
   orders_filter_all:          { te: 'అన్నీ',                       en: 'All' },
@@ -151,6 +154,14 @@ export const TRANSLATIONS: TranslationMap = {
   status_delivered:           { te: 'డెలివరీ అయింది',              en: 'Delivered' },
   status_cancelled:           { te: 'రద్దు చేయబడింది',             en: 'Cancelled' },
   reorder_btn:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Reorder' },
+  order_again:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Order Again' },
+  placed_at:                  { te: 'ఆర్డర్ చేసింది {n}',          en: 'Placed at {n}' },
+  order_details:              { te: 'ఆర్డర్ వివరాలు',              en: 'Order Details' },
+  get_help:                   { te: 'సహాయం',                       en: 'Get Help' },
+  status_preparing:           { te: 'సిద్ధం చేస్తోంది',            en: 'Preparing' },
+  arriving_in:                { te: '~{n} నిమిషాల్లో వస్తుంది',    en: 'Arriving in ~{n} mins' },
+  on_the_way:                 { te: 'దారిలో ఉంది',                 en: 'On the way' },
+  order_help_msg:             { te: 'నమస్కారం, నా ఆర్డర్ {n} గురించి సహాయం కావాలి.', en: 'Hi, I need help with my order {n}.' },
   delivery_address_label:     { te: 'డెలివరీ చిరునామా',            en: 'Delivery Address' },
   payment_method_used:        { te: 'చెల్లింపు',                   en: 'Payment' },
   view_details:               { te: 'వివరాలు చూడండి →',           en: 'View Details →' },
@@ -158,6 +169,10 @@ export const TRANSLATIONS: TranslationMap = {
   // Location & address
   select_location:        { te: 'లొకేషన్ ఎంచుకోండి',                 en: 'Select Location' },
   search_address_ph:      { te: 'చిరునామా వెతకండి',                  en: 'Search Address' },
+  village_search_ph:      { te: 'ఊరు వెతకండి',                    en: 'Search your village' },
+  search_results:         { te: 'వెతుకుడు ఫలితాలు',              en: 'Search results' },
+  no_villages_found:      { te: '“{n}” కోసం ఊళ్లు కనబడలేదు',      en: 'No villages found for “{n}”' },
+  village_search_error:   { te: 'వెతకడం విఫలమైంది. మళ్లీ ప్రయత్నించండి.', en: "Couldn't search. Try again." },
   use_current_location:   { te: 'నా ప్రస్తుత లొకేషన్ వాడండి',        en: 'Use my Current Location' },
   current_location_sub:   { te: 'మెరుగైన సేవల కోసం లొకేషన్ ఆన్ చేయండి', en: 'Enable your current location for better services' },
   enable:                 { te: 'ఆన్ చేయి',                          en: 'Enable' },
