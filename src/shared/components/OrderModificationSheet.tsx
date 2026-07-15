@@ -78,8 +78,13 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   };
 
   const handleUpdateAllPress = async () => {
+    console.log('[OrderModificationSheet] === UPDATE ALL BUTTON PRESSED ===');
+    console.log('[OrderModificationSheet] manuallyAdjusted:', Array.from(manuallyAdjusted));
+    console.log('[OrderModificationSheet] localQuantities:', localQuantities);
+
     // If no manual adjustments, auto-retry checkout
     if (manuallyAdjusted.size === 0) {
+      console.log('[OrderModificationSheet] No manual adjustments, retrying checkout');
       setIsLoading(true);
       setRetryError(null);
       try {
@@ -94,7 +99,10 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
       }
     } else {
       // User made manual adjustments — close sheet and notify parent
+      console.log('[OrderModificationSheet] Manual adjustments detected, calling onManualAdjustment');
+      console.log('[OrderModificationSheet] Adjustments to apply:', localQuantities);
       onManualAdjustment?.(localQuantities);
+      console.log('[OrderModificationSheet] Calling onClose');
       onClose();
     }
   };
@@ -183,8 +191,20 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                     {isOutOfStock ? (
                       <TouchableOpacity
                         onPress={() => {
-                          setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
-                          setLocalQuantities(prev => ({ ...prev, [conflict.productId]: 0 }));
+                          console.log('[OrderModificationSheet] === REMOVE ITEM BUTTON PRESSED ===');
+                          console.log('[OrderModificationSheet] productId:', conflict.productId);
+                          console.log('[OrderModificationSheet] Setting quantity to 0');
+                          setManuallyAdjusted(prev => {
+                            const updated = new Set(prev);
+                            updated.add(conflict.productId);
+                            console.log('[OrderModificationSheet] manuallyAdjusted set updated:', Array.from(updated));
+                            return updated;
+                          });
+                          setLocalQuantities(prev => {
+                            const updated = { ...prev, [conflict.productId]: 0 };
+                            console.log('[OrderModificationSheet] localQuantities updated:', updated);
+                            return updated;
+                          });
                         }}
                         className="border-2 border-red-600 rounded-lg py-2 items-center"
                       >
