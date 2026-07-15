@@ -200,7 +200,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                               setLocalQuantities(prev => ({
                                 ...prev,
                                 [conflict.productId]: Math.min(
-                                  prev[conflict.productId] + 1,
+                                  (prev[conflict.productId] ?? 0) + 1,
                                   conflict.availableStock
                                 ),
                               }));
@@ -209,7 +209,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                               setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
                               setLocalQuantities(prev => ({
                                 ...prev,
-                                [conflict.productId]: Math.max(prev[conflict.productId] - 1, 0),
+                                [conflict.productId]: Math.max((prev[conflict.productId] ?? 0) - 1, 0),
                               }));
                             }}
                           />
