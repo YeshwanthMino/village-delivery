@@ -31,18 +31,33 @@ export interface Category {
 
 export type CartRecord = Record<string, number>;
 
-export interface CartLineItem {
+/**
+ * Self-contained snapshot of a product captured at add-to-cart time. Works for
+ * both static catalog products (emoji + gradient) and API products (imageUrl),
+ * so the cart never has to re-resolve an id against any catalog.
+ *
+ * Prices are stored in catalog "units" (display multiplies by 20 via `rupees`).
+ * API products, whose `price` is in real rupees, are divided by 20 on capture.
+ */
+export interface CartSnapshot {
   key: string;
-  product: Product;
+  productId: string;
   variantIndex: number | null;
   name: string;
+  nameTE?: string;
   weight: string;
   price: number;
   mrp: number;
+  emoji?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  imageUrl?: string;
+}
+
+export type CartSnapshotRecord = Record<string, CartSnapshot>;
+
+export interface CartLineItem extends CartSnapshot {
   count: number;
-  emoji: string;
-  gradientFrom: string;
-  gradientTo: string;
 }
 
 export interface Bill {
@@ -71,6 +86,8 @@ export interface OrderItem {
   name: string;
   nameTE: string;
   emoji: string;
+  /** Product thumbnail URL when the API provides one; empty/absent falls back to emoji. */
+  image?: string;
   weight: string;
   price: number;
   mrp: number;

@@ -6,7 +6,7 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { getHomeLayout } from '../../data/homeLayoutApi';
 import { HomeSection } from '../../data/homeLayout.types';
 
-export function useHomeLayoutViewModel() {
+export function useHomeLayoutViewModel(slug = 'app-home-page-layout') {
   const storeId = useLocationStore((s) => s.serviceableVillage?.storeId);
   const registerDynamicPrices = useVillageStore((s) => s.registerDynamicPrices);
 
@@ -19,7 +19,7 @@ export function useHomeLayoutViewModel() {
     setLoading(true);
     setError(null);
     try {
-      const layout = await getHomeLayout(storeId);
+      const layout = await getHomeLayout(storeId, slug);
       setSections(layout.sections);
       // Register real prices so cart totals resolve dynamic products.
       const prices: Record<string, number> = {};
@@ -34,7 +34,7 @@ export function useHomeLayoutViewModel() {
     } finally {
       setLoading(false);
     }
-  }, [storeId, registerDynamicPrices]);
+  }, [storeId, slug, registerDynamicPrices]);
 
   useEffect(() => {
     void load();

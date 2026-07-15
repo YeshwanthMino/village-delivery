@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
 export const DeliveryETACard = () => {
-  const { t, tEta } = useTranslation();
+  const { t } = useTranslation();
   return (
     <LinearGradient
       colors={['#16a34a', '#059669']}
@@ -17,8 +17,7 @@ export const DeliveryETACard = () => {
         <Clock size={20} color="white" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>{tEta(12)}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 }}>{t('free_over_500')}</Text>
+        <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>{`${t('delivery_in')} 1 hour`}</Text>
       </View>
       <ChevronRight size={18} color="rgba(255,255,255,0.7)" />
     </LinearGradient>

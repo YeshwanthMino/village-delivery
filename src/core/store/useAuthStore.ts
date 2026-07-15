@@ -16,7 +16,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   error: string | null;
-  requestId: string | null;
+  deviceId: string | null;
   mobileNumber: string | null;
 }
 
@@ -53,7 +53,7 @@ const initialState: AuthState = {
   accessToken: null,
   refreshToken: null,
   error: null,
-  requestId: null,
+  deviceId: null,
   mobileNumber: null,
 };
 
@@ -171,9 +171,9 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   requestOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      const requestId = await appAuth.requestOtp(requireStoreId(), phoneNumber);
+      const deviceId = await appAuth.requestOtp(requireStoreId(), phoneNumber);
       await StoredPrefs.setUsername(phoneNumber);
-      set({ isLoading: false, requestId, mobileNumber: phoneNumber });
+      set({ isLoading: false, deviceId, mobileNumber: phoneNumber });
     } catch (error) {
       set({ isLoading: false, error: errMessage(error) });
       throw error;
@@ -183,7 +183,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   verifyOtp: async (phoneNumber: string, otp: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp, get().requestId);
+      const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp, get().deviceId);
       if (result.status === 'ok') {
         await finalizeAuth(result.tokens);
         return 'ok';
@@ -204,7 +204,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
         otp,
         firstName,
         lastName,
-        requestId: get().requestId,
+        deviceId: get().deviceId,
       });
       await finalizeAuth(tokens);
     } catch (error) {

@@ -132,6 +132,13 @@ export const CartScreen = () => {
   };
 
   const handleLoginComplete = () => {
+    // If there's a stock conflict, don't clear cart or navigate—just close the sheet
+    // so the user can interact with the StockConflictDialog
+    if (stockConflictInfo) {
+      setLoginSheetVisible(false);
+      return;
+    }
+
     setLoginSheetVisible(false);
     vm.clearCart();
     router.replace('/(dashboard)/orders');

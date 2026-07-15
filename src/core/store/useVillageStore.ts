@@ -1,4 +1,4 @@
-import { CartRecord, Order } from '@/src/base/types/village.types';
+import { CartRecord, CartSnapshot, CartSnapshotRecord, Order } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
@@ -7,6 +7,7 @@ import { Locale } from '@/src/base/constants/translations';
 
 interface VillageState {
   cart: CartRecord;
+  cartSnapshots: CartSnapshotRecord;
   favs: Record<string, boolean>;
   locale: Locale;
   orders: Order[];
@@ -14,7 +15,7 @@ interface VillageState {
 }
 
 interface VillageActions {
-  addToCart: (key: string) => void;
+  addToCart: (key: string, snapshot?: CartSnapshot) => void;
   decFromCart: (key: string) => void;
   toggleFav: (productId: string) => void;
   clearCart: () => void;
@@ -32,6 +33,7 @@ type VillageStore = VillageState & VillageActions & VillageComputed;
 
 const initialState: VillageState = {
   cart: {},
+  cartSnapshots: {},
   favs: {},
   locale: 'en',
   orders: [], // TEMP: empty for UI testing
@@ -49,12 +51,17 @@ function parseCartKey(key: string): { productId: string; variantIndex: number | 
 export const useVillageStore = create<VillageStore>((set, get) => ({
   ...initialState,
 
-  addToCart: (key) =>
+  addToCart: (key, snapshot) =>
     set((state) => ({
       cart: {
         ...state.cart,
         [key]: (state.cart[key] ?? 0) + 1,
       },
+      // Capture the snapshot once, on first add. Increments reuse it.
+      cartSnapshots:
+        snapshot && !state.cartSnapshots[key]
+          ? { ...state.cartSnapshots, [key]: snapshot }
+          : state.cartSnapshots,
     })),
 
   decFromCart: (key) =>
@@ -62,7 +69,8 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       const current = state.cart[key] ?? 0;
       if (current <= 1) {
         const { [key]: _removed, ...rest } = state.cart;
-        return { cart: rest };
+        const { [key]: _snap, ...restSnapshots } = state.cartSnapshots;
+        return { cart: rest, cartSnapshots: restSnapshots };
       }
       return { cart: { ...state.cart, [key]: current - 1 } };
     }),
@@ -75,7 +83,7 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       },
     })),
 
-  clearCart: () => set({ cart: {} }),
+  clearCart: () => set({ cart: {}, cartSnapshots: {} }),
 
   setLocale: async (locale) => {
     set({ locale });

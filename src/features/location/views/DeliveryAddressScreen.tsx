@@ -8,18 +8,23 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Check, LocateFixed, Pencil, Plus, Trash2 } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft, Briefcase, Check, Home, LocateFixed, MapPin, Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { DEFAULT_REGION } from '../viewmodel/useMapPickerViewModel';
 import { useAddAddressViewModel } from '../viewmodel/useAddAddressViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
+import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
 import { deleteAddress } from '../data/locationApi';
 import type { Address, AddressTag } from '../domain/models';
 
-const TAG_EMOJI: Record<AddressTag, string> = { home: '🏠', work: '🏢', other: '📍' };
+const TAG_ICON: Record<AddressTag, React.ComponentType<{ size?: number; color?: string }>> = {
+  home: Home,
+  work: Briefcase,
+  other: MapPin,
+};
 const TAGS: AddressTag[] = ['home', 'work', 'other'];
 
 export const DeliveryAddressScreen = () => {
@@ -27,6 +32,12 @@ export const DeliveryAddressScreen = () => {
   const router = useRouter();
   const vm = useAddAddressViewModel();
   const map = vm.map;
+
+  // "Manage" mode is reached from the profile address book: rows are read-only
+  // (edit/delete only), with no tap-to-select and no selected highlight. The
+  // cart entry point omits this flag, so addresses stay pickable there.
+  const { manage } = useLocalSearchParams<{ manage?: string }>();
+  const manageMode = manage === '1';
 
   const savedAddresses = useLocationStore((s) => s.savedAddresses);
   const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
@@ -37,6 +48,7 @@ export const DeliveryAddressScreen = () => {
   // after first login); returning users with saved addresses see the list.
   const [mode, setMode] = useState<'list' | 'add'>(savedAddresses.length === 0 ? 'add' : 'list');
   const [showForm, setShowForm] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Address | null>(null);
 
   const mapRef = useRef<MapView | null>(null);
   const suppressSettle = useRef(false);
@@ -95,22 +107,18 @@ export const DeliveryAddressScreen = () => {
     setMode('add');
   };
 
-  const onDelete = (a: Address) => {
-    Alert.alert(t('delete_address_confirm'), '', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: t('delete_address'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteAddress(a.id);
-            setSavedAddresses(savedAddresses.filter((x) => x.id !== a.id));
-          } catch {
-            Alert.alert('Error', 'Could not delete address.');
-          }
-        },
-      },
-    ]);
+  const onDelete = (a: Address) => setPendingDelete(a);
+
+  const onConfirmDelete = async () => {
+    const a = pendingDelete;
+    setPendingDelete(null);
+    if (!a) return;
+    try {
+      await deleteAddress(a.id);
+      setSavedAddresses(savedAddresses.filter((x) => x.id !== a.id));
+    } catch {
+      Alert.alert('Error', 'Could not delete address.');
+    }
   };
 
   const onSave = async () => {
@@ -124,7 +132,7 @@ export const DeliveryAddressScreen = () => {
   // ── List mode ──────────────────────────────────────────────────────────────
   if (mode === 'list') {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'left', 'right']}>
         <View className="flex-row items-center gap-3 px-4 py-3 bg-white border-b border-slate-100">
           <TouchableOpacity onPress={goBack} hitSlop={8} className="w-9 h-9 items-center justify-center">
             <ArrowLeft size={22} color="#0f172a" />
@@ -132,7 +140,7 @@ export const DeliveryAddressScreen = () => {
           <Text className="text-slate-900 font-black text-xl">{t('select_delivery_address')}</Text>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ padding: 16 }}>
           <TouchableOpacity
             onPress={() => setMode('add')}
             activeOpacity={0.85}
@@ -149,7 +157,8 @@ export const DeliveryAddressScreen = () => {
             <>
               <Text className="text-slate-500 font-semibold text-xs uppercase mb-3">{t('saved_addresses')}</Text>
               {savedAddresses.map((a) => {
-                const active = a.id === selectedAddressId;
+                const active = !manageMode && a.id === selectedAddressId;
+                const TagIcon = TAG_ICON[a.tag];
                 return (
                   <View
                     key={a.id}
@@ -157,11 +166,13 @@ export const DeliveryAddressScreen = () => {
                   >
                     <TouchableOpacity
                       onPress={() => onSelectExisting(a.id)}
-                      accessibilityRole="button"
+                      disabled={manageMode}
+                      activeOpacity={manageMode ? 1 : 0.2}
+                      accessibilityRole={manageMode ? 'text' : 'button'}
                       className="flex-1 flex-row items-center"
                     >
-                      <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
-                        <Text className="text-xl leading-none">{TAG_EMOJI[a.tag]}</Text>
+                      <View className={`w-9 h-9 rounded-full items-center justify-center ${active ? 'bg-green-100' : 'bg-slate-100'}`}>
+                        <TagIcon size={18} color={active ? '#16a34a' : '#475569'} />
                       </View>
                       <Text className="flex-1 ml-3 text-slate-900 text-base" numberOfLines={2}>
                         {[a.addressLine1, a.villageName].filter(Boolean).join(', ')}
@@ -194,6 +205,17 @@ export const DeliveryAddressScreen = () => {
             <Text className="text-slate-400 text-sm text-center mt-8">{t('no_saved_addresses')}</Text>
           )}
         </ScrollView>
+
+        <ConfirmDialog
+          visible={!!pendingDelete}
+          title={t('delete_address_confirm')}
+          message={t('delete_address_body')}
+          confirmLabel={t('delete_address')}
+          cancelLabel={t('cancel')}
+          tone="danger"
+          onConfirm={onConfirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
       </SafeAreaView>
     );
   }
@@ -297,18 +319,23 @@ export const DeliveryAddressScreen = () => {
             />
 
             <View className="flex-row gap-2 mb-3">
-              {TAGS.map((tg) => (
-                <TouchableOpacity
-                  key={tg}
-                  onPress={() => vm.setTag(tg)}
-                  accessibilityRole="button"
-                  className={`px-4 py-2 rounded-full border ${vm.tag === tg ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white'}`}
-                >
-                  <Text className={`font-bold text-[13px] ${vm.tag === tg ? 'text-green-700' : 'text-slate-600'}`}>
-                    {TAG_EMOJI[tg]} {t(`address_tag_${tg}`)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {TAGS.map((tg) => {
+                const TagIcon = TAG_ICON[tg];
+                const tagActive = vm.tag === tg;
+                return (
+                  <TouchableOpacity
+                    key={tg}
+                    onPress={() => vm.setTag(tg)}
+                    accessibilityRole="button"
+                    className={`flex-row items-center gap-1.5 px-4 py-2 rounded-full border ${tagActive ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white'}`}
+                  >
+                    <TagIcon size={15} color={tagActive ? '#15803d' : '#475569'} />
+                    <Text className={`font-bold text-[13px] ${tagActive ? 'text-green-700' : 'text-slate-600'}`}>
+                      {t(`address_tag_${tg}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <TouchableOpacity onPress={() => vm.setIsDefault(!vm.isDefault)} accessibilityRole="checkbox" accessibilityState={{ checked: vm.isDefault }} accessibilityLabel={t('set_as_default')} className="flex-row items-center gap-2 mb-4">

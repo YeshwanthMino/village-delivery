@@ -4,7 +4,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import { interpolate } from '@/src/base/constants/translations';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees, productSnapshot } from '@/src/features/home/data/static/villageData';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { CompactStepper } from './CompactStepper';
 import { VillageBottomSheet } from './VillageBottomSheet';
@@ -64,7 +64,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                   <View style={{ minWidth: 104 }}>
                     {count === 0 ? (
                       <TouchableOpacity
-                        onPress={() => addToCart(key)}
+                        onPress={() => addToCart(key, productSnapshot(product, i))}
                         className="border-2 border-green-600 rounded-lg h-9 px-4 items-center justify-center"
                       >
                         <Text className="text-green-700 font-bold text-sm">{t('add')}</Text>
@@ -72,7 +72,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                     ) : (
                       <CompactStepper
                         count={count}
-                        onAdd={() => addToCart(key)}
+                        onAdd={() => addToCart(key, productSnapshot(product, i))}
                         onDec={() => decFromCart(key)}
                       />
                     )}

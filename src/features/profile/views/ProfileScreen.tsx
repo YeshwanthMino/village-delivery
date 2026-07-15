@@ -2,12 +2,13 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Info, LogOut, MapPin, MessageCircle, Package, Share2, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, Share, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Share, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Support } from '@/src/base/constants/AppConstants';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
+import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
+import { openWhatsAppSupport } from '@/src/shared/utils/whatsappSupport';
 import { ProfileRow } from './components/ProfileRow';
 
 /** Best-effort display name from the (loosely-typed) profile returned by /app/auth/me. */
@@ -36,30 +37,16 @@ export const ProfileScreen = () => {
   const storeMobile = useAuthStore(s => s.mobileNumber);
   const logout = useAuthStore(s => s.logout);
   const [loginVisible, setLoginVisible] = useState(false);
+  const [logoutVisible, setLogoutVisible] = useState(false);
 
   const name = displayName(user);
   const phone = displayPhone(user, storeMobile);
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const initial = (name?.trim()?.charAt(0) || '?').toUpperCase();
 
-  const handleLogout = () => {
-    Alert.alert(t('profile_logout_btn'), '', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: t('profile_logout_btn'), style: 'destructive', onPress: () => { logout(); } },
-    ]);
-  };
+  const handleLogout = () => setLogoutVisible(true);
 
-  const openWhatsApp = async () => {
-    const message = encodeURIComponent('నమస్కారం, నాకు సహాయం కావాలి.');
-    const whatsappUrl = `whatsapp://send?phone=${Support.WHATSAPP_NUMBER}&text=${message}`;
-    const webUrl = `https://wa.me/${Support.WHATSAPP_NUMBER}?text=${message}`;
-    try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      await Linking.openURL(canOpen ? whatsappUrl : webUrl);
-    } catch {
-      Alert.alert('Error', 'Could not open WhatsApp.');
-    }
-  };
+  const openWhatsApp = () => openWhatsAppSupport('నమస్కారం, నాకు సహాయం కావాలి.');
 
   const handleShare = async () => {
     try {
@@ -119,7 +106,7 @@ export const ProfileScreen = () => {
             <ProfileRow
               icon={<MapPin size={20} color="#16a34a" />}
               label={t('profile_address_book')}
-              onPress={() => router.push('/address/add' as any)}
+              onPress={() => router.push('/address/add?manage=1' as any)}
             />
           </>
         ) : null}
@@ -162,6 +149,17 @@ export const ProfileScreen = () => {
         visible={loginVisible}
         onClose={() => setLoginVisible(false)}
         onComplete={() => setLoginVisible(false)}
+      />
+
+      <ConfirmDialog
+        visible={logoutVisible}
+        title={t('logout_confirm_title')}
+        message={t('logout_confirm_body')}
+        confirmLabel={t('profile_logout_btn')}
+        cancelLabel={t('cancel')}
+        tone="danger"
+        onConfirm={() => { setLogoutVisible(false); logout(); }}
+        onCancel={() => setLogoutVisible(false)}
       />
     </SafeAreaView>
   );

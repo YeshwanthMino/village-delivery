@@ -1,4 +1,4 @@
-import { Category, Product, SortKey, CartRecord, CartLineItem, Bill } from '@/src/base/types/village.types';
+import { Category, Product, SortKey, CartRecord, CartLineItem, CartSnapshot, CartSnapshotRecord, Bill } from '@/src/base/types/village.types';
 
 // ─── Hero Slide ───────────────────────────────────────────────────────────────
 
@@ -1014,49 +1014,72 @@ export function sortProducts(list: Product[], sortKey: SortKey): Product[] {
   }
 }
 
-export function getCartItems(cart: CartRecord): CartLineItem[] {
+/**
+ * Build a self-contained cart snapshot from a static catalog product. Pass a
+ * variant index for variant lines (key `${id}-v${i}`), or null for the base.
+ */
+export function productSnapshot(
+  product: Product,
+  variantIndex: number | null
+): CartSnapshot {
+  if (variantIndex !== null && product.variants?.[variantIndex]) {
+    const variant = product.variants[variantIndex];
+    return {
+      key: `${product.id}-v${variantIndex}`,
+      productId: product.id,
+      variantIndex,
+      name: product.name,
+      nameTE: product.nameTE,
+      weight: variant.name,
+      price: variant.price,
+      mrp: variant.mrp,
+      emoji: product.emoji,
+      gradientFrom: product.gradientFrom,
+      gradientTo: product.gradientTo,
+    };
+  }
+  return {
+    key: product.id,
+    productId: product.id,
+    variantIndex: null,
+    name: product.name,
+    nameTE: product.nameTE,
+    weight: product.weight,
+    price: product.price,
+    mrp: product.mrp,
+    emoji: product.emoji,
+    gradientFrom: product.gradientFrom,
+    gradientTo: product.gradientTo,
+  };
+}
+
+export function getCartItems(
+  cart: CartRecord,
+  snapshots: CartSnapshotRecord = {}
+): CartLineItem[] {
   const items: CartLineItem[] = [];
   for (const [key, count] of Object.entries(cart)) {
     if (count <= 0) continue;
+
+    // Prefer the snapshot captured at add-time — works for API products too.
+    const snapshot = snapshots[key];
+    if (snapshot) {
+      items.push({ ...snapshot, count });
+      continue;
+    }
+
+    // Legacy fallback: resolve against the static catalog (e.g. reorder).
     const dashVIdx = key.lastIndexOf('-v');
     if (dashVIdx !== -1) {
-      // Variant key: e.g. 'f1-v0'
       const productId = key.substring(0, dashVIdx);
       const variantIndex = parseInt(key.substring(dashVIdx + 2), 10);
       const product = ALL_PRODUCTS.find(p => p.id === productId);
-      if (!product || !product.variants) continue;
-      const variant = product.variants[variantIndex];
-      if (!variant) continue;
-      items.push({
-        key,
-        product,
-        variantIndex,
-        name: product.name,
-        weight: variant.name,
-        price: variant.price,
-        mrp: variant.mrp,
-        count,
-        emoji: product.emoji,
-        gradientFrom: product.gradientFrom,
-        gradientTo: product.gradientTo,
-      });
+      if (!product || !product.variants || !product.variants[variantIndex]) continue;
+      items.push({ ...productSnapshot(product, variantIndex), count });
     } else {
-      // Simple product key
       const product = ALL_PRODUCTS.find(p => p.id === key);
       if (!product) continue;
-      items.push({
-        key,
-        product,
-        variantIndex: null,
-        name: product.name,
-        weight: product.weight,
-        price: product.price,
-        mrp: product.mrp,
-        count,
-        emoji: product.emoji,
-        gradientFrom: product.gradientFrom,
-        gradientTo: product.gradientTo,
-      });
+      items.push({ ...productSnapshot(product, null), count });
     }
   }
   return items;
@@ -1077,13 +1100,13 @@ export function computeBill(
   }
 
   const itemDiscount = mrpTotal - itemTotal;
-  const deliveryFee = itemTotal >= 25 ? 0 : 2.5;  // ₹0 if ≥₹500, else ₹50
-  const platformFee = totalCount > 0 ? 0.5 : 0;   // ₹10 fixed when non-empty
+  const deliveryFee = 0;                           // delivery fee removed
+  const platformFee = 0;
   const couponDiscount = opts?.couponApplied
     ? Math.min(itemTotal * 0.10, 2)                // 10%, capped at ₹40 (= 2 pre-multiplier)
     : 0;
   const grandTotal = itemTotal + deliveryFee + platformFee - couponDiscount;
-  const totalSavings = itemDiscount + couponDiscount + (deliveryFee === 0 && itemTotal > 0 ? 2.5 : 0);
+  const totalSavings = itemDiscount + couponDiscount;
 
   return { itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, grandTotal, totalSavings, totalCount };
 }

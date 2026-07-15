@@ -9,11 +9,26 @@ import { WebService } from '@/src/base/constants/AppConstants';
 import { HomeLayout } from './homeLayout.types';
 import { mapHomeLayout } from './homeLayoutMapper';
 
-export async function getHomeLayout(storeId: string, path = 'main'): Promise<HomeLayout> {
-  // Public endpoint keyed by x-store-id; no auth token required.
+export async function getHomeLayout(
+  storeId: string,
+  slug = 'app-home-page-layout',
+): Promise<HomeLayout> {
+  // Fetch the layout directly by slug. Public endpoint keyed by x-store-id;
+  // no auth token required.
   const data = await apiClient.getWithoutAuth<any>(
-    `${WebService.villageBaseURL}/app/page-layout/path/${path}`,
+    `${WebService.villageBaseURL}/app/page-layout/slug/${slug}`,
     { headers: { Accept: '*/*', 'x-store-id': storeId } },
   );
-  return mapHomeLayout(data);
+
+  // Endpoint returns a single layout; tolerate common wrappers and a list
+  // fallback (selecting by slug) in case the shape differs by environment.
+  let layout: any = data?.pageLayout ?? data?.data ?? data ?? null;
+  if (Array.isArray(layout?.pageLayouts) || Array.isArray(layout)) {
+    const layouts: any[] = Array.isArray(layout) ? layout : layout.pageLayouts;
+    layout =
+      layouts.find((l) => String(l?.slug ?? '').replace(/^\//, '') === slug) ??
+      null;
+  }
+
+  return mapHomeLayout(layout ?? {});
 }

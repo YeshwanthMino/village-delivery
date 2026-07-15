@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Check, MapPin, X } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Check, MapPin, Search, X } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
@@ -19,12 +20,18 @@ interface Props {
 
 export const LocationSheet = ({ visible, onClose }: Props) => {
   const { t } = useTranslation();
+  const router = useRouter();
   const vm = useLocationViewModel();
   const activeStoreId = vm.village?.storeId;
 
   const run = async (p: Promise<boolean> | Promise<void>) => {
     const ok = await p;
     if (ok !== false) onClose();
+  };
+
+  const openSearch = () => {
+    onClose();
+    router.push('/location' as any);
   };
 
   return (
@@ -39,13 +46,22 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
           </View>
 
           {/* Use current location — Enable button only when permission not granted */}
-          <View className="mb-4">
+          <View className="mb-3">
             <UseCurrentLocationRow
               permission={vm.permission}
               loading={vm.detecting}
               onPress={() => run(vm.detectCurrentLocation())}
             />
           </View>
+
+          {/* Search → full Select Location screen */}
+          <TouchableOpacity
+            onPress={openSearch}
+            className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center gap-3 mb-4"
+          >
+            <Search size={20} color="#64748b" />
+            <Text className="flex-1 text-slate-700 font-bold text-sm">{t('search_your_location')}</Text>
+          </TouchableOpacity>
 
           {/* Recent locations */}
           {vm.recentLocations.length > 0 ? (

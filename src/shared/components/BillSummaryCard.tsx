@@ -38,13 +38,9 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
       </View>
 
       <BillRow label={t('item_total_mrp')} value={rupees(bill.mrpTotal)} />
-      <BillRow label={t('discount_on_mrp')} value={`-${rupees(bill.itemDiscount)}`} isGreen />
-      <BillRow
-        label={t('delivery_fee')}
-        value={bill.deliveryFee === 0 ? t('free') : rupees(bill.deliveryFee)}
-        isGreen={bill.deliveryFee === 0}
-      />
-      <BillRow label={t('platform_fee')} value={rupees(bill.platformFee)} />
+      {bill.itemDiscount > 0 && (
+        <BillRow label={t('discount_on_mrp')} value={`-${rupees(bill.itemDiscount)}`} isGreen />
+      )}
       {couponApplied && bill.couponDiscount > 0 && (
         <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
       )}

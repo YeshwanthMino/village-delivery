@@ -5,7 +5,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees, productSnapshot } from '@/src/features/home/data/static/villageData';
 import { CompactStepper } from './CompactStepper';
 import { useTranslation, localizeWeight } from '@/src/core/utils/useTranslation';
 
@@ -117,7 +117,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
             )
           ) : count === 0 ? (
             <TouchableOpacity
-              onPress={() => addToCart(product.id)}
+              onPress={() => addToCart(product.id, productSnapshot(product, null))}
               className="border-2 border-green-600 rounded-lg h-11 items-center justify-center"
             >
               <Text className="text-green-700 font-bold text-base" style={teFont}>{t('add')}</Text>
@@ -125,7 +125,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
           ) : (
             <CompactStepper
               count={count}
-              onAdd={() => addToCart(product.id)}
+              onAdd={() => addToCart(product.id, productSnapshot(product, null))}
               onDec={() => decFromCart(product.id)}
             />
           )}

@@ -169,4 +169,4 @@ reconciliation when the delivery store changes. The flow is strictly: auth gate
   one on the map (→ saved with the user's chosen `isDefault` value, always
   selected, back to cart).
 - Cart reflects the selected delivery address immediately; cart state is
-  preserved throughout.
+  preserved throughout. 

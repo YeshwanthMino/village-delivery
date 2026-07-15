@@ -7,7 +7,7 @@ export const useOrderDetailViewModel = () => {
   const addToCart = useVillageStore(state => state.addToCart);
   const clearCart = useVillageStore(state => state.clearCart);
 
-  const { data: order, isLoading } = useOrderDetailQuery(orderId);
+  const { data: order, isLoading, refetch, isRefetching } = useOrderDetailQuery(orderId);
 
   const handleReorder = () => {
     clearCart();
@@ -19,5 +19,5 @@ export const useOrderDetailViewModel = () => {
     }
   };
 
-  return { orderId, order, isLoading, handleReorder };
+  return { orderId, order, isLoading, handleReorder, refetch, isRefetching };
 };

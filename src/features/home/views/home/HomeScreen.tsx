@@ -1,8 +1,7 @@
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Bell, Search, ShoppingCart } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
@@ -36,6 +35,21 @@ export const HomeScreen = () => {
 
   const [permSheetOpen, setPermSheetOpen] = React.useState(false);
   const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try { await layout.refresh(); } finally { setRefreshing(false); }
+  }, [layout.refresh]);
+
+  // Tabs stay mounted, so refresh the home layout on every focus after the
+  // first (the first focus coincides with the mount-time load).
+  const firstHomeFocus = React.useRef(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (firstHomeFocus.current) { firstHomeFocus.current = false; return; }
+      void layout.refresh();
+    }, [layout.refresh]),
+  );
   // Auto-GPS-detect fires at most once per session. Re-focusing must NOT re-fire
   // it — that re-shows the OS "Location Accuracy" dialog every time. After the
   // first attempt the permission sheet handles manual retry.
@@ -162,6 +176,9 @@ export const HomeScreen = () => {
           bounces
           alwaysBounceVertical
           overScrollMode="always"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" colors={['#16a34a']} />
+          }
         >
           {layout.loading && layout.sections.length === 0 ? (
             <HomeSkeleton />

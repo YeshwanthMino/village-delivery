@@ -10,8 +10,10 @@ import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 
 const BASE = WebService.villageBaseURL;
 
-function storeOpts(storeId: string) {
-  return { headers: { 'x-store-id': storeId } };
+function storeOpts(storeId: string, deviceId?: string | null) {
+  const headers: Record<string, string> = { 'x-store-id': storeId };
+  if (deviceId) headers['x-device-id'] = deviceId;
+  return { headers };
 }
 
 /**
@@ -33,7 +35,7 @@ export function parseTokens(resp: any): AuthTokens | null {
 }
 
 /**
- * Send the login OTP. The server replies with a `requestId` that must be echoed
+ * Send the login OTP. The server replies with a `deviceId` that must be echoed
  * back on verify-otp / signup. Returns null if the response carries none.
  */
 export async function requestOtp(storeId: string, mobileNumber: string): Promise<string | null> {
@@ -43,7 +45,7 @@ export async function requestOtp(storeId: string, mobileNumber: string): Promise
     storeOpts(storeId),
   );
   const data = resp?.data ?? resp;
-  return data?.requestId ?? null;
+  return data?.deviceId ?? null;
 }
 
 export type VerifyResult =
@@ -54,13 +56,13 @@ export async function verifyLogin(
   storeId: string,
   mobileNumber: string,
   otp: string,
-  requestId: string | null,
+  deviceId: string | null,
 ): Promise<VerifyResult> {
   try {
     const resp = await apiClient.postWithoutAuth<any>(
       `${BASE}${AppAuthRoutes.loginVerify}`,
-      { mobileNumber, otp, requestId },
-      storeOpts(storeId),
+      { mobileNumber, otp },
+      storeOpts(storeId, deviceId),
     );
     console.log('[appAuth] login-verify raw:', JSON.stringify(resp));
     const tokens = parseTokens(resp);
@@ -81,14 +83,15 @@ export interface SignupInput {
   otp: string;
   firstName: string;
   lastName: string;
-  requestId: string | null;
+  deviceId: string | null;
 }
 
 export async function signup(storeId: string, input: SignupInput): Promise<AuthTokens> {
+  const { deviceId, ...body } = input;
   const resp = await apiClient.postWithoutAuth<any>(
     `${BASE}${AppAuthRoutes.loginSignup}`,
-    input,
-    storeOpts(storeId),
+    body,
+    storeOpts(storeId, deviceId),
   );
   console.log('[appAuth] login-signup raw:', JSON.stringify(resp));
   const tokens = parseTokens(resp);

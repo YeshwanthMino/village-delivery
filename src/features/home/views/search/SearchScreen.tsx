@@ -22,8 +22,8 @@ export const SearchScreen = () => {
   const vm = useSearchViewModel();
   const inputRef = useRef<TextInput>(null);
   const { t } = useTranslation();
-  const TAB_BAR_CONTENT_HEIGHT = 64;
-  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+  // Standalone route (no tab bar). Reserve only enough for the floating cart pill.
+  const scrollPadding = 96;
 
   const goToCart = () => router.push('/cart');
 
@@ -114,7 +114,7 @@ export const SearchScreen = () => {
 
       {/* ── Overlays ── */}
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} />
+        <FloatingCartPill count={vm.cartCount} onPress={goToCart} bottomOffset={0} />
       )}
     </SafeAreaView>
   );

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { CartLineItem } from '@/src/base/types/village.types';
@@ -15,7 +16,7 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
   const decFromCart = useVillageStore(state => state.decFromCart);
   const { locale } = useTranslation();
 
-  const displayName = locale === 'te' ? item.product.nameTE : item.product.name;
+  const displayName = locale === 'te' && item.nameTE ? item.nameTE : item.name;
 
   const discount = item.mrp > item.price
     ? Math.round((1 - item.price / item.mrp) * 100)
@@ -23,14 +24,30 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
 
   return (
     <View className="bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center gap-3">
-      <View className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.gradientFrom} ${item.gradientTo} items-center justify-center relative`}>
-        <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
-        {discount > 0 && (
-          <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
-            <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
-          </View>
-        )}
-      </View>
+      {item.imageUrl ? (
+        <View className="w-16 h-16 rounded-xl overflow-hidden bg-slate-50 relative">
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={150}
+          />
+          {discount > 0 && (
+            <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
+              <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        <View className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.gradientFrom} ${item.gradientTo} items-center justify-center relative`}>
+          <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+          {discount > 0 && (
+            <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
+              <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <View className="flex-1">
         <Text
@@ -40,7 +57,9 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
         >
           {displayName}
         </Text>
-        <Text className="text-slate-500 text-xs mt-0.5">{item.weight}</Text>
+        {item.weight ? (
+          <Text className="text-slate-500 text-xs mt-0.5">{item.weight}</Text>
+        ) : null}
         <View className="flex-row items-center gap-1.5 mt-1">
           <Text className="text-slate-900 font-bold text-sm">{rupees(item.price)}</Text>
           {item.mrp > item.price && (

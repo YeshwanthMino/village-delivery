@@ -86,9 +86,8 @@ export const StorageKeys = {
 };
 
 export const Support = {
-  // Set this to your real WhatsApp support number before release.
-  // Format: country code + number, no '+' or spaces. Example: '919876543210'
-  WHATSAPP_NUMBER: '91XXXXXXXXXX',
+  // Real WhatsApp support number. Format: country code + number, no '+' or spaces.
+  WHATSAPP_NUMBER: '916364463644',
 };
 
 // Error codes and messages

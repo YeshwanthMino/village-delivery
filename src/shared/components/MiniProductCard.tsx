@@ -4,7 +4,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees, productSnapshot } from '@/src/features/home/data/static/villageData';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
 interface MiniProductCardProps {
@@ -19,7 +19,7 @@ export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps)
 
   const handleAdd = () => {
     if (hasVariants) openVariants(product);
-    else addToCart(product.id);
+    else addToCart(product.id, productSnapshot(product, null));
   };
 
   return (
