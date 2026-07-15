@@ -87,6 +87,8 @@ export const CartScreen = () => {
       if (result.stockInfo && result.stockInfo.length > 0) {
         console.log('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
         setStockConflictInfo(result.stockInfo);
+        // Close login sheet to show OrderModificationSheet exclusively
+        setLoginSheetVisible(false);
         throw new Error('Stock conflicts detected');
       }
 
