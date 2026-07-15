@@ -1,18 +1,20 @@
 // src/features/location/views/SelectLocationScreen.tsx
 //
 // Full-screen location picker reached from the "Search your Location" button.
-// Search Address (visual placeholder, behavior deferred) + Use my Current Location
-// + saved addresses + recent locations.
+// Village search (debounced) + Use my Current Location + saved addresses
+// + recent locations.
 
-import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Clock, MapPin, Search } from 'lucide-react-native';
+import { ArrowLeft, Clock, MapPin, Search, X } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 import { AddressTag } from '../domain/models';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { useAddressBookViewModel } from '../viewmodel/useAddressBookViewModel';
+import { useVillageSearchQuery } from '../data/queries/useVillageSearchQuery';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 
@@ -23,6 +25,19 @@ export const SelectLocationScreen = () => {
   const router = useRouter();
   const vm = useLocationViewModel();
   const book = useAddressBookViewModel();
+
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // 500ms debounce: village search fires only after typing settles.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query), 500);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  const villageSearch = useVillageSearchQuery(debouncedQuery);
+  const showResults = query.trim().length >= 3;
+  const villageResults = villageSearch.data ?? [];
 
   const goHome = () => {
     if (router.canGoBack()) router.back();
@@ -49,14 +64,71 @@ export const SelectLocationScreen = () => {
             <Text className="text-slate-900 font-bold text-2xl">{t('select_location')}</Text>
           </View>
 
-          {/* Search Address — visual placeholder (behavior deferred) */}
+          {/* Village search */}
           <View className="flex-row items-center border border-slate-200 rounded-2xl px-4 py-3.5">
             <Search size={20} color="#94a3b8" />
-            <Text className="flex-1 ml-3 text-slate-400 text-base">{t('search_address_ph')}</Text>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('village_search_ph')}
+              placeholderTextColor="#94a3b8"
+              className="flex-1 ml-3 text-slate-900 text-base"
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {query.length > 0 ? (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                <X size={18} color="#94a3b8" />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
 
         <View className="px-5 pt-4">
+          {/* Search results (village directory) */}
+          {showResults ? (
+            <View className="mb-2">
+              <View className="flex-row items-center mb-3">
+                <Text className="text-slate-500 font-semibold text-xs uppercase">
+                  {t('search_results')}
+                </Text>
+                {villageSearch.isFetching ? (
+                  <ActivityIndicator size="small" color="#64748b" className="ml-2" />
+                ) : null}
+              </View>
+
+              {villageSearch.isError ? (
+                <Text className="text-slate-400 text-sm mb-2">{t('village_search_error')}</Text>
+              ) : villageResults.length === 0 && !villageSearch.isFetching ? (
+                <Text className="text-slate-400 text-sm mb-2">
+                  {interpolate(t('no_villages_found'), query.trim())}
+                </Text>
+              ) : (
+                villageResults.map((v) => (
+                  <TouchableOpacity
+                    key={v.id}
+                    onPress={() => run(vm.selectVillage(v))}
+                    className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
+                  >
+                    <View className="w-9 h-9 rounded-full bg-rose-50 items-center justify-center">
+                      <MapPin size={18} color="#e11d48" />
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className="text-slate-900 font-semibold text-base" numberOfLines={1}>
+                        {v.name}
+                      </Text>
+                      {v.secondaryName || v.pincode ? (
+                        <Text className="text-slate-400 text-xs" numberOfLines={1}>
+                          {[v.secondaryName, v.pincode].filter(Boolean).join(' · ')}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          ) : null}
+
           {/* Use my Current Location */}
           <UseCurrentLocationRow
             permission={vm.permission}
