@@ -209,6 +209,38 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                 );
               })}
             </ScrollView>
+
+            {/* Footer */}
+            <View className="px-4 mt-4 border-t border-slate-100 pt-4">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-slate-600 text-sm">Subtotal</Text>
+                <Text className="text-slate-900 font-bold text-base">₹{calculateSubtotal()}</Text>
+              </View>
+
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={onClose}
+                  className="flex-1 border-2 border-slate-300 rounded-lg py-3 items-center"
+                >
+                  <Text className="text-slate-900 font-semibold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleUpdateAllPress()}
+                  disabled={isLoading}
+                  className={`flex-1 rounded-lg py-3 items-center ${
+                    isLoading ? 'bg-green-400' : 'bg-green-600'
+                  }`}
+                >
+                  <Text className="text-white font-bold">
+                    {isLoading ? '...' : 'Update all'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {retryError && (
+                <Text className="text-red-600 text-xs mt-2 text-center">{retryError}</Text>
+              )}
+            </View>
           </>
         ) : (
           <>
