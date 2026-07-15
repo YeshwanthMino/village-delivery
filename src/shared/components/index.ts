@@ -21,4 +21,4 @@ export { FloatingCartPill } from './FloatingCartPill';
 export { EmptyCart } from './EmptyCart';
 export { Skeleton } from './Skeleton';
 export { OrderModificationSheet } from './OrderModificationSheet';
-export type { StockInfo } from './OrderModificationSheet';
+export type { StockInfo, CartItem, OrderModificationSheetProps } from './OrderModificationSheet';

@@ -4,12 +4,12 @@ import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
 import { CompactStepper } from './CompactStepper';
 
-interface StockInfo {
+export interface StockInfo {
   productId: string;
   availableStock: number;
 }
 
-interface CartItem {
+export interface CartItem {
   productId: string;
   name: string;
   weight: string;
@@ -18,7 +18,7 @@ interface CartItem {
   count: number;
 }
 
-interface OrderModificationSheetProps {
+export interface OrderModificationSheetProps {
   visible: boolean;
   stockInfo: StockInfo[];
   cartItems: CartItem[];
@@ -35,6 +35,9 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   onRetryCheckout,
   onManualAdjustment,
 }) => {
+  // Track user adjustments: manuallyAdjusted identifies items user changed,
+  // localQuantities stores the adjusted values, isLoading/retryError handle retry state,
+  // state tracks the sheet view (conflicts vs all-sorted items)
   const [manuallyAdjusted, setManuallyAdjusted] = useState<Set<string>>(new Set());
   const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);

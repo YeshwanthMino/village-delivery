@@ -35,12 +35,16 @@ describe('StockConflictDialog', () => {
     {
       productId: 'prod1',
       name: 'Godrej Soap',
+      weight: '100g',
+      price: 50,
       image: 'http://example.com/soap.jpg',
       count: 2,
     },
     {
       productId: 'prod2',
       name: 'Jet Gold',
+      weight: '250ml',
+      price: 150,
       image: 'http://example.com/jet.jpg',
       count: 5,
     },
