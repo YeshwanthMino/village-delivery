@@ -115,11 +115,10 @@ describe('useCartStockStore', () => {
   test('selectIsInStock selector defaults to true when product not found', () => {
     useCartStockStore.setState({ stockStatus: {} });
 
-    const selector = useCartStockStore(state =>
-      useCartStockStore.getState().stockStatus['unknown']?.inStock ?? true
-    );
+    const state = useCartStockStore.getState();
+    const isInStock = state.stockStatus['unknown']?.inStock ?? true;
 
-    expect(selector).toBe(true);
+    expect(isInStock).toBe(true);
   });
 
   test('selectIsInStock selector returns correct status for existing product', () => {
@@ -129,10 +128,9 @@ describe('useCartStockStore', () => {
       },
     });
 
-    const selector = useCartStockStore(state =>
-      state.stockStatus['prod1']?.inStock ?? true
-    );
+    const state = useCartStockStore.getState();
+    const isInStock = state.stockStatus['prod1']?.inStock ?? true;
 
-    expect(selector).toBe(false);
+    expect(isInStock).toBe(false);
   });
 });
