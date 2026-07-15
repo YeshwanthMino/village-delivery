@@ -70,26 +70,36 @@ export const CartScreen = () => {
     const addressId = addr.selectedAddress?.id;
     if (!addressId) throw new Error('Select a delivery address first.');
 
-    const result = await createOrder({
-      products: vm.cartItems.map(item => ({
-        productId: item.productId,
-        quantity: item.count,
-      })),
-      address: addressId,
-      paymentMethod: paymentMethod ?? 'cod',
-      isPriority: false,
-    });
+    try {
+      console.log('[handlePlaceOrder] Starting order placement');
+      const result = await createOrder({
+        products: vm.cartItems.map(item => ({
+          productId: item.productId,
+          quantity: item.count,
+        })),
+        address: addressId,
+        paymentMethod: paymentMethod ?? 'cod',
+        isPriority: false,
+      });
 
-    // Check for stock conflicts before treating as success
-    if (result.stockInfo && result.stockInfo.length > 0) {
-      setStockConflictInfo(result.stockInfo);
-      return;
-    }
+      console.log('[handlePlaceOrder] createOrder returned:', result);
 
-    // Existing success path
-    if (result.orderId) {
-      vm.clearCart();
-      router.replace('/(dashboard)/orders');
+      // Check for stock conflicts before treating as success
+      if (result.stockInfo && result.stockInfo.length > 0) {
+        console.log('[handlePlaceOrder] Setting stockConflictInfo:', result.stockInfo);
+        setStockConflictInfo(result.stockInfo);
+        return;
+      }
+
+      // Existing success path
+      if (result.orderId) {
+        console.log('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
+        vm.clearCart();
+        router.replace('/(dashboard)/orders');
+      }
+    } catch (error) {
+      console.log('[handlePlaceOrder] Error:', error);
+      throw error;
     }
   };
 
@@ -132,13 +142,17 @@ export const CartScreen = () => {
   };
 
   const handleLoginComplete = () => {
+    console.log('[handleLoginComplete] stockConflictInfo:', stockConflictInfo);
+
     // If there's a stock conflict, don't clear cart or navigate—just close the sheet
     // so the user can interact with the StockConflictDialog
     if (stockConflictInfo) {
+      console.log('[handleLoginComplete] Stock conflict detected, closing sheet without navigating');
       setLoginSheetVisible(false);
       return;
     }
 
+    console.log('[handleLoginComplete] No conflict, proceeding to orders');
     setLoginSheetVisible(false);
     vm.clearCart();
     router.replace('/(dashboard)/orders');
