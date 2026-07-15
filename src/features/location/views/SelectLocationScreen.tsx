@@ -38,6 +38,9 @@ export const SelectLocationScreen = () => {
   const villageSearch = useVillageSearchQuery(debouncedQuery);
   const showResults = query.trim().length >= 3;
   const villageResults = villageSearch.data ?? [];
+  // Debounce hasn't caught up to the live query yet — treat as "searching" so
+  // the empty state doesn't flash before the request fires.
+  const searchPending = query.trim() !== debouncedQuery.trim();
 
   const goHome = () => {
     if (router.canGoBack()) router.back();
@@ -92,14 +95,14 @@ export const SelectLocationScreen = () => {
                 <Text className="text-slate-500 font-semibold text-xs uppercase">
                   {t('search_results')}
                 </Text>
-                {villageSearch.isFetching ? (
+                {villageSearch.isFetching || searchPending ? (
                   <ActivityIndicator size="small" color="#64748b" className="ml-2" />
                 ) : null}
               </View>
 
               {villageSearch.isError ? (
                 <Text className="text-slate-400 text-sm mb-2">{t('village_search_error')}</Text>
-              ) : villageResults.length === 0 && !villageSearch.isFetching ? (
+              ) : villageResults.length === 0 && !villageSearch.isFetching && !searchPending ? (
                 <Text className="text-slate-400 text-sm mb-2">
                   {interpolate(t('no_villages_found'), query.trim())}
                 </Text>
