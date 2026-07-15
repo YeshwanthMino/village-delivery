@@ -49,7 +49,7 @@ export function labelToTag(label?: string): AddressTag {
 }
 
 /**
- * Map an address API object into the domain Address. The /app/address API nests
+ * Map an address API object into the domain Address. The /app/addresses API nests
  * the village as an object under `villageId` (with `_id`, `title`, `storeId`,
  * `defaultLocation`, `pincode`), and carries a top-level `storeId` plus a
  * `location` object. Older/flat shapes (a `village` key, or string ids) still
@@ -99,4 +99,12 @@ export function mapAddressList(raw: any): Address[] {
   const data = raw?.data ?? raw;
   const arr = Array.isArray(data) ? data : data?.items ?? data?.results ?? [];
   return Array.isArray(arr) ? arr.map(mapAddress) : [];
+}
+
+/** Map an array (or wrapped array) of village-shaped objects, dropping nulls. */
+export function mapVillageList(raw: any): Village[] {
+  const data = raw?.data ?? raw;
+  const arr = Array.isArray(data) ? data : data?.items ?? data?.results ?? [];
+  if (!Array.isArray(arr)) return [];
+  return arr.map(mapVillage).filter((v): v is Village => v !== null);
 }

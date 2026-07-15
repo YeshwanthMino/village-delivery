@@ -1,7 +1,7 @@
 // src/features/location/data/__tests__/mappers.test.ts
-import { mapAddress } from '../mappers';
+import { mapAddress, mapVillageList } from '../mappers';
 
-// Shape returned by GET /app/address (village nested under `villageId`).
+// Shape returned by GET /app/addresses (village nested under `villageId`).
 const apiAddress = {
   _id: '6a37e5e544c38d7d5d569e86',
   storeId: '68989c821388764b3a92f0dd',
@@ -54,4 +54,47 @@ it('still parses the legacy flat/village-key shape', () => {
   expect(a.storeId).toBeUndefined();
   expect(a.latitude).toBe(1);
   expect(a.tag).toBe('work');
+});
+
+// Shape returned by GET /app/villages?search=… (array of village objects).
+const apiVillage = {
+  _id: '691860854a92a246c6456b98',
+  title: 'Mittoor',
+  storeId: '68989c821388764b3a92f0dd',
+  pincode: '517001',
+  defaultLocation: { latitude: 13.36, longitude: 79.02 },
+};
+
+describe('mapVillageList', () => {
+  it('maps a bare array of villages', () => {
+    const out = mapVillageList([apiVillage]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      id: '691860854a92a246c6456b98',
+      name: 'Mittoor',
+      storeId: '68989c821388764b3a92f0dd',
+      pincode: '517001',
+      latitude: 13.36,
+      longitude: 79.02,
+    });
+  });
+
+  it('unwraps a { data: [...] } envelope', () => {
+    expect(mapVillageList({ data: [apiVillage] })).toHaveLength(1);
+  });
+
+  it('unwraps items / results envelopes', () => {
+    expect(mapVillageList({ items: [apiVillage] })).toHaveLength(1);
+    expect(mapVillageList({ results: [apiVillage] })).toHaveLength(1);
+  });
+
+  it('returns [] for empty or garbage input', () => {
+    expect(mapVillageList([])).toEqual([]);
+    expect(mapVillageList(null)).toEqual([]);
+    expect(mapVillageList({ nope: true })).toEqual([]);
+  });
+
+  it('drops elements that map to null', () => {
+    expect(mapVillageList([{ foo: 'bar' }, apiVillage])).toHaveLength(1);
+  });
 });
