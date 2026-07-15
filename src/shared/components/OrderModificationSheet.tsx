@@ -44,6 +44,31 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   const [retryError, setRetryError] = useState<string | null>(null);
   const [state, setState] = useState<'conflicts' | 'all-sorted'>('conflicts');
 
+  useEffect(() => {
+    if (!visible) return;
+
+    // Build localQuantities based on stockInfo
+    const quantities: Record<string, number> = {};
+    for (const conflict of stockInfo) {
+      const cartItem = cartItems.find(i => i.productId === conflict.productId);
+      if (!cartItem) continue;
+
+      if (conflict.availableStock === 0) {
+        quantities[conflict.productId] = 0;
+      } else if (conflict.availableStock < cartItem.count) {
+        quantities[conflict.productId] = conflict.availableStock;
+      } else {
+        quantities[conflict.productId] = cartItem.count;
+      }
+    }
+
+    setLocalQuantities(quantities);
+    setManuallyAdjusted(new Set());
+    setIsLoading(false);
+    setRetryError(null);
+    setState('conflicts');
+  }, [visible, stockInfo, cartItems]);
+
   return (
     <VillageBottomSheet visible={visible} onClose={onClose}>
       <View className="pb-6">
