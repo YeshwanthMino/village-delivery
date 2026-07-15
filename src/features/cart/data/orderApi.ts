@@ -55,19 +55,33 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     isPriority: input.isPriority ?? false,
   };
 
-  const resp = await apiClient.post<any>(`${BASE}/app/orders`, body);
-  const data = resp?.data ?? resp;
+  try {
+    const resp = await apiClient.post<any>(`${BASE}/app/orders`, body);
+    const data = resp?.data ?? resp;
 
-  // Check for stock conflict response (API returns stockInfo instead of success/error)
-  if (data?.stockInfo && Array.isArray(data.stockInfo) && data.stockInfo.length > 0) {
-    return {
-      orderId: null,
-      raw: resp,
-      stockInfo: data.stockInfo,
-    };
+    // Check for stock conflict response (API returns stockInfo in success response)
+    if (data?.stockInfo && Array.isArray(data.stockInfo) && data.stockInfo.length > 0) {
+      return {
+        orderId: null,
+        raw: resp,
+        stockInfo: data.stockInfo,
+      };
+    }
+
+    // Existing success path
+    const orderId = data?._id ?? data?.id ?? data?.orderId ?? null;
+    return { orderId: orderId != null ? String(orderId) : null, raw: resp };
+  } catch (error: any) {
+    // API may return 400 with stockInfo for stock conflicts instead of 200
+    const errorData = error?.response?.data ?? error?.data ?? error;
+    if (errorData?.stockInfo && Array.isArray(errorData.stockInfo) && errorData.stockInfo.length > 0) {
+      return {
+        orderId: null,
+        raw: error?.response ?? error,
+        stockInfo: errorData.stockInfo,
+      };
+    }
+    // Re-throw if not a stock conflict
+    throw error;
   }
-
-  // Existing success path
-  const orderId = data?._id ?? data?.id ?? data?.orderId ?? null;
-  return { orderId: orderId != null ? String(orderId) : null, raw: resp };
 }
