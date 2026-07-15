@@ -39,6 +39,7 @@ interface LocationActions {
   searchLocation: (query: string) => Promise<boolean>;
   selectAddress: (address: Address) => Promise<boolean>;
   selectRecent: (recent: RecentLocation) => Promise<void>;
+  selectVillage: (village: Village) => Promise<boolean>;
 }
 
 type LocationStore = LocationState & LocationActions;
@@ -288,5 +289,22 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     };
     await get().setServiceable(v);
     await get().addRecent({ ...r, savedAt: Date.now() });
+  },
+
+  selectVillage: async (village) => {
+    // Search results already carry storeId + defaultLocation, so switch the
+    // active store directly — no find-by-location round-trip (like selectRecent).
+    await get().setServiceable(village);
+    if (village.storeId) {
+      await get().addRecent({
+        storeId: village.storeId,
+        villageName: village.name,
+        latitude: village.latitude ?? 0,
+        longitude: village.longitude ?? 0,
+        label: [village.name, village.secondaryName].filter(Boolean).join(', '),
+        savedAt: Date.now(),
+      });
+    }
+    return true;
   },
 }));
