@@ -20,3 +20,5 @@ export type { PaymentMethod } from './PaymentMethodSection';
 export { FloatingCartPill } from './FloatingCartPill';
 export { EmptyCart } from './EmptyCart';
 export { Skeleton } from './Skeleton';
+export { StockConflictDialog } from './StockConflictDialog';
+export type { StockConflict, CartItem } from './StockConflictDialog';
