@@ -69,6 +69,47 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
     setState('conflicts');
   }, [visible, stockInfo, cartItems]);
 
+  const getStockStatus = (productId: string) => {
+    const conflict = stockInfo.find(s => s.productId === productId);
+    if (!conflict) return null;
+
+    return {
+      isOutOfStock: conflict.availableStock === 0,
+      availableCount: conflict.availableStock,
+    };
+  };
+
+  const calculateSubtotal = () => {
+    return stockInfo.reduce((sum, conflict) => {
+      const cartItem = cartItems.find(i => i.productId === conflict.productId);
+      if (!cartItem) return sum;
+      const quantity = localQuantities[conflict.productId] ?? 0;
+      return sum + cartItem.price * quantity;
+    }, 0);
+  };
+
+  const handleUpdateAllPress = async () => {
+    // If no manual adjustments, auto-retry checkout
+    if (manuallyAdjusted.size === 0) {
+      setIsLoading(true);
+      setRetryError(null);
+      try {
+        await onRetryCheckout();
+        // On success, sheet closes automatically via parent
+      } catch (error) {
+        // On failure with new conflicts, parent updates stockInfo
+        // which triggers our useEffect to reinitialize
+        setRetryError((error as any)?.message || 'Failed to place order. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // User made manual adjustments — close sheet and notify parent
+      onManualAdjustment?.(localQuantities);
+      onClose();
+    }
+  };
+
   return (
     <VillageBottomSheet visible={visible} onClose={onClose} dismissable={true}>
       <View className="pb-6">
@@ -87,7 +128,87 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Item rows and footer will go here in next tasks */}
+            {/* Item Rows */}
+            <ScrollView className="px-4 mt-3 max-h-96" showsVerticalScrollIndicator={false}>
+              {stockInfo.map(conflict => {
+                const cartItem = cartItems.find(i => i.productId === conflict.productId);
+                if (!cartItem) return null;
+
+                const isOutOfStock = conflict.availableStock === 0;
+                const currentQuantity = localQuantities[conflict.productId] ?? 0;
+
+                return (
+                  <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
+                    {/* Item header with image, name, price */}
+                    <View className="flex-row gap-3 mb-2">
+                      <View className="w-12 h-12 bg-slate-200 rounded-lg items-center justify-center">
+                        <Text className="text-xs text-slate-500">photo</Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
+                        <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
+                      </View>
+                      <Text className="text-slate-900 font-bold text-sm">₹{cartItem.price}</Text>
+                    </View>
+
+                    {/* Stock status badge */}
+                    {isOutOfStock ? (
+                      <Text className="text-red-600 text-sm font-semibold mb-2">Out of stock</Text>
+                    ) : (
+                      <Text className="text-orange-600 text-sm font-semibold mb-2">
+                        Only {conflict.availableStock} left
+                      </Text>
+                    )}
+
+                    {/* Action: Remove or Adjust */}
+                    {isOutOfStock ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
+                          setLocalQuantities(prev => ({ ...prev, [conflict.productId]: 0 }));
+                        }}
+                        className="border-2 border-red-600 rounded-lg py-2 items-center"
+                      >
+                        <Text className="text-red-600 font-semibold">Remove item</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View>
+                        <View className="flex-row items-center gap-3 mb-2">
+                          <CompactStepper
+                            count={currentQuantity}
+                            onAdd={() => {
+                              setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
+                              setLocalQuantities(prev => ({
+                                ...prev,
+                                [conflict.productId]: Math.min(
+                                  prev[conflict.productId] + 1,
+                                  conflict.availableStock
+                                ),
+                              }));
+                            }}
+                            onDec={() => {
+                              setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
+                              setLocalQuantities(prev => ({
+                                ...prev,
+                                [conflict.productId]: Math.max(prev[conflict.productId] - 1, 0),
+                              }));
+                            }}
+                          />
+                          <TouchableOpacity
+                            onPress={() => {
+                              setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
+                              setLocalQuantities(prev => ({ ...prev, [conflict.productId]: 0 }));
+                            }}
+                          >
+                            <Text className="text-slate-600 text-sm underline">Remove instead</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
           </>
         ) : (
           <>
