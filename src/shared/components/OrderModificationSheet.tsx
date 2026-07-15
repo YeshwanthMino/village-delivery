@@ -235,7 +235,79 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
           </>
         ) : (
           <>
-            {/* All sorted state will go here */}
+            {/* Header */}
+            <View className="flex-row items-center px-4 pb-3 border-b border-slate-100">
+              <View className="flex-1">
+                <Text className="text-slate-900 font-black text-lg">All sorted!</Text>
+                <Text className="text-slate-500 text-sm mt-1">
+                  Your cart is ready — nothing else needs attention.
+                </Text>
+              </View>
+              <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center ml-2" testID="close-button-sorted">
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Item Rows */}
+            <ScrollView className="px-4 mt-3 max-h-96" showsVerticalScrollIndicator={false}>
+              {stockInfo.map(conflict => {
+                const cartItem = cartItems.find(i => i.productId === conflict.productId);
+                if (!cartItem) return null;
+
+                const quantity = localQuantities[conflict.productId] ?? 0;
+
+                return (
+                  <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
+                    {/* Item header */}
+                    <View className="flex-row gap-3 mb-2">
+                      <View className="w-12 h-12 bg-slate-200 rounded-lg items-center justify-center">
+                        <Text className="text-xs text-slate-500">photo</Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
+                        <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
+                      </View>
+                      <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
+                    </View>
+
+                    {/* Updated badge and quantity */}
+                    <View className="flex-row items-center gap-2 mb-2">
+                      <Text className="text-green-600 text-sm font-semibold">Updated ✓</Text>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Text className="text-slate-600 text-sm">Qty:</Text>
+                        <Text className="text-slate-900 font-semibold">{quantity}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Success message */}
+            <View className="px-4 mt-3 flex-row items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+              <Text className="text-green-600 text-lg">✓</Text>
+              <Text className="text-green-700 text-sm font-medium flex-1">
+                All set! Your cart is up to date.
+              </Text>
+            </View>
+
+            {/* Footer with Place Order button */}
+            <View className="px-4 mt-4 border-t border-slate-100 pt-4">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-slate-600 text-sm">Subtotal</Text>
+                <Text className="text-slate-900 font-bold text-base">{rupees(calculateSubtotal())}</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={onClose}
+                className="w-full bg-green-600 rounded-lg py-3 items-center"
+              >
+                <Text className="text-white font-bold">Place order · {rupees(calculateSubtotal())}</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </View>
