@@ -34,18 +34,33 @@ export async function checkCartStock(items: CheckStockItem[]): Promise<CheckStoc
   try {
     console.log('[checkCartStock] Request:', JSON.stringify(body));
 
-    const resp = await apiClient.post<CheckStockResponse>(`${BASE}/app/orders/check-stock`, body, {
+    const resp = await apiClient.post<any>(`${BASE}/app/orders/check-stock`, body, {
       timeout: STOCK_CHECK_TIMEOUT,
     });
 
     const data = resp?.data ?? resp;
     console.log('[checkCartStock] Success response:', JSON.stringify(data));
 
-    if (!data?.items || !Array.isArray(data.items)) {
+    // Handle both response formats:
+    // 1. {items: [...]} format
+    // 2. Direct array [...] format
+    let itemsArray: StockCheckItem[] = [];
+
+    if (Array.isArray(data)) {
+      // Direct array response
+      itemsArray = data.map((item) => ({
+        productId: item.productId,
+        inStock: item.availableStock > 0,
+        availableQuantity: item.availableStock,
+      }));
+    } else if (data?.items && Array.isArray(data.items)) {
+      // {items: [...]} response
+      itemsArray = data.items;
+    } else {
       throw new Error('Invalid stock check response format');
     }
 
-    return data;
+    return { items: itemsArray };
   } catch (error: any) {
     console.error('[checkCartStock] Error:', error?.message || error);
 

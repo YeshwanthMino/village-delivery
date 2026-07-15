@@ -41,14 +41,11 @@ export const CartScreen = () => {
   const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
   const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
 
-  // Stock verification
-  const { stockStatus, isLoading: isVerifyingStock, error: stockError } = useCartStockStore(state => ({
-    stockStatus: state.stockStatus,
-    isLoading: state.isLoading,
-    error: state.error,
-  }));
+  // Stock verification (use separate selectors to avoid infinite loops)
+  const stockStatus = useCartStockStore(state => state.stockStatus);
+  const isVerifyingStock = useCartStockStore(state => state.isLoading);
+  const stockError = useCartStockStore(state => state.error);
   const verifyCartStock = useCartStockStore(state => state.verifyCartStock);
-  const retryStockVerification = useCartStockStore(state => state.verifyCartStock);
   const clearStockError = useCartStockStore(state => state.setError);
 
   // Verify stock when cart items change
@@ -99,7 +96,7 @@ export const CartScreen = () => {
         productId: item.productId,
         quantity: item.count,
       }));
-      void retryStockVerification(itemsToCheck).catch(error => {
+      void verifyCartStock(itemsToCheck).catch(error => {
         console.warn('[CartScreen] Stock verification retry failed:', error);
       });
     }

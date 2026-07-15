@@ -15,7 +15,7 @@ describe('Stock API', () => {
     jest.clearAllMocks();
   });
 
-  test('checkCartStock returns stock status for items', async () => {
+  test('checkCartStock returns stock status for items with {items: []} format', async () => {
     const mockResponse = {
       items: [
         { productId: 'prod1', inStock: true, availableQuantity: 5 },
@@ -36,6 +36,32 @@ describe('Stock API', () => {
       { items: [{ productId: 'prod1', quantity: 2 }, { productId: 'prod2', quantity: 1 }] },
       { timeout: 5000 }
     );
+  });
+
+  test('checkCartStock handles direct array response format', async () => {
+    const mockResponse = [
+      { productId: 'prod1', availableStock: 5 },
+      { productId: 'prod2', availableStock: 0 },
+    ];
+
+    mockApiClient.post.mockResolvedValue(mockResponse);
+
+    const result = await checkCartStock([
+      { productId: 'prod1', quantity: 2 },
+      { productId: 'prod2', quantity: 1 },
+    ]);
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toEqual({
+      productId: 'prod1',
+      inStock: true,
+      availableQuantity: 5,
+    });
+    expect(result.items[1]).toEqual({
+      productId: 'prod2',
+      inStock: false,
+      availableQuantity: 0,
+    });
   });
 
   test('checkCartStock returns empty items for empty input', async () => {
