@@ -153,7 +153,7 @@ describe('StockConflictDialog', () => {
 
   test('shows loading state when updating', async () => {
     const slowUpdate = jest.fn(
-      () => new Promise(resolve => setTimeout(resolve, 100))
+      async () => new Promise<void>(resolve => setTimeout(resolve, 100))
     );
 
     const { getByText, queryByText } = render(
