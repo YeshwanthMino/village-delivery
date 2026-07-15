@@ -255,6 +255,8 @@ export const CartScreen = () => {
         cartItems={vm.cartItems.map(item => ({
           productId: item.productId,
           name: item.name,
+          weight: item.weight,
+          price: item.price,
           image: item.imageUrl,
           count: item.count,
         }))}

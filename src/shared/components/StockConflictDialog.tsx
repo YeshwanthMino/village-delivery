@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,9 +6,10 @@ import {
   View,
   Image,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Minus, Plus } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { VillageBottomSheet } from './VillageBottomSheet';
+import { rupees } from '@/src/features/home/data/static/villageData';
 
 export interface StockConflict {
   productId: string;
@@ -18,6 +19,8 @@ export interface StockConflict {
 export interface CartItem {
   productId: string;
   name: string;
+  weight?: string;
+  price: number;
   image?: string;
   count: number;
 }
@@ -30,6 +33,8 @@ interface StockConflictDialogProps {
   cartItems: CartItem[];
   onUpdateCart: () => Promise<void>;
   onCancel: () => void;
+  onQtyChange?: (productId: string, newQty: number) => void;
+  onRemove?: (productId: string) => void;
 }
 
 export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
@@ -38,14 +43,55 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
   cartItems,
   onUpdateCart,
   onCancel,
+  onQtyChange,
+  onRemove,
 }) => {
   const { t } = useTranslation();
   const [state, setState] = useState<DialogState>('showing');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [localQtyChanges, setLocalQtyChanges] = useState<Record<string, number>>({});
+
+  const affectedItems = useMemo(() => {
+    return stockInfo.map(conflict => {
+      const cartItem = cartItems.find(i => i.productId === conflict.productId);
+      return { conflict, cartItem };
+    }).filter(({ cartItem }) => cartItem);
+  }, [stockInfo, cartItems]);
+
+  const subtotal = useMemo(() => {
+    return affectedItems.reduce((sum, { cartItem, conflict }) => {
+      if (!cartItem) return sum;
+      const qty = localQtyChanges[cartItem.productId] ?? cartItem.count;
+      return sum + (cartItem.price * qty);
+    }, 0);
+  }, [affectedItems, localQtyChanges]);
+
+  const handleQtyDecrement = (productId: string) => {
+    setLocalQtyChanges(prev => ({
+      ...prev,
+      [productId]: Math.max(0, (prev[productId] ?? cartItems.find(i => i.productId === productId)?.count ?? 0) - 1)
+    }));
+  };
+
+  const handleQtyIncrement = (productId: string, maxStock: number) => {
+    setLocalQtyChanges(prev => ({
+      ...prev,
+      [productId]: Math.min(maxStock, (prev[productId] ?? cartItems.find(i => i.productId === productId)?.count ?? 0) + 1)
+    }));
+  };
 
   const handleUpdateCart = async () => {
     try {
       setState('updating');
+
+      // Apply quantity changes before calling onUpdateCart
+      for (const [productId, newQty] of Object.entries(localQtyChanges)) {
+        const cartItem = cartItems.find(i => i.productId === productId);
+        if (cartItem && newQty !== cartItem.count) {
+          onQtyChange?.(productId, newQty);
+        }
+      }
+
       await onUpdateCart();
     } catch (error) {
       setState('error');
@@ -62,6 +108,7 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
   const handleBackToCart = () => {
     setState('showing');
     setErrorMessage('');
+    setLocalQtyChanges({});
     onCancel();
   };
 
@@ -69,96 +116,150 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
     <VillageBottomSheet visible={visible} onClose={onCancel}>
       <View className="pb-6">
         {/* Header */}
-        <View className="px-4 py-5 flex-row items-start justify-between">
-          <View className="flex-1">
+        <View className="px-4 py-5 flex-row items-start justify-between border-b border-slate-100">
+          <View className="flex-1 pr-3">
             <Text className="text-slate-900 font-black text-xl">
               {t('stock_conflict_title')}
             </Text>
-            <Text className="text-slate-500 text-sm mt-2">
+            <Text className="text-slate-500 text-sm mt-2 leading-5">
               {t('stock_conflict_subtitle')}
             </Text>
           </View>
           <Pressable
             onPress={onCancel}
-            className="w-8 h-8 items-center justify-center ml-2"
+            className="w-8 h-8 items-center justify-center flex-shrink-0"
           >
             <X size={24} color="#64748b" strokeWidth={2} />
           </Pressable>
         </View>
 
-        {/* Divider */}
-        <View className="h-px bg-slate-100 my-2" />
-
         {/* Body */}
         {state === 'showing' && (
-          <View className="px-4 py-4 gap-3">
-            {stockInfo.map((conflict, idx) => {
-              const cartItem = cartItems.find(
-                (item) => item.productId === conflict.productId
-              );
-              if (!cartItem) return null;
+          <View className="px-4 py-4">
+            <View className="gap-3">
+              {affectedItems.map(({ conflict, cartItem }) => {
+                if (!cartItem) return null;
 
-              const isRemoval = conflict.availableStock === 0;
-              const badgeText = isRemoval
-                ? t('stock_conflict_remove_badge')
-                : t('stock_conflict_reduce_to').replace(
-                    '{n}',
-                    String(conflict.availableStock)
-                  );
-              const badgeColor = isRemoval ? '#dc2626' : '#eab308';
+                const isOutOfStock = conflict.availableStock === 0;
+                const currentQty = localQtyChanges[cartItem.productId] ?? cartItem.count;
+                const statusText = isOutOfStock
+                  ? t('stock_conflict_remove_badge')
+                  : t('stock_conflict_reduce_to').replace('{n}', String(conflict.availableStock));
+                const statusColor = isOutOfStock ? '#ef4444' : '#f59e0b';
 
-              return (
-                <View key={conflict.productId}>
-                  <View className="flex-row gap-3 pb-4">
-                    {/* Product thumbnail */}
-                    <View className="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                      {cartItem.image ? (
-                        <Image
-                          source={{ uri: cartItem.image }}
-                          className="w-full h-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View className="w-full h-full items-center justify-center bg-slate-100">
-                          <Text className="text-2xl">📦</Text>
-                        </View>
-                      )}
-                    </View>
+                return (
+                  <View
+                    key={cartItem.productId}
+                    className="border border-slate-200 rounded-2xl p-4 bg-white gap-3"
+                  >
+                    {/* Product header with image, name, price */}
+                    <View className="flex-row gap-3">
+                      {/* Image */}
+                      <View className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                        {cartItem.image ? (
+                          <Image
+                            source={{ uri: cartItem.image }}
+                            className="w-full h-full"
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View className="w-full h-full items-center justify-center bg-slate-200">
+                            <Text className="text-xs text-slate-400">photo</Text>
+                          </View>
+                        )}
+                      </View>
 
-                    {/* Product info */}
-                    <View className="flex-1">
-                      <Text
-                        className="text-slate-900 font-bold text-base"
-                        numberOfLines={1}
-                      >
-                        {cartItem.name}
-                      </Text>
-                      <Text
-                        className="text-slate-500 text-sm mt-1"
-                        numberOfLines={1}
-                      >
-                        {t('stock_conflict_quantity_change')
-                          .replace('{current}', String(cartItem.count))
-                          .replace('{available}', String(conflict.availableStock))}
-                      </Text>
-                      <View className="flex-row items-center gap-2 mt-2">
-                        <View
-                          style={{ backgroundColor: badgeColor }}
-                          className="px-3 py-1 rounded-full"
-                        >
-                          <Text className="text-xs font-bold text-white">
-                            {badgeText}
+                      {/* Info */}
+                      <View className="flex-1">
+                        <View className="flex-row items-start justify-between gap-2">
+                          <View className="flex-1">
+                            <Text className="text-slate-900 font-bold text-base leading-5">
+                              {cartItem.name}
+                            </Text>
+                            {cartItem.weight && (
+                              <Text className="text-slate-500 text-xs mt-1">
+                                {cartItem.weight}
+                              </Text>
+                            )}
+                          </View>
+                          <Text className="text-slate-900 font-bold text-base flex-shrink-0">
+                            ₹{rupees(cartItem.price)}
                           </Text>
                         </View>
                       </View>
                     </View>
+
+                    {/* Status badge */}
+                    <View>
+                      <Text style={{ color: statusColor }} className="text-sm font-bold">
+                        {statusText}
+                      </Text>
+                    </View>
+
+                    {/* Action */}
+                    {isOutOfStock ? (
+                      <Pressable
+                        onPress={() => {
+                          setLocalQtyChanges(prev => ({
+                            ...prev,
+                            [cartItem.productId]: 0
+                          }));
+                          onRemove?.(cartItem.productId);
+                        }}
+                        className="py-3 border border-orange-500 rounded-xl items-center"
+                      >
+                        <Text className="text-orange-600 font-bold text-base">
+                          Remove item
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <View className="gap-3">
+                        <View className="flex-row items-center gap-4">
+                          <View className="flex-row items-center border border-slate-300 rounded-xl px-3 py-2 gap-2">
+                            <Pressable
+                              onPress={() => handleQtyDecrement(cartItem.productId)}
+                              className="w-6 h-6 items-center justify-center"
+                            >
+                              <Minus size={16} color="#64748b" />
+                            </Pressable>
+                            <Text className="text-slate-900 font-bold text-base w-8 text-center">
+                              {currentQty}
+                            </Text>
+                            <Pressable
+                              onPress={() => handleQtyIncrement(cartItem.productId, conflict.availableStock)}
+                              className="w-6 h-6 items-center justify-center"
+                            >
+                              <Plus size={16} color="#64748b" />
+                            </Pressable>
+                          </View>
+                        </View>
+                        <Pressable
+                          onPress={() => {
+                            setLocalQtyChanges(prev => ({
+                              ...prev,
+                              [cartItem.productId]: 0
+                            }));
+                            onRemove?.(cartItem.productId);
+                          }}
+                        >
+                          <Text className="text-slate-600 font-semibold text-sm underline">
+                            Remove instead
+                          </Text>
+                        </Pressable>
+                      </View>
+                    )}
                   </View>
-                  {idx < stockInfo.length - 1 && (
-                    <View className="h-px bg-slate-100" />
-                  )}
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
+
+            {/* Subtotal */}
+            <View className="flex-row justify-between items-center py-4 border-t border-slate-100 mt-4">
+              <Text className="text-slate-600 text-base">Subtotal</Text>
+              <Text className="text-slate-900 font-bold text-base">
+                ₹{rupees(subtotal)}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -192,25 +293,25 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
         )}
 
         {/* Footer with buttons */}
-        <View className="px-4 py-4 gap-3 border-t border-slate-100">
+        <View className="px-4 py-4 gap-3 border-t border-slate-100 flex-row">
           {state === 'showing' && (
             <>
               <Pressable
                 onPress={onCancel}
-                className="py-4 rounded-2xl border border-slate-300 items-center active:bg-slate-50"
+                className="flex-1 py-4 rounded-2xl border border-slate-300 items-center"
                 style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
               >
                 <Text className="text-slate-900 font-bold text-base">
-                  {t('stock_conflict_cancel_button')}
+                  Cancel
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleUpdateCart}
-                className="py-4 rounded-2xl bg-green-600 items-center active:bg-green-700"
+                className="flex-1 py-4 rounded-2xl bg-green-600 items-center"
                 style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
               >
                 <Text className="text-white font-bold text-base">
-                  {t('stock_conflict_update_button')}
+                  Update all
                 </Text>
               </Pressable>
             </>
@@ -220,20 +321,42 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
             <>
               <Pressable
                 onPress={handleBackToCart}
-                className="py-4 rounded-2xl border border-slate-300 items-center active:bg-slate-50"
+                className="flex-1 py-4 rounded-2xl border border-slate-300 items-center"
                 style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
               >
                 <Text className="text-slate-900 font-bold text-base">
-                  {t('stock_conflict_back_to_cart')}
+                  Back to cart
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleRetry}
-                className="py-4 rounded-2xl bg-green-600 items-center active:bg-green-700"
+                className="flex-1 py-4 rounded-2xl bg-green-600 items-center"
                 style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
               >
                 <Text className="text-white font-bold text-base">
-                  {t('stock_conflict_try_again')}
+                  Try again
+                </Text>
+              </Pressable>
+            </>
+          )}
+
+          {(state === 'updating' || state === 'retrying') && (
+            <>
+              <Pressable
+                disabled
+                className="flex-1 py-4 rounded-2xl border border-slate-300 items-center opacity-50"
+              >
+                <Text className="text-slate-900 font-bold text-base">
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled
+                className="flex-1 py-4 rounded-2xl bg-green-600 items-center opacity-50 flex-row items-center justify-center gap-2"
+              >
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text className="text-white font-bold text-base">
+                  {state === 'updating' ? 'Updating...' : 'Retrying...'}
                 </Text>
               </Pressable>
             </>
