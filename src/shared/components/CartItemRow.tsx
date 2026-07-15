@@ -24,6 +24,15 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
   const decFromCart = useVillageStore(state => state.decFromCart);
   const { locale } = useTranslation();
 
+  const handleRemoveItem = () => {
+    console.log('[CartItemRow] Removing out-of-stock item:', item.key, 'productId:', item.productId, 'quantity:', item.count);
+    // Remove entire quantity
+    for (let i = 0; i < item.count; i++) {
+      decFromCart(item.key);
+    }
+    console.log('[CartItemRow] Item removal completed');
+  };
+
   const displayName = locale === 'te' && item.nameTE ? item.nameTE : item.name;
 
   const discount = item.mrp > item.price
@@ -97,7 +106,7 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
               <Text className="text-red-700 text-xs font-semibold">Out of stock</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => decFromCart(item.key)}
+              onPress={handleRemoveItem}
               className="bg-red-50 rounded-lg px-2 py-1 flex-row items-center justify-center border border-red-200"
             >
               <Trash2 size={12} color="#dc2626" />
