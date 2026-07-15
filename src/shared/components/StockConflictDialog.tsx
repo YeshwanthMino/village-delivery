@@ -59,12 +59,11 @@ export const StockConflictDialog: React.FC<StockConflictDialogProps> = ({
   }, [stockInfo, cartItems]);
 
   const subtotal = useMemo(() => {
-    return affectedItems.reduce((sum, { cartItem, conflict }) => {
-      if (!cartItem) return sum;
+    return cartItems.reduce((sum, cartItem) => {
       const qty = localQtyChanges[cartItem.productId] ?? cartItem.count;
       return sum + (cartItem.price * qty);
     }, 0);
-  }, [affectedItems, localQtyChanges]);
+  }, [cartItems, localQtyChanges]);
 
   const handleQtyDecrement = (productId: string) => {
     setLocalQtyChanges(prev => ({
