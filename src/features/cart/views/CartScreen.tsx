@@ -246,10 +246,10 @@ export const CartScreen = () => {
         visible={loginSheetVisible}
         onClose={() => setLoginSheetVisible(false)}
         onComplete={handleLoginComplete}
+        onPlaceOrder={handlePlaceOrder}
         initialStep={isAuthenticated ? 'placing' : 'phone'}
         itemCount={vm.bill.totalCount}
         grandTotal={Math.round(vm.bill.grandTotal)}
-        onPlaceOrder={handlePlaceOrder}
       />
 
       {/* Auth gate for the address flow */}
