@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, Image } from 'react-native';
 import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
 import { CompactStepper } from './CompactStepper';
@@ -132,12 +132,20 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                   <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
                     {/* Item header with image, name, price */}
                     <View className="flex-row gap-3 mb-2">
-                      <View className="w-12 h-12 bg-slate-200 rounded-lg items-center justify-center">
-                        <Text className="text-xs text-slate-500">photo</Text>
+                      <View className="w-12 h-12 rounded-lg overflow-hidden bg-slate-200">
+                        {cartItem.image ? (
+                          <Image
+                            source={{ uri: cartItem.image }}
+                            style={{ width: '100%', height: '100%' }}
+                          />
+                        ) : (
+                          <View className="flex-1 items-center justify-center">
+                            <Text className="text-xs text-slate-500">photo</Text>
+                          </View>
+                        )}
                       </View>
                       <View className="flex-1">
                         <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
-                        <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
                       </View>
                       <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
                     </View>
@@ -260,12 +268,20 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                   <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
                     {/* Item header */}
                     <View className="flex-row gap-3 mb-2">
-                      <View className="w-12 h-12 bg-slate-200 rounded-lg items-center justify-center">
-                        <Text className="text-xs text-slate-500">photo</Text>
+                      <View className="w-12 h-12 rounded-lg overflow-hidden bg-slate-200">
+                        {cartItem.image ? (
+                          <Image
+                            source={{ uri: cartItem.image }}
+                            style={{ width: '100%', height: '100%' }}
+                          />
+                        ) : (
+                          <View className="flex-1 items-center justify-center">
+                            <Text className="text-xs text-slate-500">photo</Text>
+                          </View>
+                        )}
                       </View>
                       <View className="flex-1">
                         <Text className="text-slate-900 font-semibold text-sm">{cartItem.name}</Text>
-                        <Text className="text-slate-500 text-xs mt-0.5">{cartItem.weight}</Text>
                       </View>
                       <Text className="text-slate-900 font-bold text-sm">{rupees(cartItem.price)}</Text>
                     </View>
