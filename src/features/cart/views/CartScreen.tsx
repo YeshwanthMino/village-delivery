@@ -108,6 +108,25 @@ export const CartScreen = () => {
     router.replace('/(dashboard)/orders');
   };
 
+  const handleManualAdjustment = (adjustedQuantities: Record<string, number>) => {
+    // Apply adjusted quantities to cart
+    for (const [productId, newQuantity] of Object.entries(adjustedQuantities)) {
+      const cartItem = vm.cartItems.find(i => i.productId === productId);
+      if (!cartItem) continue;
+
+      const diff = newQuantity - cartItem.count;
+      if (diff > 0) {
+        for (let i = 0; i < diff; i++) {
+          vm.addToCart(productId);
+        }
+      } else if (diff < 0) {
+        for (let i = 0; i < Math.abs(diff); i++) {
+          vm.decFromCart(productId);
+        }
+      }
+    }
+  };
+
   if (vm.cartCount === 0) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -227,6 +246,23 @@ export const CartScreen = () => {
         onClose={() => setPureLoginVisible(false)}
         onComplete={() => setPureLoginVisible(false)}
         mode="auth"
+      />
+
+      {/* Order Modification Sheet */}
+      <OrderModificationSheet
+        visible={stockConflictInfo !== null}
+        stockInfo={stockConflictInfo ?? []}
+        cartItems={vm.cartItems.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          weight: item.weight,
+          price: item.price,
+          image: item.imageUrl ?? '',
+          count: item.count,
+        }))}
+        onClose={() => setStockConflictInfo(null)}
+        onRetryCheckout={handlePlaceOrder}
+        onManualAdjustment={handleManualAdjustment}
       />
     </SafeAreaView>
   );
