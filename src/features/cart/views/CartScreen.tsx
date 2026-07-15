@@ -10,11 +10,12 @@ import {
   CheckoutBar,
   DeliveryETACard,
   EmptyCart,
+  OrderModificationSheet,
   PaymentMethodSection,
   SavingsStrip,
   VariantBottomSheet,
 } from '@/src/shared/components';
-import type { PaymentMethod } from '@/src/shared/components';
+import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
@@ -38,6 +39,7 @@ export const CartScreen = () => {
   const addr = useCartAddressViewModel();
   const [addressLoginVisible, setAddressLoginVisible] = React.useState(false);
   const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
+  const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
 
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
@@ -81,6 +83,14 @@ export const CartScreen = () => {
 
       console.log('[handlePlaceOrder] createOrder returned:', result);
 
+      // Check for stock conflicts
+      if (result.stockInfo && result.stockInfo.length > 0) {
+        console.log('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
+        setStockConflictInfo(result.stockInfo);
+        throw new Error('Stock conflicts detected');
+      }
+
+      // Success path
       if (result.orderId) {
         console.log('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
         vm.clearCart();
