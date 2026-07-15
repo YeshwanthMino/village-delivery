@@ -70,10 +70,30 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   }, [visible, stockInfo, cartItems]);
 
   return (
-    <VillageBottomSheet visible={visible} onClose={onClose}>
+    <VillageBottomSheet visible={visible} onClose={onClose} dismissable={true}>
       <View className="pb-6">
-        {/* Placeholder — implement in next tasks */}
-        <Text>Order Modification Sheet</Text>
+        {state === 'conflicts' ? (
+          <>
+            {/* Header */}
+            <View className="flex-row items-center px-4 pb-3 border-b border-slate-100">
+              <View className="flex-1">
+                <Text className="text-slate-900 font-black text-lg">A couple of things changed</Text>
+                <Text className="text-slate-500 text-sm mt-1">
+                  Some items in your cart are sold out or running low. Update your order to continue.
+                </Text>
+              </View>
+              <TouchableOpacity onPress={onClose} className="w-8 h-8 items-center justify-center ml-2" testID="close-button-conflicts">
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Item rows and footer will go here in next tasks */}
+          </>
+        ) : (
+          <>
+            {/* All sorted state will go here */}
+          </>
+        )}
       </View>
     </VillageBottomSheet>
   );
