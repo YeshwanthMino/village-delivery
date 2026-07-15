@@ -101,10 +101,16 @@ export function mapAddressList(raw: any): Address[] {
   return Array.isArray(arr) ? arr.map(mapAddress) : [];
 }
 
-/** Map an array (or wrapped array) of village-shaped objects, dropping nulls. */
+/**
+ * Map an array (or wrapped array) of village-shaped objects, dropping nulls.
+ * The /app/villages search wraps the list under `villages` (with a `count`);
+ * `data`/`items`/`results` are also accepted for other/legacy shapes.
+ */
 export function mapVillageList(raw: any): Village[] {
   const data = raw?.data ?? raw;
-  const arr = Array.isArray(data) ? data : data?.items ?? data?.results ?? [];
+  const arr = Array.isArray(data)
+    ? data
+    : data?.villages ?? data?.items ?? data?.results ?? [];
   if (!Array.isArray(arr)) return [];
   return arr.map(mapVillage).filter((v): v is Village => v !== null);
 }

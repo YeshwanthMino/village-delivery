@@ -79,6 +79,35 @@ describe('mapVillageList', () => {
     });
   });
 
+  it('unwraps the { villages: [...], count } search envelope', () => {
+    const out = mapVillageList({ villages: [apiVillage], count: 1 });
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe('Mittoor');
+  });
+
+  it('maps a real /app/villages village (defaultLocation → lat/lng)', () => {
+    const out = mapVillageList({
+      villages: [
+        {
+          _id: '691860854a92a246c6456b98',
+          title: 'Errepalli (Diguva HW)',
+          storeId: '68989c821388764b3a92f0dd',
+          pincode: '123456',
+          defaultLocation: { latitude: 13.360026, longitude: 79.028338 },
+        },
+      ],
+      count: 1,
+    });
+    expect(out[0]).toMatchObject({
+      id: '691860854a92a246c6456b98',
+      name: 'Errepalli (Diguva HW)',
+      storeId: '68989c821388764b3a92f0dd',
+      pincode: '123456',
+      latitude: 13.360026,
+      longitude: 79.028338,
+    });
+  });
+
   it('unwraps a { data: [...] } envelope', () => {
     expect(mapVillageList({ data: [apiVillage] })).toHaveLength(1);
   });
