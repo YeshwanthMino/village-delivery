@@ -18,4 +18,8 @@ export const queryKeys = {
     list: () => [...queryKeys.orders.all, 'list'] as const,
     detail: (id: string) => [...queryKeys.orders.all, id] as const,
   },
+  villages: {
+    all: ['villages'] as const,
+    search: (term: string) => [...queryKeys.villages.all, 'search', { term }] as const,
+  },
 } as const;
