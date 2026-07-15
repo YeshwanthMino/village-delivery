@@ -78,32 +78,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     return { orderId: orderId != null ? String(orderId) : null, raw: resp };
   } catch (error: any) {
     console.log('[createOrder] Error caught:', error?.message || error);
-    console.log('[createOrder] Full error object:', error);
-    console.log('[createOrder] error.response:', error?.response);
-    console.log('[createOrder] error.response.data:', error?.response?.data);
-    console.log('[createOrder] error.data:', error?.data);
 
     // API may return 400 with stockInfo for stock conflicts instead of 200
-    // Try multiple paths where stockInfo might be
-    const errorData = error?.response?.data ?? error?.data ?? error;
-    console.log('[createOrder] Checking errorData for stockInfo:', errorData);
-
-    if (errorData?.stockInfo && Array.isArray(errorData.stockInfo) && errorData.stockInfo.length > 0) {
-      console.log('[createOrder] Stock conflict detected in error response:', errorData.stockInfo);
-      return {
-        orderId: null,
-        raw: error?.response ?? error,
-        stockInfo: errorData.stockInfo,
-      };
-    }
-
-    // Also check if the entire error response is the stockInfo
-    if (error?.stockInfo && Array.isArray(error.stockInfo) && error.stockInfo.length > 0) {
-      console.log('[createOrder] Stock conflict detected in error root:', error.stockInfo);
+    // Check rawData from error object (added by ErrorMapper)
+    if (error?.rawData?.stockInfo && Array.isArray(error.rawData.stockInfo) && error.rawData.stockInfo.length > 0) {
+      console.log('[createOrder] Stock conflict detected in error.rawData:', error.rawData.stockInfo);
       return {
         orderId: null,
         raw: error,
-        stockInfo: error.stockInfo,
+        stockInfo: error.rawData.stockInfo,
       };
     }
 
