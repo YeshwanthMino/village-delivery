@@ -119,12 +119,25 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
         setIsLoading(false);
       }
     } else {
-      // User made manual adjustments — close sheet and notify parent
+      // User made manual adjustments — apply to cart and auto-retry checkout
       console.log('[OrderModificationSheet] Manual adjustments detected, calling onManualAdjustment');
       console.log('[OrderModificationSheet] Adjustments to apply:', localQuantities);
       onManualAdjustment?.(localQuantities);
-      console.log('[OrderModificationSheet] Calling onClose');
-      onClose();
+
+      // Auto-retry checkout after applying manual adjustments
+      setIsLoading(true);
+      setRetryError(null);
+      try {
+        console.log('[OrderModificationSheet] Auto-retrying checkout after manual adjustments');
+        await onRetryCheckout();
+        // On success, sheet closes automatically via parent
+      } catch (error) {
+        // On failure with new conflicts, parent updates stockInfo
+        // which triggers our useEffect to reinitialize
+        setRetryError((error as any)?.message || 'Failed to place order. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
