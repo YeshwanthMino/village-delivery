@@ -75,6 +75,22 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
     setState('conflicts');
   }, [visible, stockInfo, cartItems]);
 
+  // Close sheet if all items have been removed (all quantities = 0)
+  useEffect(() => {
+    if (!visible || stockInfo.length === 0) return;
+
+    const allRemoved = stockInfo.every(conflict => {
+      const qty = localQuantities[conflict.productId] ?? 0;
+      return qty === 0;
+    });
+
+    if (allRemoved && manuallyAdjusted.size > 0) {
+      console.log('[OrderModificationSheet] All items removed, auto-closing sheet');
+      onManualAdjustment?.(localQuantities);
+      onClose();
+    }
+  }, [localQuantities, manuallyAdjusted, stockInfo, visible, onManualAdjustment, onClose]);
+
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, cartItem) => {
       const quantity = localQuantities[cartItem.productId] ?? cartItem.count;
