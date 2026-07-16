@@ -146,6 +146,9 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                 const isOutOfStock = conflict.availableStock === 0;
                 const currentQuantity = localQuantities[conflict.productId] ?? 0;
 
+                // Hide items that have been removed (quantity = 0)
+                if (currentQuantity === 0) return null;
+
                 return (
                   <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
                     {/* Item header with image, name, price */}
@@ -203,20 +206,15 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                     {isOutOfStock ? (
                       <TouchableOpacity
                         onPress={() => {
-                          console.log('[OrderModificationSheet] === REMOVE ITEM BUTTON PRESSED ===');
-                          console.log('[OrderModificationSheet] productId:', conflict.productId);
-                          console.log('[OrderModificationSheet] Setting quantity to 0');
                           setManuallyAdjusted(prev => {
                             const updated = new Set(prev);
                             updated.add(conflict.productId);
-                            console.log('[OrderModificationSheet] manuallyAdjusted set updated:', Array.from(updated));
                             return updated;
                           });
-                          setLocalQuantities(prev => {
-                            const updated = { ...prev, [conflict.productId]: 0 };
-                            console.log('[OrderModificationSheet] localQuantities updated:', updated);
-                            return updated;
-                          });
+                          setLocalQuantities(prev => ({
+                            ...prev,
+                            [conflict.productId]: 0,
+                          }));
                         }}
                         className="border-2 border-red-600 rounded-lg py-2 items-center"
                       >
