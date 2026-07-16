@@ -186,6 +186,8 @@ export const CartScreen = () => {
       }
     }
     console.log('[CartScreen] Manual adjustment completed');
+    // Clear the conflict state so the sheet closes
+    setStockConflictInfo(null);
   };
 
   if (vm.cartCount === 0) {

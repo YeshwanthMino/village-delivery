@@ -8,7 +8,7 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,25 +28,18 @@ function formatDate(iso: string): string {
   });
 }
 
-// ── Derived (time-based) order progress ───────────────────────────────────────
+// ── Derived order progress from server status ─────────────────────────────────
 //
-// Orders come back as `draft`/`placed`, so progress is simulated from the order
-// creation time: "Preparing" for the first PREP_MINUTES, then "Out for Delivery".
-// A server `delivered`/`cancelled` always wins over the time-based guess.
-
-const PREP_MINUTES = 40;
+// Orders use the server status directly: if the server says 'out_for_delivery',
+// show that; otherwise show 'preparing' until server marks as delivered/cancelled.
 
 type ViewStatus = 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
 
-function deriveViewStatus(order: Order, now: number): { status: ViewStatus; remainingMin: number } {
+function deriveViewStatus(order: Order): { status: ViewStatus; remainingMin: number } {
   if (order.status === 'delivered') return { status: 'delivered', remainingMin: 0 };
   if (order.status === 'cancelled') return { status: 'cancelled', remainingMin: 0 };
-  const placed = new Date(order.placedAt).getTime();
-  const elapsedMin = (now - placed) / 60000;
-  if (Number.isFinite(elapsedMin) && elapsedMin < PREP_MINUTES) {
-    return { status: 'preparing', remainingMin: Math.max(1, Math.ceil(PREP_MINUTES - elapsedMin)) };
-  }
-  return { status: 'out_for_delivery', remainingMin: 0 };
+  if (order.status === 'out_for_delivery') return { status: 'out_for_delivery', remainingMin: 0 };
+  return { status: 'preparing', remainingMin: 0 };
 }
 
 // ── Status banner ─────────────────────────────────────────────────────────────
@@ -122,14 +115,6 @@ export const OrderDetailScreen = () => {
   const { order, isLoading, handleReorder, refetch, isRefetching } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
-  // Re-render every 30s so the time-based status ("Preparing" → "Out for
-  // Delivery") and the arrival countdown stay current while the screen is open.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
-
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -174,11 +159,11 @@ export const OrderDetailScreen = () => {
     );
   }
 
-  const { status: viewStatus, remainingMin } = deriveViewStatus(order, now);
+  const { status: viewStatus } = deriveViewStatus(order);
   const banner = VIEW_BANNER[viewStatus];
   const isCancelled = viewStatus === 'cancelled';
   const bannerSub =
-    viewStatus === 'preparing'        ? interpolate(t('arriving_in'), String(remainingMin))
+    viewStatus === 'preparing'        ? formatDate(order.placedAt)
     : viewStatus === 'out_for_delivery' ? t('on_the_way')
     : formatDate(order.placedAt);
   const BOTTOM_BAR_H = 80;
