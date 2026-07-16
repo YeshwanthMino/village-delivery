@@ -162,8 +162,8 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                 const isOutOfStock = conflict.availableStock === 0;
                 const currentQuantity = localQuantities[conflict.productId] ?? 0;
 
-                // Hide items that have been removed (quantity = 0)
-                if (currentQuantity === 0) return null;
+                // Hide only items that user manually removed (in manuallyAdjusted AND quantity = 0)
+                if (currentQuantity === 0 && manuallyAdjusted.has(conflict.productId)) return null;
 
                 return (
                   <View key={conflict.productId} className="pb-4 border-b border-slate-100 last:border-b-0">
