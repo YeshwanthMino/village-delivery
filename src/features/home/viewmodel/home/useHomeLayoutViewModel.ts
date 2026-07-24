@@ -1,13 +1,13 @@
 // src/features/home/viewmodel/home/useHomeLayoutViewModel.ts
 
 import { useCallback, useEffect, useState } from 'react';
-import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { getHomeLayout } from '../../data/homeLayoutApi';
 import { HomeSection } from '../../data/homeLayout.types';
+import { useStoreId } from '@/src/core/utils/getStoreId';
 
 export function useHomeLayoutViewModel(slug = 'app-home-page-layout') {
-  const storeId = useLocationStore((s) => s.serviceableVillage?.storeId);
+  const storeId = useStoreId();
   const registerDynamicPrices = useVillageStore((s) => s.registerDynamicPrices);
 
   const [sections, setSections] = useState<HomeSection[]>([]);

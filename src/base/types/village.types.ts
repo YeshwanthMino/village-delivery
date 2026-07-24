@@ -2,6 +2,7 @@ export interface Variant {
   name: string;
   price: number;
   mrp: number;
+  stock?: number;
 }
 
 export interface Product {
@@ -14,9 +15,11 @@ export interface Product {
   mrp: number;
   rating: number;
   reviews: number;
-  emoji: string;
-  gradientFrom: string;
-  gradientTo: string;
+  emoji?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  // API products use images instead of emojis
+  image?: string;
   variants?: Variant[];
 }
 

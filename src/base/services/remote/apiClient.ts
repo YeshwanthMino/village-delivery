@@ -102,12 +102,15 @@ class ApiClient {
   }
 
   // The village API is multi-tenant: every authed endpoint needs the active
-  // store's `x-store-id` header. Inject it centrally from the persisted
-  // serviceable village so individual endpoints never have to remember — a
-  // missing header makes the server reply 401 "Store could not be resolved".
-  // Callers that target a *specific* store (login, catalog probes) still pass
-  // their own `x-store-id`, which overrides this one (merged later).
+  // store's `x-store-id` header. Use the env default if set, otherwise read from
+  // persisted serviceable village. Callers that target a *specific* store (login,
+  // catalog probes) still pass their own `x-store-id`, which overrides this one.
   private async getStoreId(): Promise<string | null> {
+    // Use env default first
+    const envStoreId = process.env.EXPO_PUBLIC_DEFAULT_STORE_ID;
+    if (envStoreId) return envStoreId;
+
+    // Fallback to persisted serviceable village
     try {
       const village = await StoredPrefs.getCustomData<{ storeId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
       return village?.storeId ?? null;

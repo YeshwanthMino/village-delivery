@@ -5,6 +5,7 @@
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
+import { getStoreIdSync } from '@/src/core/utils/getStoreId';
 import * as appAuth from '@/src/features/auth/data/appAuthApi';
 import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 import { create } from 'zustand';
@@ -58,8 +59,8 @@ const initialState: AuthState = {
 };
 
 function requireStoreId(): string {
-  const storeId = useLocationStore.getState().serviceableVillage?.storeId;
-  if (!storeId) throw new Error('Select your location first');
+  const storeId = getStoreIdSync();
+  if (!storeId) throw new Error('EXPO_PUBLIC_DEFAULT_STORE_ID not set in .env');
   return storeId;
 }
 

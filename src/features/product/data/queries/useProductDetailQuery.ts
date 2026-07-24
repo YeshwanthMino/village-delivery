@@ -2,15 +2,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/src/base/query/queryKeys';
-import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { getProductDetail } from '../productDetailApi';
+import { useStoreId } from '@/src/core/utils/getStoreId';
 
 export const useProductDetailQuery = (id?: string) => {
-  const storeId = useLocationStore((s) => s.serviceableVillage?.storeId);
+  const storeId = useStoreId();
 
   return useQuery({
     queryKey: [...queryKeys.products.detail(id ?? ''), { storeId }],
-    queryFn: () => getProductDetail(storeId!, id!),
+    queryFn: () => getProductDetail(storeId, id || ''),
     enabled: !!id && !!storeId,
     staleTime: 5 * 60 * 1000,
   });

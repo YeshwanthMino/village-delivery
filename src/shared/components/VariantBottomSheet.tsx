@@ -46,15 +46,19 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
               const discount = variant.mrp > variant.price
                 ? Math.round((1 - variant.price / variant.mrp) * 100)
                 : 0;
+              // API prices are already in rupees, catalog prices need * 20
+              const isApiProduct = !!product.image;
+              const displayPrice = isApiProduct ? `₹${variant.price}` : rupees(variant.price);
+              const displayMrp = isApiProduct ? `₹${variant.mrp}` : rupees(variant.mrp);
 
               return (
                 <View key={key} className="flex-row items-center py-3 border-b border-slate-50">
                   <View className="flex-1">
                     <Text className="text-slate-900 font-semibold text-sm">{variant.name}</Text>
                     <View className="flex-row items-center gap-2 mt-0.5">
-                      <Text className="text-slate-900 font-bold text-sm">{rupees(variant.price)}</Text>
+                      <Text className="text-slate-900 font-bold text-sm">{displayPrice}</Text>
                       {variant.mrp > variant.price && (
-                        <Text className="text-slate-400 text-xs line-through">{rupees(variant.mrp)}</Text>
+                        <Text className="text-slate-400 text-xs line-through">{displayMrp}</Text>
                       )}
                       {discount > 0 && (
                         <Text className="text-green-600 text-xs font-semibold">{interpolate(t('discount_badge'), discount)}</Text>

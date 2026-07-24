@@ -2,14 +2,13 @@
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { queryKeys } from '@/src/base/query/queryKeys';
-import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { searchVillages } from '../locationApi';
+import { useStoreId } from '@/src/core/utils/getStoreId';
 
 /** Village-directory search. Enabled only at 3+ trimmed characters. */
 export const useVillageSearchQuery = (term: string, limit = 24) => {
   const trimmed = term.trim();
-  // Forward the active store's id as x-store-id when one is already selected.
-  const storeId = useLocationStore((s) => s.serviceableVillage?.storeId);
+  const storeId = useStoreId();
 
   return useQuery({
     queryKey: [...queryKeys.villages.search(trimmed), { limit, storeId }],

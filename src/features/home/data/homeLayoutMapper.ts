@@ -13,6 +13,8 @@ import {
   ProductCarouselSection,
 } from './homeLayout.types';
 
+import { Product, Variant } from '@/src/base/types/village.types';
+
 function num(v: any): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
@@ -31,6 +33,56 @@ export function isProductActive(p: any): boolean {
   return p?.active !== false;
 }
 
+function mapVariant(v: any): Variant {
+  const mrp = num(v?.mrp);
+  const price = num(v?.dealPrice ?? v?.listPrice ?? v?.mrp);
+  // Get stock from stockId nested object if available
+  const stock = v?.stockId?.stock ?? num(v?.stock);
+
+  return {
+    name: String(v?.title ?? ''),
+    price,
+    mrp,
+    stock,
+  };
+}
+
+/**
+ * Map backend product with variants (variantIds) to Product interface.
+ * Handles both API products with variantIds and legacy products.
+ */
+export function mapProductWithVariants(p: any): Product {
+  const variants = Array.isArray(p?.variantIds)
+    ? p.variantIds.map(mapVariant)
+    : [];
+
+  // Use first variant's price for product-level price, or fallback to dealPrice/listPrice/mrp
+  const firstVariant = variants[0];
+  const productPrice = firstVariant?.price ?? num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
+  const productMrp = firstVariant?.mrp ?? num(p?.mrp);
+
+  // Extract image from product or first variant
+  const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) ||
+                (firstVariant && (p?.variantIds?.[0]?.landingImage || Array.isArray(p?.variantIds?.[0]?.images) ? p.variantIds[0].images[0] : undefined)) || '';
+
+  return {
+    id: String(p?._id ?? ''),
+    categoryId: String(p?.categoryId?._id ?? ''),
+    name: String(p?.title ?? ''),
+    nameTE: String(p?.teluguTitle ?? ''),
+    weight: '', // Not provided by backend
+    price: productPrice,
+    mrp: productMrp,
+    rating: num(p?.rating),
+    reviews: num(p?.reviews),
+    emoji: undefined,
+    gradientFrom: undefined,
+    gradientTo: undefined,
+    image,
+    variants: variants.length > 0 ? variants : undefined,
+  };
+}
+
 /**
  * Inactive categories (`active: false`) are hidden everywhere — the home page,
  * the Categories page, and the Category Details rail (all driven by the same
@@ -46,6 +98,17 @@ export function mapProduct(p: any): HomeProduct {
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) || '';
   const slug = p?.slug || undefined;
+
+  // Get stock from variants if available, otherwise fallback to root stock
+  let totalStock = num(p?.stock);
+  if (Array.isArray(p?.variantIds) && p.variantIds.length > 0) {
+    // Sum stock from all variants
+    totalStock = p.variantIds.reduce((sum: number, v: any) => {
+      const variantStock = v?.stockId?.stock ?? num(v?.stock);
+      return sum + variantStock;
+    }, 0);
+  }
+
   return {
     id: String(p?._id ?? ''),
     title: String(p?.title ?? ''),
@@ -54,7 +117,7 @@ export function mapProduct(p: any): HomeProduct {
     mrp,
     price,
     discountPct,
-    inStock: num(p?.stock) > 0,
+    inStock: totalStock > 0,
     slug,
     link: slug ? `/${slug}` : undefined,
     categoryId: p?.categoryId || undefined,
