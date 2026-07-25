@@ -40,6 +40,8 @@ function mapVariant(v: any): Variant {
   const price = toUnits(num(v?.dealPrice ?? v?.listPrice ?? v?.mrp));
   // Get stock from stockId nested object if available
   const stock = v?.stockId?.stock ?? num(v?.stock);
+  const images = Array.isArray(v?.images) ? v.images : [];
+  const image = v?.landingImage || images[0];
 
   return {
     id: String(v?._id ?? ''),
@@ -47,6 +49,7 @@ function mapVariant(v: any): Variant {
     price,
     mrp,
     stock,
+    image: image ? String(image) : undefined,
   };
 }
 
@@ -139,6 +142,7 @@ export function mapProduct(p: any): HomeProduct {
     link: slug ? `/${slug}` : undefined,
     categoryId: p?.categoryId || undefined,
     hasVariants: hasVariants && p.variantIds.length > 1,
+    variants: hasVariants ? p.variantIds.map(mapVariant) : undefined,
   };
 }
 
