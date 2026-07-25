@@ -173,5 +173,25 @@ describe('mapProduct variants', () => {
     const product = mapProduct(withUnpopulatedRef);
     expect(product.variants).toHaveLength(1);
     expect(product.variants?.[0].id).toBe('v1');
+    // hasVariants and the card image must read the same (filtered) array —
+    // a single real variant behind a dropped ref is not "has variants", and
+    // the image must come from the populated entry, not the unpopulated one.
+    expect(product.hasVariants).toBe(false);
+    expect(product.image).toBe('https://cdn/250.jpg');
+    expect(product.variants).toEqual(mapApiProduct(withUnpopulatedRef).variants);
+  });
+
+  it('falls back to product-level stock when every variant ref is unpopulated', () => {
+    const allUnpopulated = {
+      _id: 'p5',
+      title: 'Salt',
+      stock: 7,
+      variantIds: ['64f0000000000000000000aa', '64f0000000000000000000bb'],
+    };
+    const product = mapProduct(allUnpopulated);
+    expect(product.variants).toBeUndefined();
+    expect(product.hasVariants).toBe(false);
+    expect(product.stock).toBe(7);
+    expect(product.inStock).toBe(true);
   });
 });

@@ -15,7 +15,7 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
-import { mapVariant } from './productMapper';
+import { mapVariants } from './productMapper';
 
 function num(v: any): number {
   const n = Number(v);
@@ -40,9 +40,7 @@ export function isProductActive(p: any): boolean {
  * Handles both API products with variantIds and legacy products.
  */
 export function mapProductWithVariants(p: any): Product {
-  const variants = Array.isArray(p?.variantIds)
-    ? p.variantIds.map(mapVariant)
-    : [];
+  const variants = mapVariants(p?.variantIds);
 
   // Use first variant's price for product-level price, or fallback to dealPrice/listPrice/mrp
   const firstVariant = variants[0];
@@ -81,14 +79,11 @@ export function isCategoryActive(c: any): boolean {
 }
 
 export function mapProduct(p: any): HomeProduct {
-  // If product has variants, use first variant's data; otherwise use product-level data
-  const hasAnyVariants = Array.isArray(p?.variantIds) && p.variantIds.length > 0;
-  const firstVariant = hasAnyVariants ? p.variantIds[0] : null;
   // Unpopulated refs (a raw ObjectId string instead of the variant object)
-  // would otherwise map to a nameless, ₹0 row the sheet renders as selectable.
-  const variants = hasAnyVariants
-    ? p.variantIds.filter((v: any) => v && typeof v === 'object').map(mapVariant)
-    : undefined;
+  // are dropped by mapVariants, so an all-unpopulated array collapses to
+  // undefined rather than a truthy [] that would swallow the stock fallback.
+  const mapped = mapVariants(p?.variantIds);
+  const variants = mapped.length > 0 ? mapped : undefined;
   const first = variants?.[0];
 
   const mrp = first?.mrp ?? toUnits(num(p?.mrp));
@@ -96,8 +91,7 @@ export function mapProduct(p: any): HomeProduct {
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   // Use variant image if available, otherwise product image
-  const image = firstVariant?.landingImage ||
-                (Array.isArray(firstVariant?.images) ? firstVariant.images[0] : undefined) ||
+  const image = first?.image ||
                 p?.landingImage ||
                 (Array.isArray(p?.images) ? p.images[0] : undefined) ||
                 '';
@@ -122,7 +116,7 @@ export function mapProduct(p: any): HomeProduct {
     slug,
     link: slug ? `/${slug}` : undefined,
     categoryId: p?.categoryId || undefined,
-    hasVariants: hasAnyVariants && p.variantIds.length > 1,
+    hasVariants: (variants?.length ?? 0) > 1,
     variants,
   };
 }

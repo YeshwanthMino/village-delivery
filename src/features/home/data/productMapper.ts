@@ -51,15 +51,24 @@ export function mapVariant(v: any): Variant {
 }
 
 /**
+ * Maps a raw variantIds array, dropping unpopulated refs (a raw ObjectId
+ * string instead of the populated variant object) so callers never see a
+ * nameless, ₹0 row.
+ */
+export function mapVariants(raw: any[]): Variant[] {
+  return Array.isArray(raw)
+    ? raw.filter((v: any) => v && typeof v === 'object').map(mapVariant)
+    : [];
+}
+
+/**
  * Map a backend product object (with variantIds) to the Product interface.
  * - Extracts comprehensive variant data including images, pricing tiers, and tax info
  * - Aggregates stock from all variants
  * - Uses first variant's image and price for product-level defaults
  */
 export function mapApiProduct(p: any): Product {
-  const variants = Array.isArray(p?.variantIds)
-    ? p.variantIds.map(mapVariant)
-    : [];
+  const variants = mapVariants(p?.variantIds);
 
   // Aggregate stock from all variants
   const totalStock = variants.reduce((sum: number, v: Variant) => sum + (v.stock ?? 0), 0);
