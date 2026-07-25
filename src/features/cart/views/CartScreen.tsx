@@ -26,7 +26,7 @@ import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore, useCartStockStore } from '@/src/core/store';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
-import { createOrder } from '../data/orderApi';
+import { useCreateOrderMutation } from '../data/mutations/useCreateOrderMutation';
 import { logger } from '@/src/base/services/logger';
 
 // Stable identity so the sheet does not see a "new" empty array each render.
@@ -131,6 +131,8 @@ export const CartScreen = () => {
 
   const handleCheckout = () => setSheet('checkout');
 
+  const createOrderMutation = useCreateOrderMutation();
+
   // Places the real order once the checkout sheet reaches its 'placing' step.
   // Rejecting here surfaces the retryable error inside the sheet and keeps the
   // cart intact (clearing only happens on the success → onComplete path).
@@ -140,7 +142,7 @@ export const CartScreen = () => {
 
     try {
       logger.debug('[handlePlaceOrder] Starting order placement');
-      const result = await createOrder({
+      const result = await createOrderMutation.mutateAsync({
         products: vm.cartItems.map(item => ({
           productId: item.productId,
           ...(item.variantId ? { variantId: item.variantId } : {}),
