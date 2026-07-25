@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { OrderModificationSheet } from '../OrderModificationSheet';
 import { rupees } from '@/src/shared/utils/currency';
+import { useVillageStore } from '@/src/core/store/useVillageStore';
 
 describe('OrderModificationSheet', () => {
   const mockStockInfo = [
@@ -50,7 +51,11 @@ describe('OrderModificationSheet', () => {
     render(<OrderModificationSheet {...mockProps} />);
 
     expect(screen.getByText('Whole Wheat Bread')).toBeTruthy();
-    expect(screen.getByText('Out of stock')).toBeTruthy();
+    // Routed through the shared `out_of_stock` i18n key as of the L4 i18n pass,
+    // which renders "Out of Stock" (Title Case) — the same badge text every
+    // other screen already uses for this status, rather than this component's
+    // previously one-off "Out of stock".
+    expect(screen.getByText('Out of Stock')).toBeTruthy();
     expect(screen.getByText('Remove item')).toBeTruthy();
   });
 
@@ -159,6 +164,18 @@ describe('OrderModificationSheet', () => {
     );
 
     expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('1');
+  });
+
+  it('renders in Telugu when the locale is te', () => {
+    const originalLocale = useVillageStore.getState().locale;
+    useVillageStore.setState({ locale: 'te' });
+    try {
+      render(<OrderModificationSheet {...mockProps} />);
+      expect(screen.getByText('కొన్ని విషయాలు మారాయి')).toBeTruthy();
+      expect(screen.getByText('ఉప మొత్తం')).toBeTruthy();
+    } finally {
+      useVillageStore.setState({ locale: originalLocale });
+    }
   });
 
   it('closes sheet when X button tapped', () => {

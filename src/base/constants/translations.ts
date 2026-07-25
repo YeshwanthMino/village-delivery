@@ -288,6 +288,20 @@ export const TRANSLATIONS: TranslationMap = {
   stock_conflict_error:        { te: 'ఆర్డర్‌ను నవీకరించలేకపోయాం. మళ్ళీ ప్రయత్నించాలా?', en: 'Couldn\'t update your order. Try again?' },
   stock_conflict_try_again:    { te: 'మళ్ళీ ప్రయత్నించండి',                      en: 'Try Again' },
   stock_conflict_back_to_cart: { te: 'కార్ట్‌కు వెనుకకు',                        en: 'Back to Cart' },
+
+  // Order modification sheet (shown when checkout hits a stock conflict)
+  order_mod_title:      { te: 'కొన్ని విషయాలు మారాయి',                                  en: 'A couple of things changed' },
+  order_mod_subtitle:   { te: 'మీ కార్ట్‌లోని కొన్ని వస్తువులు అయిపోయాయి లేదా తక్కువగా ఉన్నాయి. కొనసాగించడానికి మీ ఆర్డర్‌ను నవీకరించండి.', en: 'Some items in your cart are sold out or running low. Update your order to continue.' },
+  order_mod_photo:      { te: 'ఫోటో',                                                   en: 'photo' },
+  order_mod_only_left:  { te: 'కేవలం {n} మిగిలి ఉన్నాయి',                              en: 'Only {n} left' },
+  order_mod_remove_item:    { te: 'వస్తువును తొలగించండి',                             en: 'Remove item' },
+  order_mod_remove_instead: { te: 'బదులుగా తొలగించండి',                               en: 'Remove instead' },
+  order_mod_subtotal:   { te: 'ఉప మొత్తం',                                             en: 'Subtotal' },
+  order_mod_update_all: { te: 'అన్నీ నవీకరించండి',                                    en: 'Update all' },
+
+  // Promo strip (first-order discount banner)
+  promo_first_order:    { te: 'మీ మొదటి ఆర్డర్‌పై 10% తగ్గింపు',                      en: '10% off your first order' },
+  promo_use_at_checkout: { te: 'చెక్అవుట్ వద్ద కోడ్ ఉపయోగించండి',                     en: 'Use code at checkout' },
 };
 
 /** Returns translated string; falls back to English if key missing. */

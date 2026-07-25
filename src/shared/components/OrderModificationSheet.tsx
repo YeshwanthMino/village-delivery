@@ -4,6 +4,8 @@ import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
 import { CompactStepper } from './CompactStepper';
 import { rupees } from '@/src/shared/utils/currency';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 export interface StockInfo {
   productId: string;
@@ -36,6 +38,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   onRetryCheckout,
   onManualAdjustment,
 }) => {
+  const { t } = useTranslation();
   // manuallyAdjusted identifies the lines the customer changed, localQuantities
   // holds the values, isLoading/retryError cover the retry round-trip.
   const [manuallyAdjusted, setManuallyAdjusted] = useState<Set<string>>(new Set());
@@ -127,9 +130,9 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
         {/* Header */}
         <View className="flex-row items-center px-4 pb-3 border-b border-slate-100">
           <View className="flex-1">
-            <Text className="text-slate-900 font-black text-lg">A couple of things changed</Text>
+            <Text className="text-slate-900 font-black text-lg">{t('order_mod_title')}</Text>
             <Text className="text-slate-500 text-sm mt-1">
-              Some items in your cart are sold out or running low. Update your order to continue.
+              {t('order_mod_subtitle')}
             </Text>
           </View>
           <TouchableOpacity
@@ -165,7 +168,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                       />
                     ) : (
                       <View className="flex-1 items-center justify-center">
-                        <Text className="text-xs text-slate-500">photo</Text>
+                        <Text className="text-xs text-slate-500">{t('order_mod_photo')}</Text>
                       </View>
                     )}
                   </View>
@@ -177,12 +180,12 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                     ) : (
                       isOutOfStock ? (
                         <View className="bg-red-50 px-2 py-1 rounded-full self-start mt-0.5">
-                          <Text className="text-red-600 text-xs font-semibold">Out of stock</Text>
+                          <Text className="text-red-600 text-xs font-semibold">{t('out_of_stock')}</Text>
                         </View>
                       ) : (
                         <View className="bg-amber-50 px-2 py-1 rounded-full self-start mt-0.5">
                           <Text className="text-amber-600 text-xs font-semibold">
-                            Only {conflict.availableStock} left
+                            {interpolate(t('order_mod_only_left'), conflict.availableStock)}
                           </Text>
                         </View>
                       )
@@ -195,12 +198,12 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                 {cartItem.weight && (
                   isOutOfStock ? (
                     <View className="bg-red-50 px-3 py-2 rounded-full self-start mb-2">
-                      <Text className="text-red-600 text-sm font-semibold">Out of stock</Text>
+                      <Text className="text-red-600 text-sm font-semibold">{t('out_of_stock')}</Text>
                     </View>
                   ) : (
                     <View className="bg-amber-50 px-3 py-2 rounded-full self-start mb-2">
                       <Text className="text-amber-600 text-sm font-semibold">
-                        Only {conflict.availableStock} left
+                        {interpolate(t('order_mod_only_left'), conflict.availableStock)}
                       </Text>
                     </View>
                   )
@@ -222,7 +225,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                     }}
                     className="border-2 border-red-600 rounded-lg py-2 items-center"
                   >
-                    <Text className="text-red-600 font-semibold">Remove item</Text>
+                    <Text className="text-red-600 font-semibold">{t('order_mod_remove_item')}</Text>
                   </TouchableOpacity>
                 ) : (
                   <View>
@@ -254,7 +257,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                           setLocalQuantities(prev => ({ ...prev, [conflict.productId]: 0 }));
                         }}
                       >
-                        <Text className="text-slate-600 text-sm underline">Remove instead</Text>
+                        <Text className="text-slate-600 text-sm underline">{t('order_mod_remove_instead')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -267,7 +270,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
         {/* Footer */}
         <View className="px-4 mt-4 border-t border-slate-100 pt-4">
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-slate-600 text-sm">Subtotal</Text>
+            <Text className="text-slate-600 text-sm">{t('order_mod_subtotal')}</Text>
             <Text className="text-slate-900 font-bold text-base">{rupees(subtotal)}</Text>
           </View>
 
@@ -276,7 +279,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
               onPress={onClose}
               className="flex-1 border-2 border-slate-300 rounded-lg py-3 items-center"
             >
-              <Text className="text-slate-900 font-semibold">Cancel</Text>
+              <Text className="text-slate-900 font-semibold">{t('cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleUpdateAllPress()}
@@ -286,7 +289,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
               }`}
             >
               <Text className="text-white font-bold">
-                {isLoading ? '...' : 'Update all'}
+                {isLoading ? '...' : t('order_mod_update_all')}
               </Text>
             </TouchableOpacity>
           </View>
