@@ -27,7 +27,11 @@ export function useTranslation() {
     return interpolate(translate('discount_badge', locale), pct);
   }
 
-  return { t, tEta, tItemCount, tDiscount, locale };
+  function tOptionCount(count: number): string {
+    return interpolate(translate('option_count', locale), count);
+  }
+
+  return { t, tEta, tItemCount, tDiscount, tOptionCount, locale };
 }
 
 /**

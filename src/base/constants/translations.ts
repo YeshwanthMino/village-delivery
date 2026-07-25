@@ -44,6 +44,7 @@ export const TRANSLATIONS: TranslationMap = {
   upi_subtitle:            { te: 'GPay, PhonePe, Paytm', en: 'GPay, PhonePe, Paytm' },
   item_count:       { te: '{n} వస్తువు', en: '{n} item' },
   discount_badge:   { te: '{n}% తగ్గింపు', en: '{n}% OFF' },
+  option_count:     { te: '{n} ఎంపికలు', en: '{n} options' },
   // Category names keyed by category id
   cat_fruits:       { te: 'పండ్లు', en: 'Fruits' },
   cat_vegetables:   { te: 'కూరగాయలు', en: 'Vegetables' },

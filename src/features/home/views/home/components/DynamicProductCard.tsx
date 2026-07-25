@@ -3,11 +3,11 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Minus, Plus } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
+import { useVariantCardView } from '@/src/shared/hooks/useVariantCardView';
 import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
@@ -19,14 +19,9 @@ interface Props {
 }
 
 const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: Props) => {
-  const [isLoading, setIsLoading] = useState(false);
-  // Subscribe to this card's own line, not the whole cart object: addToCart
-  // replaces `cart`, so selecting it re-rendered every card in every rail on any
-  // stepper tap.
-  const count = useVillageStore((s) => s.cart[product.id] ?? 0);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
-  const { t, locale } = useTranslation();
+  const { t, tOptionCount, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
@@ -34,16 +29,24 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
   const displayTitle = locale === 'te' && product.teluguTitle
     ? product.teluguTitle
     : product.title || 'Product';
-  const hasMultipleVariants = product.hasVariants;
-  const stock = product.stock ?? 0;
-  const canAdd = count < stock;
 
-  const handleAdd = () => {
-    // If product has multiple variants and callback is provided, open variant sheet
-    if (hasMultipleVariants && onOpenVariants) {
-      // Create a minimal Product object for the callback
-      // The parent component should fetch full product with variants
-      const minimalProduct: Product = {
+  const view = useVariantCardView({
+    id: product.id,
+    price: product.price,
+    mrp: product.mrp,
+    variants: product.variants,
+    hasVariants: product.hasVariants,
+  });
+
+  const stock = product.stock ?? 0;
+  const canAdd = view.count < stock;
+
+  // With more than one variant the sheet owns every quantity change; the card's
+  // controls are display plus a way in. Forward the variants the card already
+  // has so the sheet can open without its own network round-trip.
+  const openSheet = () => {
+    if (onOpenVariants) {
+      onOpenVariants({
         id: product.id,
         categoryId: product.categoryId || '',
         name: product.title,
@@ -53,16 +56,20 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
         mrp: product.mrp,
         rating: 0,
         reviews: 0,
-      };
-      onOpenVariants(minimalProduct);
+        stock: product.stock,
+        image: product.image,
+        variants: product.variants,
+      });
       return;
     }
-    // If product has variants but no callback, go to detail page
-    if (hasMultipleVariants) {
-      openDetail();
+    openDetail();
+  };
+
+  const handleAdd = () => {
+    if (view.opensSheet) {
+      openSheet();
       return;
     }
-    // Otherwise, add directly to cart
     addToCart(product.id, {
       key: product.id,
       productId: product.id,
@@ -108,31 +115,57 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
           </Text>
         </TouchableOpacity>
 
+        {view.packLabel ? (
+          <Text className="text-slate-500 text-[11px] mt-1">{view.packLabel}</Text>
+        ) : null}
+
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-slate-900 font-bold text-sm">{rupees(product.price)}</Text>
-          {product.discountPct > 0 ? (
-            <Text className="text-slate-400 text-xs line-through ml-1.5">{rupees(product.mrp)}</Text>
+          <Text className="text-slate-900 font-bold text-sm">{rupees(view.price)}</Text>
+          {view.mrp > view.price ? (
+            <Text className="text-slate-400 text-xs line-through ml-1.5">{rupees(view.mrp)}</Text>
           ) : null}
         </View>
 
         <View className="mt-2">
-          {count === 0 ? (
+          {view.mode === 'add' ? (
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
-              className={`rounded-xl py-2 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
+              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
               <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
-                {hasMultipleVariants ? 'OPTIONS' : 'ADD'}
+                {t('add')}
               </Text>
+              {view.optionsCount > 0 ? (
+                <Text className="text-green-700 text-[10px] opacity-70">{tOptionCount(view.optionsCount)}</Text>
+              ) : null}
+            </TouchableOpacity>
+          ) : view.opensSheet ? (
+            <TouchableOpacity
+              onPress={openSheet}
+              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
+            >
+              <View testID="variant-stepper-dec" className="px-1">
+                <Minus size={16} color="#ffffff" />
+              </View>
+              <Text className="text-white font-bold text-sm">{view.count}</Text>
+              <View testID="variant-stepper-inc" className="px-1">
+                <Plus size={16} color="#ffffff" />
+              </View>
             </TouchableOpacity>
           ) : (
             <View className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2">
-              <TouchableOpacity onPress={() => decFromCart(product.id)} hitSlop={6}>
+              <TouchableOpacity testID="stepper-dec" onPress={() => decFromCart(product.id)} hitSlop={6}>
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>
-              <Text className="text-white font-bold text-sm">{count}</Text>
-              <TouchableOpacity onPress={handleAdd} disabled={!canAdd} hitSlop={6} style={{ opacity: canAdd ? 1 : 0.5 }}>
+              <Text className="text-white font-bold text-sm">{view.count}</Text>
+              <TouchableOpacity
+                testID="stepper-inc"
+                onPress={handleAdd}
+                disabled={!canAdd}
+                hitSlop={6}
+                style={{ opacity: canAdd ? 1 : 0.5 }}
+              >
                 <Plus size={16} color={canAdd ? '#ffffff' : '#d1d5db'} />
               </TouchableOpacity>
             </View>

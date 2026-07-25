@@ -70,4 +70,20 @@ describe('useVariantCardView', () => {
     expect(result.current.price).toBe(58.25);
     expect(result.current.packLabel).toBe('1 pc (1 L)');
   });
+
+  it('forces the sheet open when flagged multi-variant but the variants are missing', () => {
+    const { result } = renderHook(() => useVariantCardView({
+      id: 'p1', price: 15.5, mrp: 29.95, weight: undefined, variants: undefined, hasVariants: true,
+    }));
+
+    expect(result.current.opensSheet).toBe(true);
+  });
+
+  it('falls back to the product weight for the pack label when there are no variants', () => {
+    const { result } = renderHook(() => useVariantCardView({
+      id: 'p2', price: 18, mrp: 25, weight: '500 g', variants: undefined, hasVariants: false,
+    }));
+
+    expect(result.current.packLabel).toBe('500 g');
+  });
 });
