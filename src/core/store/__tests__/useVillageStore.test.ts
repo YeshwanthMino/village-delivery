@@ -1,4 +1,5 @@
 import { StorageKeys } from '@/src/base/constants/AppConstants';
+import * as cartKeyModule from '@/src/features/cart/domain/cartKey';
 
 // In-memory stand-in for StoredPrefs' custom-data bucket. jest.mock factories
 // may only close over vars prefixed "mock".
@@ -194,7 +195,7 @@ const variantSnapshot = (productId: string, index: number, price: number) => ({
 });
 
 describe('lastVariantKey', () => {
-  beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
+  beforeEach(reset);
 
   test('points at the most recently added variant of a product', () => {
     const { addToCart } = useVillageStore.getState();
@@ -256,7 +257,7 @@ describe('lastVariantKey', () => {
     expect(useVillageStore.getState().lastVariantKey.p1).toBe('p1-v1');
   });
 
-  test('hydrating a cart persisted before this field existed does not throw', async () => {
+  test('backfills the pointer for a cart persisted before this field existed', async () => {
     // Reset first: setState fires the persist subscriber too, and doing the
     // reset before seeding the mock keeps that write from overwriting the
     // pre-migration payload this test cares about.
@@ -265,7 +266,24 @@ describe('lastVariantKey', () => {
     await useVillageStore.getState().hydrateCart();
 
     expect(useVillageStore.getState().cart['p1-v0']).toBe(1);
-    expect(useVillageStore.getState().lastVariantKey).toEqual({});
+    // Without a backfill, every existing install would hydrate a variant cart
+    // with no pointer at all and the card would show the wrong price/pack on
+    // first launch after the update, until the user touched that product again.
+    expect(useVillageStore.getState().lastVariantKey).toEqual({ p1: 'p1-v0' });
+  });
+
+  test('replaces a pointer that names a key no longer in the cart', async () => {
+    useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
+    mockStore.set(StorageKeys.CART, {
+      cart: { 'p1-v0': 1 },
+      cartSnapshots: {},
+      // A stale pointer: some earlier session touched v1 last, but that line
+      // has since left the cart (e.g. removed on another device).
+      lastVariantKey: { p1: 'p1-v1' },
+    });
+    await useVillageStore.getState().hydrateCart();
+
+    expect(useVillageStore.getState().lastVariantKey).toEqual({ p1: 'p1-v0' });
   });
 
   test('clearCart drops every entry', () => {
@@ -275,10 +293,59 @@ describe('lastVariantKey', () => {
 
     expect(useVillageStore.getState().lastVariantKey).toEqual({});
   });
+
+  test('sets the pointer even when addToCart is called without a snapshot', () => {
+    // setQuantity/addToCart on a key with no snapshot on file (e.g. a line
+    // added by key alone) must still move the pointer — it can't rely on a
+    // cartSnapshots lookup the way the old per-action productId derivation did.
+    useVillageStore.getState().addToCart('p1-v0');
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBe('p1-v0');
+  });
+
+  test('addToCart blocked by the stock cap does not move the pointer', () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5), 1);
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    // v0 is already at its cap of 1, so this add is rejected outright.
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5), 1);
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBe('p1-v1');
+  });
+
+  test('falls back to the first remaining line in cart order when several remain', () => {
+    const { addToCart, decFromCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    addToCart('p1-v2', variantSnapshot('p1', 2, 100));
+    decFromCart('p1-v2');
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBe('p1-v0');
+  });
+
+  test('a decrement below zero is a no-op, not a fresh notification', () => {
+    let writes = 0;
+    const unsubscribe = useVillageStore.subscribe(() => { writes += 1; });
+    useVillageStore.getState().decFromCart('nonexistent');
+    unsubscribe();
+
+    expect(writes).toBe(0);
+  });
+
+  test('selectLastVariantSnapshot is reference-stable across an unrelated notification', () => {
+    const { addToCart, toggleFav } = useVillageStore.getState();
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    const first = selectLastVariantSnapshot('p1')(useVillageStore.getState());
+
+    toggleFav('unrelated-product');
+    const second = selectLastVariantSnapshot('p1')(useVillageStore.getState());
+
+    expect(second).toBe(first);
+  });
 });
 
 describe('selectProductCartCount', () => {
-  beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
+  beforeEach(reset);
 
   test('sums every variant line of one product and ignores others', () => {
     const { addToCart } = useVillageStore.getState();
@@ -288,6 +355,22 @@ describe('selectProductCartCount', () => {
     addToCart('p2-v0', variantSnapshot('p2', 0, 10));
 
     expect(selectProductCartCount('p1')(useVillageStore.getState())).toBe(3);
+  });
+
+  test('does not recompute when an unrelated slice changes', () => {
+    const { addToCart, toggleFav } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    const state = useVillageStore.getState();
+    expect(selectProductCartCount('p1')(state)).toBe(1);
+
+    // Dozens of product cards mount this selector in a category grid, so a
+    // notification that touches no cart state — toggling a favourite — must
+    // be a cache hit, not a fresh group-by over the whole cart.
+    const spy = jest.spyOn(cartKeyModule, 'parseCartKey');
+    toggleFav('p1');
+    selectProductCartCount('p1')(useVillageStore.getState());
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   test('counts a variant-less line keyed by the product id', () => {

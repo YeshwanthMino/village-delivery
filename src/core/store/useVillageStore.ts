@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Locale } from '@/src/base/constants/translations';
+import { parseCartKey } from '@/src/features/cart/domain/cartKey';
 
 interface VillageState {
   cart: CartRecord;
@@ -58,12 +59,11 @@ function isPersistedCart(value: unknown): value is PersistedCart {
 function releaseLastVariant(
   lastVariantKey: Record<string, string>,
   cart: CartRecord,
-  snapshots: CartSnapshotRecord,
-  productId: string | undefined,
+  productId: string,
   removedKey: string,
 ): Record<string, string> {
-  if (!productId || lastVariantKey[productId] !== removedKey) return lastVariantKey;
-  const fallback = Object.keys(cart).find((k) => snapshots[k]?.productId === productId);
+  if (lastVariantKey[productId] !== removedKey) return lastVariantKey;
+  const fallback = Object.keys(cart).find((k) => parseCartKey(k).productId === productId);
   const next = { ...lastVariantKey };
   if (fallback) next[productId] = fallback;
   else delete next[productId];
@@ -77,11 +77,18 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
     try {
       const saved = await StoredPrefs.getCustomData<unknown>(StorageKeys.CART);
       if (!isPersistedCart(saved)) return;
-      set({
-        cart: saved.cart,
-        cartSnapshots: saved.cartSnapshots ?? {},
-        lastVariantKey: saved.lastVariantKey ?? {},
-      });
+      const cartSnapshots = saved.cartSnapshots ?? {};
+      // Backfill and prune in one pass: installs persisted before this field
+      // existed hydrate with no pointer at all, and any pointer — old or new —
+      // can name a key a later write already dropped from the cart. Either way,
+      // a product with lines in the cart must point at a real one of them.
+      const lastVariantKey = { ...(saved.lastVariantKey ?? {}) };
+      for (const key in saved.cart) {
+        const { productId } = parseCartKey(key);
+        const pointed = lastVariantKey[productId];
+        if (!pointed || !(pointed in saved.cart)) lastVariantKey[productId] = key;
+      }
+      set({ cart: saved.cart, cartSnapshots, lastVariantKey });
     } catch {
       // A missing or unreadable cart is not worth failing app start over.
     }
@@ -90,10 +97,12 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   addToCart: (key, snapshot, maxQuantity) =>
     set((state) => {
       const current = state.cart[key] ?? 0;
+      // Nothing changed, so nothing is touched: the pointer stays wherever it
+      // was, exactly like a rejected add never happened.
       if (maxQuantity !== undefined && current >= maxQuantity) {
         return state;
       }
-      const productId = snapshot?.productId ?? state.cartSnapshots[key]?.productId;
+      const { productId } = parseCartKey(key);
       return {
         cart: {
           ...state.cart,
@@ -103,37 +112,36 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
           snapshot && !state.cartSnapshots[key]
             ? { ...state.cartSnapshots, [key]: snapshot }
             : state.cartSnapshots,
-        lastVariantKey: productId
-          ? { ...state.lastVariantKey, [productId]: key }
-          : state.lastVariantKey,
+        lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
     }),
 
   decFromCart: (key) =>
     set((state) => {
       const current = state.cart[key] ?? 0;
-      const productId = state.cartSnapshots[key]?.productId;
+      // Nothing to remove — a no-op write would still fire a notification and
+      // a persist call for a line that was never there.
+      if (current === 0) return state;
+      const { productId } = parseCartKey(key);
       if (current <= 1) {
         const { [key]: _removed, ...cart } = state.cart;
         const { [key]: _snap, ...cartSnapshots } = state.cartSnapshots;
         return {
           cart,
           cartSnapshots,
-          lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, cartSnapshots, productId, key),
+          lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, productId, key),
         };
       }
       return {
         cart: { ...state.cart, [key]: current - 1 },
-        lastVariantKey: productId
-          ? { ...state.lastVariantKey, [productId]: key }
-          : state.lastVariantKey,
+        lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
     }),
 
   setQuantity: (key, quantity, maxQuantity) =>
     set((state) => {
       const capped = maxQuantity !== undefined ? Math.min(quantity, maxQuantity) : quantity;
-      const productId = state.cartSnapshots[key]?.productId;
+      const { productId } = parseCartKey(key);
 
       if (capped <= 0) {
         const { [key]: _removed, ...cart } = state.cart;
@@ -141,15 +149,13 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         return {
           cart,
           cartSnapshots,
-          lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, cartSnapshots, productId, key),
+          lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, productId, key),
         };
       }
 
       return {
         cart: { ...state.cart, [key]: capped },
-        lastVariantKey: productId
-          ? { ...state.lastVariantKey, [productId]: key }
-          : state.lastVariantKey,
+        lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
     }),
 
@@ -199,18 +205,36 @@ export const selectCartCount = (state: VillageStore): number => {
 };
 
 /**
- * Every cart line belonging to one product, summed. Variant lines are keyed
- * `${productId}-v${index}`; a variant-less product is keyed by its id alone.
+ * Both selectors below are curried — `selector(productId)(state)` — so a
+ * component can subscribe with a stable per-product selector. That's only
+ * safe under zustand 5 + React 19 because each returns a value stable under
+ * `Object.is` across notifications that don't actually change it: a number,
+ * or `state.cartSnapshots[key]`, an object reference untouched by unrelated
+ * spreads. A future curried selector that builds and returns a fresh
+ * array/object on every call would re-render its subscriber on every store
+ * notification — the safety is a property of the return value, not the
+ * curried shape.
  */
+
+// Every cart line belonging to one product, summed (see parseCartKey for the
+// key format). Grouped once per `cart` identity, same rationale as
+// selectCartCount above: this selector runs once per mounted product card —
+// dozens in a category grid — on every notification, cart-related or not.
+let groupedCart: CartRecord | null = null;
+let productTotals: Record<string, number> = {};
+
 export const selectProductCartCount =
   (productId: string) =>
   (state: VillageStore): number => {
-    const variantPrefix = `${productId}-v`;
-    let total = 0;
-    for (const key in state.cart) {
-      if (key === productId || key.startsWith(variantPrefix)) total += state.cart[key];
+    if (state.cart !== groupedCart) {
+      groupedCart = state.cart;
+      productTotals = {};
+      for (const key in state.cart) {
+        const owner = parseCartKey(key).productId;
+        productTotals[owner] = (productTotals[owner] ?? 0) + state.cart[key];
+      }
     }
-    return total;
+    return productTotals[productId] ?? 0;
   };
 
 /** The snapshot of the variant this product last had added or changed, if any. */
