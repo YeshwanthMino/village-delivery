@@ -9,6 +9,10 @@ import { StoredPrefs } from './storage/StoredPrefs';
 interface FetchOptions extends RequestInit {
   withAuth?: boolean;
   _retry?: boolean;
+  /** Abort deadline in ms for this call. Defaults to AppConfig.timeout.
+   *  Must be destructured out of the options — `fetch` ignores unknown keys, so
+   *  a stray `timeout` here would silently do nothing. */
+  timeout?: number;
 }
 
 class ApiClient {
@@ -134,7 +138,7 @@ class ApiClient {
   }
 
   private async request<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    const { withAuth = true, _retry = false, ...fetchOptions } = options;
+    const { withAuth = true, _retry = false, timeout = AppConfig.timeout, ...fetchOptions } = options;
 
     const authHeaders = withAuth ? await this.getAuthHeaders() : {};
     // Authed requests carry the active store's id by default; a per-call
@@ -148,7 +152,7 @@ class ApiClient {
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), AppConfig.timeout);
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
       const response = await fetch(url, {

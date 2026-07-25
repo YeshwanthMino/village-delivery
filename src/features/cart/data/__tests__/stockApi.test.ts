@@ -7,6 +7,7 @@ jest.mock('@/src/base/services/remote/apiClient', () => ({
 }));
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
+import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
 
 describe('Stock API', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
@@ -72,10 +73,11 @@ describe('Stock API', () => {
   });
 
   test('checkCartStock handles timeout gracefully by assuming all items in stock', async () => {
-    const timeoutError = new Error('Request timeout');
-    (timeoutError as any).code = 'ECONNABORTED';
-
-    mockApiClient.post.mockRejectedValue(timeoutError);
+    // Build the rejection through the real mapper rather than hand-rolling an
+    // error literal: this is the exact shape apiClient throws on abort, and
+    // hand-written Axios-style errors previously let this path pass while the
+    // production code could never actually match it.
+    mockApiClient.post.mockRejectedValue(ErrorMapper.createNetworkError('REQUEST_TIMED_OUT'));
 
     const result = await checkCartStock([
       { productId: 'prod1', quantity: 2 },
@@ -95,14 +97,27 @@ describe('Stock API', () => {
     });
   });
 
-  test('checkCartStock handles timeout message in error', async () => {
-    const timeoutError = new Error('timeout');
+  test('checkCartStock preserves variantId when falling back on timeout', async () => {
+    mockApiClient.post.mockRejectedValue(ErrorMapper.createNetworkError('REQUEST_TIMED_OUT'));
 
-    mockApiClient.post.mockRejectedValue(timeoutError);
+    const result = await checkCartStock([
+      { productId: 'prod1', variantId: 'var1', quantity: 2 },
+    ]);
 
-    const result = await checkCartStock([{ productId: 'prod1', quantity: 2 }]);
+    expect(result.items[0]).toEqual({
+      productId: 'prod1',
+      variantId: 'var1',
+      inStock: true,
+      availableQuantity: 2,
+    });
+  });
 
-    expect(result.items[0].inStock).toBe(true);
+  test('checkCartStock rethrows a non-timeout network error rather than assuming stock', async () => {
+    mockApiClient.post.mockRejectedValue(ErrorMapper.createNetworkError('NO_INTERNET'));
+
+    await expect(
+      checkCartStock([{ productId: 'prod1', quantity: 2 }])
+    ).rejects.toMatchObject({ type: 'NO_INTERNET' });
   });
 
   test('checkCartStock throws on non-timeout network error', async () => {

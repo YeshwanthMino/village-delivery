@@ -18,6 +18,7 @@ export interface StockInfo {
 
 export interface OrderProductInput {
   productId: string;
+  variantId?: string;
   quantity: number;
   hasFreeItem?: boolean;
 }
@@ -45,6 +46,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const body = {
     products: input.products.map((p) => ({
       productId: p.productId,
+      ...(p.variantId ? { variantId: p.variantId } : {}),
       quantity: p.quantity,
       hasFreeItem: p.hasFreeItem ?? false,
     })),

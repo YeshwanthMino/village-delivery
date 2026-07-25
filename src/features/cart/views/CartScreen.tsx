@@ -53,6 +53,7 @@ export const CartScreen = () => {
     if (vm.cartItems.length > 0) {
       const itemsToCheck = vm.cartItems.map(item => ({
         productId: item.productId,
+        ...(item.variantId ? { variantId: item.variantId } : {}),
         quantity: item.count,
       }));
       void verifyCartStock(itemsToCheck).catch(error => {
@@ -94,6 +95,7 @@ export const CartScreen = () => {
     if (vm.cartItems.length > 0) {
       const itemsToCheck = vm.cartItems.map(item => ({
         productId: item.productId,
+        ...(item.variantId ? { variantId: item.variantId } : {}),
         quantity: item.count,
       }));
       void verifyCartStock(itemsToCheck).catch(error => {
@@ -118,7 +120,9 @@ export const CartScreen = () => {
       const result = await createOrder({
         products: vm.cartItems.map(item => ({
           productId: item.productId,
+          ...(item.variantId ? { variantId: item.variantId } : {}),
           quantity: item.count,
+          hasFreeItem: item.hasFreeItem,
         })),
         address: addressId,
         paymentMethod: paymentMethod ?? 'cod',

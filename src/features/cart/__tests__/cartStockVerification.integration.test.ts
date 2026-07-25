@@ -8,6 +8,7 @@ jest.mock('@/src/base/services/remote/apiClient', () => ({
 }));
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
+import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
 
 describe('Cart Stock Verification Integration', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
@@ -102,10 +103,8 @@ describe('Cart Stock Verification Integration', () => {
   });
 
   test('cart stock verification timeout handling', async () => {
-    const timeoutError = new Error('Request timeout');
-    (timeoutError as any).code = 'ECONNABORTED';
-
-    mockApiClient.post.mockRejectedValue(timeoutError);
+    // The real apiClient rejects with a mapped NetworkError, not an Axios error.
+    mockApiClient.post.mockRejectedValue(ErrorMapper.createNetworkError('REQUEST_TIMED_OUT'));
 
     const cartItems = [
       { productId: 'prod-1', quantity: 2 },

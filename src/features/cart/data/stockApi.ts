@@ -5,6 +5,7 @@ const BASE = WebService.villageBaseURL;
 
 export interface CheckStockItem {
   productId: string;
+  variantId?: string;
   quantity: number;
 }
 
@@ -14,6 +15,7 @@ export interface CheckStockRequest {
 
 export interface StockCheckItem {
   productId: string;
+  variantId?: string;
   inStock: boolean;
   availableQuantity?: number;
 }
@@ -29,6 +31,7 @@ export async function checkCartStock(items: CheckStockItem[]): Promise<CheckStoc
     return { items: [] };
   }
 
+  // Backend requires both productId and variantId for stock checks
   const body: CheckStockRequest = { items };
 
   try {
@@ -50,6 +53,7 @@ export async function checkCartStock(items: CheckStockItem[]): Promise<CheckStoc
       // Direct array response
       itemsArray = data.map((item) => ({
         productId: item.productId,
+        variantId: item.variantId,
         inStock: item.availableStock > 0,
         availableQuantity: item.availableStock,
       }));
@@ -62,14 +66,17 @@ export async function checkCartStock(items: CheckStockItem[]): Promise<CheckStoc
 
     return { items: itemsArray };
   } catch (error: any) {
-    console.error('[checkCartStock] Error:', error?.message || error);
-
-    // Handle timeout gracefully - assume all items are in stock
-    if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-      console.warn('[checkCartStock] Timeout - assuming all items in stock');
+    // apiClient rejects with a NetworkError ({ type, message }) — never an Axios
+    // error — so match on the mapped type. Matching on `code`/message substrings
+    // silently never fired.
+    if (error?.type === 'REQUEST_TIMED_OUT') {
+      // Deliberately fail open. This check is a pre-checkout courtesy; the server
+      // re-validates stock when the order is created and returns `stockInfo`
+      // conflicts, so a slow check must not block a customer from trying.
       return {
         items: items.map((item) => ({
           productId: item.productId,
+          variantId: item.variantId,
           inStock: true,
           availableQuantity: item.quantity,
         })),

@@ -103,3 +103,40 @@ describe('apiClient 401 interceptor — session expiry', () => {
     expect(onExpired).not.toHaveBeenCalled();
   });
 });
+
+describe('apiClient request timeout', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('aborts a per-call timeout at the caller-supplied deadline, not the global one', async () => {
+    const { apiClient } = require('../apiClient');
+    // Resolve only when the AbortSignal fires, so the rejection proves the abort
+    // came from *this* request's timer rather than the 30s AppConfig default.
+    (global.fetch as jest.Mock).mockImplementation(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }),
+    );
+
+    const pending = apiClient.get('https://api.test/slow', { timeout: 5000 });
+    const assertion = expect(pending).rejects.toMatchObject({ type: 'REQUEST_TIMED_OUT' });
+
+    await jest.advanceTimersByTimeAsync(5000);
+    await assertion;
+  });
+
+  it('does not pass the timeout option through to fetch', async () => {
+    const { apiClient } = require('../apiClient');
+    (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    await apiClient.get('https://api.test/thing', { timeout: 5000 });
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(init).not.toHaveProperty('timeout');
+  });
+});
