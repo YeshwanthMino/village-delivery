@@ -1,5 +1,19 @@
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
+
+// Same in-memory stand-in useVariantCardView.test.ts uses — the store subscribes
+// to StoredPrefs on every cart mutation, so it needs a mock to avoid touching
+// real storage (and logging ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG noise)
+// during the test.
+const mockStore = new Map<string, unknown>();
+jest.mock('@/src/base/services/remote/storage/StoredPrefs', () => ({
+  StoredPrefs: {
+    getCustomData: jest.fn(async (k: string) => mockStore.get(k) ?? null),
+    setCustomData: jest.fn(async (k: string, v: unknown) => { mockStore.set(k, v); }),
+    removeCustomData: jest.fn(async (k: string) => { mockStore.delete(k); }),
+  },
+}));
+
 import { DynamicProductCard } from '../DynamicProductCard';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { HomeProduct } from '../../../../data/homeLayout.types';
@@ -107,5 +121,29 @@ describe('DynamicProductCard, no variants', () => {
   it('shows no options label and no pack line', () => {
     render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
     expect(screen.queryByText(/options/)).toBeNull();
+  });
+
+  it('ignores a phantom variant-keyed cart line for a product this card treats as plain', () => {
+    // Simulates the known cross-page inconsistency: ProductCard opens its sheet
+    // for variants.length >= 1 while this card only does so for > 1, so a
+    // product this card renders as "plain" can still carry a `${id}-v0` cart
+    // line from being added on another screen. The plain stepper's own buttons
+    // only ever touch the bare `p2` key, so its display and gating must ignore
+    // that phantom line rather than folding it into the total.
+    useVillageStore.setState({ cart: { 'p2-v0': 2 }, cartSnapshots: {}, lastVariantKey: {} });
+
+    render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
+
+    // Own count (0) is shown, not the total across every cart line for p2 (2).
+    expect(screen.getByText('0')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('stepper-inc'));
+    expect(useVillageStore.getState().cart.p2).toBe(1);
+    expect(useVillageStore.getState().cart['p2-v0']).toBe(2); // untouched
+    expect(screen.getByText('1')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('stepper-dec'));
+    expect(useVillageStore.getState().cart.p2).toBeUndefined();
+    expect(useVillageStore.getState().cart['p2-v0']).toBe(2); // still untouched
   });
 });

@@ -21,7 +21,13 @@ interface Props {
 const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: Props) => {
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
-  const { t, tOptionCount, locale } = useTranslation();
+  // The plain (non-sheet) stepper's buttons mutate only this bare-id key, so it
+  // must display/gate on this key's own count — not view.count, which sums
+  // every cart line for the product including any `${id}-v${i}` variant lines
+  // (possible today because ProductCard's sheet threshold differs from this
+  // card's, so a product classified "plain" here can still carry a variant line).
+  const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
+  const { t, tOptionCount, tDiscount, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
@@ -39,11 +45,17 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
   });
 
   const stock = product.stock ?? 0;
-  const canAdd = view.count < stock;
+  const canAdd = ownCount < stock;
+
+  // Badge mirrors the price row above it: view.price/view.mrp track whichever
+  // variant was last touched, so the discount must be recomputed from those,
+  // not from product.discountPct (fixed at the default variant's discount).
+  const discountPct = view.mrp > view.price ? Math.round((1 - view.price / view.mrp) * 100) : 0;
 
   // With more than one variant the sheet owns every quantity change; the card's
   // controls are display plus a way in. Forward the variants the card already
-  // has so the sheet can open without its own network round-trip.
+  // has — once the screens are wired to useVariantSheet, this lets the sheet
+  // open without its own network round-trip.
   const openSheet = () => {
     if (onOpenVariants) {
       onOpenVariants({
@@ -92,9 +104,9 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
           contentFit="cover"
           transition={150}
         />
-        {product.discountPct > 0 ? (
+        {discountPct > 0 ? (
           <View className="absolute top-2 left-2 bg-green-600 rounded-md px-1.5 py-0.5">
-            <Text className="text-white text-[10px] font-bold">{product.discountPct}% OFF</Text>
+            <Text className="text-white text-[10px] font-bold">{tDiscount(discountPct)}</Text>
           </View>
         ) : null}
         {!product.inStock ? (
@@ -143,13 +155,18 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
           ) : view.opensSheet ? (
             <TouchableOpacity
               onPress={openSheet}
+              accessibilityRole="button"
+              accessibilityLabel={`${view.count} in cart, change options`}
               className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
             >
-              <View testID="variant-stepper-dec" className="px-1">
+              {/* The − / count / + below are display only — the whole row opens
+                  the sheet as one control, so these two Views intentionally
+                  carry no onPress of their own. Don't wire one up separately. */}
+              <View testID="variant-stepper-dec" className="px-1" accessible={false}>
                 <Minus size={16} color="#ffffff" />
               </View>
               <Text className="text-white font-bold text-sm">{view.count}</Text>
-              <View testID="variant-stepper-inc" className="px-1">
+              <View testID="variant-stepper-inc" className="px-1" accessible={false}>
                 <Plus size={16} color="#ffffff" />
               </View>
             </TouchableOpacity>
@@ -158,7 +175,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               <TouchableOpacity testID="stepper-dec" onPress={() => decFromCart(product.id)} hitSlop={6}>
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>
-              <Text className="text-white font-bold text-sm">{view.count}</Text>
+              <Text className="text-white font-bold text-sm">{ownCount}</Text>
               <TouchableOpacity
                 testID="stepper-inc"
                 onPress={handleAdd}
