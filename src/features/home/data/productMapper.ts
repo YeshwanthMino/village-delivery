@@ -6,7 +6,78 @@
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
 
-function num(v: any): number {
+/**
+ * Shape of a variant as the backend sends it (populated, i.e. already an
+ * object rather than a bare ObjectId ref — see `mapVariants`). Every field is
+ * `unknown` rather than the plausible JS type: nothing here is validated
+ * server-side, every read already goes through `num`/`String`/`Boolean`, and a
+ * looser type would just be a type assertion with extra steps.
+ */
+export interface RawVariant {
+  _id?: unknown;
+  title?: unknown;
+  teluguTitle?: unknown;
+  slug?: unknown;
+  description?: unknown;
+  mrp?: unknown;
+  listPrice?: unknown;
+  dealPrice?: unknown;
+  stockId?: { stock?: unknown };
+  stock?: unknown;
+  images?: unknown;
+  landingImage?: unknown;
+  taxType?: unknown;
+  taxRate?: unknown;
+  hasFreeItem?: unknown;
+  hsn?: unknown;
+  active?: unknown;
+}
+
+/**
+ * Shape of a product as the backend sends it, before mapping to `Product` or
+ * `HomeProduct`. Shared by every product mapper (this file and
+ * homeLayoutMapper.ts) because they map the same conceptual payload from
+ * different endpoints; each mapper reads only the subset it needs.
+ *
+ * `categoryId` is `unknown` rather than a fixed shape because the two
+ * endpoints disagree: the page-layout feed sends it unpopulated (a bare id
+ * string), product/category-detail endpoints send it populated (`{ _id,
+ * title }`). Callers narrow at the point of use rather than the type lying
+ * about a single shape.
+ */
+export interface RawApiProduct {
+  _id?: unknown;
+  categoryId?: unknown;
+  title?: unknown;
+  teluguTitle?: unknown;
+  rating?: unknown;
+  reviews?: unknown;
+  description?: unknown;
+  manufacturerId?: unknown;
+  brandId?: unknown;
+  mrp?: unknown;
+  listPrice?: unknown;
+  dealPrice?: unknown;
+  landingImage?: unknown;
+  images?: unknown;
+  slug?: unknown;
+  stock?: unknown;
+  active?: unknown;
+  /** Populated variant objects, or unpopulated ObjectId refs — see `mapVariants`. */
+  variantIds?: unknown;
+}
+
+/** Narrow the loosely-typed `categoryId` to the populated `{ _id }` shape a
+ *  couple of mappers expect; other endpoints send a bare id string instead,
+ *  which has no `_id` to read and falls through to the empty default. */
+export function populatedCategoryId(categoryId: unknown): string {
+  if (categoryId && typeof categoryId === 'object' && '_id' in categoryId) {
+    return String((categoryId as { _id?: unknown })._id ?? '');
+  }
+  return '';
+}
+
+function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
@@ -16,11 +87,11 @@ function num(v: any): number {
  * units (see shared/utils/currency). Converting here — the boundary — is what
  * lets productSnapshot copy a price verbatim and be right for every source.
  */
-function toPriceUnits(v: any): number {
+function toPriceUnits(v: unknown): number {
   return toUnits(num(v));
 }
 
-export function mapVariant(v: any): Variant {
+export function mapVariant(v: RawVariant): Variant {
   const mrp = toPriceUnits(v?.mrp);
   const listPrice = toPriceUnits(v?.listPrice);
   const dealPrice = toPriceUnits(v?.dealPrice);
@@ -55,9 +126,9 @@ export function mapVariant(v: any): Variant {
  * string instead of the populated variant object) so callers never see a
  * nameless, ₹0 row.
  */
-export function mapVariants(raw: any[]): Variant[] {
+export function mapVariants(raw: unknown): Variant[] {
   return Array.isArray(raw)
-    ? raw.filter((v: any) => v && typeof v === 'object').map(mapVariant)
+    ? raw.filter((v): v is RawVariant => v != null && typeof v === 'object').map(mapVariant)
     : [];
 }
 
@@ -67,7 +138,7 @@ export function mapVariants(raw: any[]): Variant[] {
  * - Aggregates stock from all variants
  * - Uses first variant's image and price for product-level defaults
  */
-export function mapApiProduct(p: any): Product {
+export function mapApiProduct(p: RawApiProduct): Product {
   const variants = mapVariants(p?.variantIds);
 
   // Aggregate stock from all variants
@@ -82,7 +153,7 @@ export function mapApiProduct(p: any): Product {
 
   return {
     id: String(p?._id ?? ''),
-    categoryId: String(p?.categoryId?._id ?? ''),
+    categoryId: populatedCategoryId(p?.categoryId),
     name: String(p?.title ?? ''),
     nameTE: String(p?.teluguTitle ?? ''),
     weight: '', // Not provided by backend

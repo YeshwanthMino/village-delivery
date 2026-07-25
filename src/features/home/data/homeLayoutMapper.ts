@@ -15,14 +15,89 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
-import { mapVariants } from './productMapper';
+import { mapVariants, populatedCategoryId, RawApiProduct, RawVariant } from './productMapper';
 
-function num(v: any): number {
+/** Raw active-flag shape shared by products, categories, and menus — every
+ *  caller only ever reads `active`, so this is deliberately minimal rather
+ *  than duplicating the fuller product/category interfaces below. */
+interface RawActiveFlagged {
+  active?: unknown;
+}
+
+interface RawBannerSlide {
+  uniqueId?: unknown;
+  _id?: unknown;
+  title?: unknown;
+  imageUrl?: unknown;
+  link?: unknown;
+}
+
+interface RawBanner {
+  _id?: unknown;
+  title?: unknown;
+  hideTitle?: unknown;
+  slides?: unknown;
+  height?: unknown;
+  autoScroll?: unknown;
+  autoPlayDelay?: unknown;
+  itemsPerSlide?: unknown;
+}
+
+interface RawMenuItem extends RawActiveFlagged {
+  docId?: unknown;
+  uniqueId?: unknown;
+  title?: unknown;
+  imageUrl?: unknown;
+  link?: unknown;
+}
+
+interface RawFeaturedMenu extends RawActiveFlagged {
+  _id?: unknown;
+  title?: unknown;
+  hideTitle?: unknown;
+  menuItems?: unknown;
+}
+
+interface RawProductCarousel {
+  _id?: unknown;
+  title?: unknown;
+  hideTitle?: unknown;
+  products?: unknown;
+}
+
+interface RawLayoutComponent {
+  collection?: unknown;
+  component?: unknown;
+}
+
+interface RawHomeLayoutRoot {
+  _id?: unknown;
+  title?: unknown;
+  path?: unknown;
+  bannerCarousels?: unknown;
+  featuredMenus?: unknown;
+  productCarousels?: unknown;
+  components?: unknown;
+}
+
+function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
-function byId(arr: any[], id: string): any {
+/** Coerce to a non-empty string, or undefined — mirrors the `x || undefined`
+ *  fallback every mapper here already used, just typed for an `unknown` input. */
+function str(v: unknown): string | undefined {
+  return v ? String(v) : undefined;
+}
+
+/** The network layer hands back either the payload itself or `{ data: payload }`;
+ *  narrow to a plain object either way before reading named fields off it. */
+function asRecord(v: unknown): Record<string, unknown> {
+  return v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+}
+
+function byId<T extends { _id?: unknown }>(arr: T[], id: string): T | undefined {
   return arr.find((x) => String(x?._id) === String(id));
 }
 
@@ -31,7 +106,7 @@ function byId(arr: any[], id: string): any {
  * category listings — so they can never be added to the cart or ordered. A
  * missing `active` flag is treated as active.
  */
-export function isProductActive(p: any): boolean {
+export function isProductActive(p: RawActiveFlagged): boolean {
   return p?.active !== false;
 }
 
@@ -39,7 +114,7 @@ export function isProductActive(p: any): boolean {
  * Map backend product with variants (variantIds) to Product interface.
  * Handles both API products with variantIds and legacy products.
  */
-export function mapProductWithVariants(p: any): Product {
+export function mapProductWithVariants(p: RawApiProduct): Product {
   const variants = mapVariants(p?.variantIds);
 
   // Use first variant's price for product-level price, or fallback to dealPrice/listPrice/mrp
@@ -47,13 +122,25 @@ export function mapProductWithVariants(p: any): Product {
   const productPrice = firstVariant?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
   const productMrp = firstVariant?.mrp ?? toUnits(num(p?.mrp));
 
-  // Extract image from product or first variant
-  const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) ||
-                (firstVariant && (p?.variantIds?.[0]?.landingImage || Array.isArray(p?.variantIds?.[0]?.images) ? p.variantIds[0].images[0] : undefined)) || '';
+  // Extract image from product or first variant. The raw (pre-mapVariants) first
+  // entry is read directly here, matching the pre-existing fallback order;
+  // `variantIds` is `unknown` on the raw type, so this narrows once at the single
+  // nested access rather than typing every level of an already-raw JSON blob.
+  const rawFirstVariant = (Array.isArray(p?.variantIds) ? p.variantIds[0] : undefined) as
+    | RawVariant
+    | undefined;
+  const image = String(
+    p?.landingImage ||
+    (Array.isArray(p?.images) ? p.images[0] : undefined) ||
+    (firstVariant && (rawFirstVariant?.landingImage || Array.isArray(rawFirstVariant?.images))
+      ? (rawFirstVariant?.images as unknown[] | undefined)?.[0]
+      : undefined) ||
+    ''
+  );
 
   return {
     id: String(p?._id ?? ''),
-    categoryId: String(p?.categoryId?._id ?? ''),
+    categoryId: populatedCategoryId(p?.categoryId),
     name: String(p?.title ?? ''),
     nameTE: String(p?.teluguTitle ?? ''),
     weight: '', // Not provided by backend
@@ -74,11 +161,11 @@ export function mapProductWithVariants(p: any): Product {
  * the Categories page, and the Category Details rail (all driven by the same
  * page-layout). A missing `active` flag is treated as active.
  */
-export function isCategoryActive(c: any): boolean {
+export function isCategoryActive(c: RawActiveFlagged): boolean {
   return c?.active !== false;
 }
 
-export function mapProduct(p: any): HomeProduct {
+export function mapProduct(p: RawApiProduct): HomeProduct {
   // Unpopulated refs (a raw ObjectId string instead of the variant object)
   // are dropped by mapVariants, so an all-unpopulated array collapses to
   // undefined rather than a truthy [] that would swallow the stock fallback.
@@ -91,12 +178,14 @@ export function mapProduct(p: any): HomeProduct {
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   // Use variant image if available, otherwise product image
-  const image = first?.image ||
-                p?.landingImage ||
-                (Array.isArray(p?.images) ? p.images[0] : undefined) ||
-                '';
+  const image = String(
+    first?.image ||
+    p?.landingImage ||
+    (Array.isArray(p?.images) ? p.images[0] : undefined) ||
+    ''
+  );
 
-  const slug = p?.slug || undefined;
+  const slug = str(p?.slug);
 
   // Get stock from variants if available, otherwise fallback to root stock
   const totalStock = variants
@@ -106,7 +195,7 @@ export function mapProduct(p: any): HomeProduct {
   return {
     id: String(p?._id ?? ''),
     title: String(p?.title ?? ''),
-    teluguTitle: p?.teluguTitle || undefined,
+    teluguTitle: str(p?.teluguTitle),
     image,
     mrp,
     price,
@@ -115,23 +204,26 @@ export function mapProduct(p: any): HomeProduct {
     stock: totalStock,
     slug,
     link: slug ? `/${slug}` : undefined,
-    categoryId: p?.categoryId || undefined,
+    // Unlike mapApiProduct/mapProductWithVariants, this endpoint's categoryId
+    // arrives unpopulated (a bare id string) — see RawApiProduct's doc comment.
+    categoryId: str(p?.categoryId),
     hasVariants: (variants?.length ?? 0) > 1,
     variants,
   };
 }
 
-function mapBanner(b: any): BannerSection {
+function mapBanner(b: RawBanner): BannerSection {
+  const slides: RawBannerSlide[] = Array.isArray(b?.slides) ? b.slides : [];
   return {
     kind: 'banner',
     id: String(b?._id ?? ''),
     title: String(b?.title ?? ''),
     hideTitle: Boolean(b?.hideTitle),
-    slides: (Array.isArray(b?.slides) ? b.slides : []).map((s: any) => ({
+    slides: slides.map((s) => ({
       id: String(s?.uniqueId ?? s?._id ?? ''),
       title: String(s?.title ?? ''),
       imageUrl: String(s?.imageUrl ?? ''),
-      link: s?.link || undefined,
+      link: str(s?.link),
     })),
     height: num(b?.height) || 200,
     autoScroll: Boolean(b?.autoScroll),
@@ -140,37 +232,40 @@ function mapBanner(b: any): BannerSection {
   };
 }
 
-function mapCategory(m: any): CategorySection {
+function mapCategory(m: RawFeaturedMenu): CategorySection {
+  const menuItems: RawMenuItem[] = Array.isArray(m?.menuItems) ? m.menuItems : [];
   return {
     kind: 'category',
     id: String(m?._id ?? ''),
     title: String(m?.title ?? ''),
     hideTitle: Boolean(m?.hideTitle),
-    items: (Array.isArray(m?.menuItems) ? m.menuItems : []).filter(isCategoryActive).map((it: any) => ({
+    items: menuItems.filter(isCategoryActive).map((it) => ({
       id: String(it?.docId ?? it?.uniqueId ?? ''),
       title: String(it?.title ?? ''),
       imageUrl: String(it?.imageUrl ?? ''),
-      link: it?.link || undefined,
+      link: str(it?.link),
     })),
   };
 }
 
-function mapProductCarousel(pc: any): ProductCarouselSection {
+function mapProductCarousel(pc: RawProductCarousel): ProductCarouselSection {
+  const products: RawApiProduct[] = Array.isArray(pc?.products) ? pc.products : [];
   return {
     kind: 'productCarousel',
     id: String(pc?._id ?? ''),
     title: String(pc?.title ?? ''),
     hideTitle: Boolean(pc?.hideTitle),
-    products: (Array.isArray(pc?.products) ? pc.products : []).filter(isProductActive).map(mapProduct),
+    products: products.filter(isProductActive).map(mapProduct),
   };
 }
 
-export function mapHomeLayout(raw: any): HomeLayout {
-  const root = raw?.data ?? raw ?? {};
-  const banners = Array.isArray(root.bannerCarousels) ? root.bannerCarousels : [];
-  const menus = Array.isArray(root.featuredMenus) ? root.featuredMenus : [];
-  const carousels = Array.isArray(root.productCarousels) ? root.productCarousels : [];
-  const components = Array.isArray(root.components) ? root.components : [];
+export function mapHomeLayout(raw: unknown): HomeLayout {
+  const envelope = asRecord(raw);
+  const root = asRecord(envelope.data ?? envelope) as RawHomeLayoutRoot;
+  const banners: RawBanner[] = Array.isArray(root.bannerCarousels) ? root.bannerCarousels : [];
+  const menus: RawFeaturedMenu[] = Array.isArray(root.featuredMenus) ? root.featuredMenus : [];
+  const carousels: RawProductCarousel[] = Array.isArray(root.productCarousels) ? root.productCarousels : [];
+  const components: RawLayoutComponent[] = Array.isArray(root.components) ? root.components : [];
 
   const sections: HomeSection[] = [];
   for (const c of components) {
