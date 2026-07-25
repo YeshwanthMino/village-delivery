@@ -7,6 +7,7 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { mapProduct, isProductActive } from '@/src/features/home/data/homeLayoutMapper';
+import { mapApiProduct } from '@/src/features/home/data/productMapper';
 import { ProductDetail } from './productDetail.types';
 
 function num(v: any): number {
@@ -15,13 +16,37 @@ function num(v: any): number {
 }
 
 export function mapProductDetail(p: any): ProductDetail {
-  const mrp = num(p?.mrp);
-  const price = num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
+  // Use the comprehensive mapApiProduct to extract all variant data
+  const fullProduct = mapApiProduct(p);
+
+  // If product has variants, use first variant's price; otherwise use product-level price
+  const firstVariant = fullProduct.variants?.[0];
+  const mrp = firstVariant?.mrp ?? num(p?.mrp);
+  const price = firstVariant?.price ?? num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
-  const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) || '';
-  const imagesRaw = Array.isArray(p?.images) ? p.images.filter(Boolean) : [];
-  const images = imagesRaw.length > 0 ? imagesRaw : image ? [image] : [];
+
+  // Use first variant's image if available, otherwise product image
+  const variantImage = firstVariant?.image;
+  const image = variantImage || p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) || '';
+
+  // Use first variant's images if available, otherwise product images
+  const variantImages = firstVariant?.images;
+  const imagesRaw = variantImages || (Array.isArray(p?.images) ? p.images.filter(Boolean) : []);
+  const images = imagesRaw && imagesRaw.length > 0 ? imagesRaw : image ? [image] : [];
+
   const similarRaw = Array.isArray(p?.similarProducts) ? p.similarProducts : [];
+
+  // Stock resolution mirrors the price fallback above: prefer the variants
+  // (where the backend actually tracks inventory), fall back to the product-level
+  // field for variant-less products, and treat a *missing* value as in-stock —
+  // absent data must not hide a sellable product.
+  const hasVariants = (fullProduct.variants?.length ?? 0) > 0;
+  const rawStock = p?.stockId?.stock ?? p?.stock;
+  const stock = hasVariants
+    ? fullProduct.stock
+    : rawStock != null
+      ? num(rawStock)
+      : undefined;
 
   return {
     id: String(p?._id ?? ''),
@@ -33,9 +58,11 @@ export function mapProductDetail(p: any): ProductDetail {
     mrp,
     price,
     discountPct,
-    inStock: p?.stock === undefined ? true : num(p?.stock) > 0,
+    inStock: stock == null ? true : stock > 0,
+    stock,
     active: p?.active !== false,
     categoryTitle: p?.categoryId?.title || undefined,
+    variants: fullProduct.variants,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
   };
 }

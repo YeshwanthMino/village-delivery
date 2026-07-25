@@ -5,6 +5,7 @@
 // backend field shapes directly.
 
 import { HomeProduct } from '@/src/features/home/data/homeLayout.types';
+import { Variant } from '@/src/base/types/village.types';
 
 export interface ProductDetail {
   id: string;
@@ -17,7 +18,9 @@ export interface ProductDetail {
   price: number;          // dealPrice ?? listPrice ?? mrp
   discountPct: number;    // 0 when no discount
   inStock: boolean;       // false when stock is 0; absent stock => true
+  stock?: number;         // available quantity
   active: boolean;        // p.active !== false (missing flag => active)
   categoryTitle?: string; // categoryId.title
+  variants?: Variant[];   // available variants for the product
   similarProducts: HomeProduct[];
 }

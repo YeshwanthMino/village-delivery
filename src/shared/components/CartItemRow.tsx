@@ -110,6 +110,7 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
           <View className="gap-1 w-full">
             <TouchableOpacity
               onPress={onOutOfStockPress}
+              testID="out-of-stock-badge"
               className="bg-red-100 rounded-lg px-2 py-1 flex-row items-center gap-1 justify-center"
             >
               <AlertCircle size={14} color="#dc2626" />
@@ -127,7 +128,8 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
           <>
             <FullWidthStepper
               count={item.count}
-              onAdd={() => addToCart(item.key)}
+              maxQuantity={stockStatus?.availableQuantity}
+              onAdd={() => addToCart(item.key, undefined, stockStatus?.availableQuantity)}
               onDec={() => decFromCart(item.key)}
             />
             <Text className="text-slate-500 text-[10px]">

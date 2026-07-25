@@ -78,4 +78,41 @@ describe('mapProductDetail', () => {
   it('maps active:false to inactive', () => {
     expect(mapProductDetail({ ...RAW, active: false }).active).toBe(false);
   });
+
+  it('takes stock from the variants when the product has them', () => {
+    const withVariants = {
+      ...RAW,
+      stock: 99, // product-level value must be ignored once variants exist
+      variantIds: [
+        { _id: 'v1', title: '6 pc', mrp: 25, dealPrice: 20, stock: 2 },
+        { _id: 'v2', title: '12 pc', mrp: 45, dealPrice: 40, stock: 3 },
+      ],
+    };
+    const d = mapProductDetail(withVariants);
+    expect(d.stock).toBe(5);
+    expect(d.inStock).toBe(true);
+  });
+
+  it('is out of stock when every variant is out of stock', () => {
+    const allEmpty = {
+      ...RAW,
+      stock: 99,
+      variantIds: [
+        { _id: 'v1', title: '6 pc', mrp: 25, dealPrice: 20, stock: 0 },
+        { _id: 'v2', title: '12 pc', mrp: 45, dealPrice: 40, stock: 0 },
+      ],
+    };
+    const d = mapProductDetail(allEmpty);
+    expect(d.stock).toBe(0);
+    expect(d.inStock).toBe(false);
+  });
+
+  it('reads variant stock from stockId.stock when present', () => {
+    const d = mapProductDetail({
+      ...RAW,
+      variantIds: [{ _id: 'v1', title: '6 pc', mrp: 25, dealPrice: 20, stockId: { stock: 7 } }],
+    });
+    expect(d.stock).toBe(7);
+    expect(d.inStock).toBe(true);
+  });
 });

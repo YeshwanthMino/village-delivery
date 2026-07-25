@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { OrderModificationSheet } from '../OrderModificationSheet';
+import { rupees } from '@/src/features/home/data/static/villageData';
 
 describe('OrderModificationSheet', () => {
   const mockStockInfo = [
@@ -63,11 +64,10 @@ describe('OrderModificationSheet', () => {
   it('calculates correct subtotal', () => {
     render(<OrderModificationSheet {...mockProps} />);
 
-    // prod1 out of stock (0 qty) = 45 * 0 = 0
-    // prod2 low stock (1 qty) = 96 * 1 = 96
-    // subtotal = 96
-    const subtotalText = screen.getAllByText('₹96');
-    expect(subtotalText.length).toBeGreaterThan(0);
+    // prod1 out of stock -> 45 * 0 = 0 units
+    // prod2 capped at available stock -> 96 * 1 = 96 units
+    // subtotal = 96 units, which rupees() renders as 96 * 20.
+    expect(screen.getAllByText(rupees(96)).length).toBeGreaterThan(0);
   });
 
   it('calls onRetryCheckout when Update all tapped without manual changes', async () => {
@@ -93,17 +93,19 @@ describe('OrderModificationSheet', () => {
       <OrderModificationSheet
         {...mockProps}
         onManualAdjustment={mockManualAdjustment}
+        onRetryCheckout={jest.fn().mockResolvedValue(undefined)}
       />
     );
 
-    // Note: In actual app, user would press stepper to trigger manual adjustment
-    // This test structure is simplified for the mock environment
-
-    const updateAllButton = screen.getByText('Update all');
-    fireEvent.press(updateAllButton);
+    // prod2 is capped at its available stock of 1; stepping it down to 0 is a
+    // real manual adjustment, which is what routes "Update all" down this branch.
+    fireEvent.press(screen.getByTestId('stepper-dec-prod2'));
+    fireEvent.press(screen.getByText('Update all'));
 
     await waitFor(() => {
-      expect(mockManualAdjustment).toHaveBeenCalled();
+      expect(mockManualAdjustment).toHaveBeenCalledWith(
+        expect.objectContaining({ prod2: 0 }),
+      );
     });
   });
 

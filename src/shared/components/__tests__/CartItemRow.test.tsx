@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CartItemRow } from '../CartItemRow';
 import { CartLineItem } from '@/src/base/types/village.types';
+import { rupees } from '@/src/features/home/data/static/villageData';
 
 jest.mock('@/src/core/store', () => ({
   useVillageStore: jest.fn(selector => {
@@ -23,6 +24,7 @@ describe('CartItemRow', () => {
   const mockItem: CartLineItem = {
     key: 'item-1',
     productId: 'prod-1',
+    variantIndex: null,
     name: 'Test Product',
     nameTE: '',
     weight: '500g',
@@ -60,20 +62,17 @@ describe('CartItemRow', () => {
     const onOutOfStockPress = jest.fn();
     const stockStatus = { inStock: false, availableQuantity: 0 };
 
-    const { getByTestId } = render(
+    render(
       <CartItemRow
         item={mockItem}
         stockStatus={stockStatus}
         onOutOfStockPress={onOutOfStockPress}
-        testID="out-of-stock-badge"
       />
     );
 
-    const badge = screen.getByText('Out of stock').closest('View');
-    if (badge) {
-      fireEvent.press(badge);
-      expect(onOutOfStockPress).toHaveBeenCalled();
-    }
+    fireEvent.press(screen.getByTestId('out-of-stock-badge'));
+
+    expect(onOutOfStockPress).toHaveBeenCalledTimes(1);
   });
 
   test('shows stepper when item is in stock', () => {
@@ -84,18 +83,12 @@ describe('CartItemRow', () => {
     expect(screen.queryByText('Out of stock')).toBeNull();
   });
 
-  test('applies red border styling when item is out of stock', () => {
+  test('swaps the stepper for remove actions when out of stock', () => {
     const stockStatus = { inStock: false, availableQuantity: 0 };
-    const { getByTestId } = render(
-      <CartItemRow
-        item={mockItem}
-        stockStatus={stockStatus}
-        testID="cart-item-row"
-      />
-    );
+    render(<CartItemRow item={mockItem} stockStatus={stockStatus} />);
 
-    // The component should have modified styling for out-of-stock items
-    // In the actual implementation, this is done via className with border-red-200
+    expect(screen.getByTestId('out-of-stock-badge')).toBeTruthy();
+    expect(screen.getByText('Remove')).toBeTruthy();
   });
 
   test('handles undefined stockStatus gracefully', () => {
@@ -118,17 +111,18 @@ describe('CartItemRow', () => {
     expect(screen.getByText('50%')).toBeTruthy();
   });
 
-  test('displays total price for quantity', () => {
-    render(<CartItemRow item={mockItem} />);
+  test('displays the line total for the quantity', () => {
+    // count 3 keeps the line total (300 units) distinct from the struck-through
+    // mrp (200 units), which would otherwise render the same string.
+    render(<CartItemRow item={{ ...mockItem, count: 3 }} />);
 
-    // Item price is 100, count is 2, so total should be 200
-    // The component displays rupees(price * count)
+    expect(screen.getByText(rupees(300))).toBeTruthy();
   });
 
   test('handles item without image URL (emoji fallback)', () => {
     const itemWithoutImage = {
       ...mockItem,
-      imageUrl: null,
+      imageUrl: undefined,
     };
 
     render(<CartItemRow item={itemWithoutImage} />);

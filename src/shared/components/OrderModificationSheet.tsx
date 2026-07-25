@@ -254,6 +254,7 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
                         <View className="flex-row items-center gap-3 mb-2">
                           <CompactStepper
                             count={currentQuantity}
+                            testIDSuffix={conflict.productId}
                             onAdd={() => {
                               setManuallyAdjusted(prev => new Set(prev).add(conflict.productId));
                               setLocalQuantities(prev => ({
