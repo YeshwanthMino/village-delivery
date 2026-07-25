@@ -3,7 +3,30 @@
 **Date:** 2026-07-25
 **Branch audited:** `feat/address-location-flow` (27 modified files, ~651 uncommitted insertions)
 **Scope:** Whole application — security, performance, correctness, code structure, tests
-**Status:** Findings only. No code changed.
+**Status:** Findings below were audited first, then acted on. See §0 for what was fixed.
+
+---
+
+## 0. Resolution status
+
+All findings were addressed across seven commits (`c5d6501`..`1a967a3`), each
+verified with `tsc --noEmit`, `eslint`, and the full suite.
+
+| Finding | Status |
+|---|---|
+| C1 adjustment reset · C2 timeout ignored · C3 unreachable fallback · C4 variant collision · C5 cart not persisted | **Fixed** |
+| H1 ungated logging · H3 no memo · H4 cartCount selector · H5 money math in mock file · H7 no error boundary · H8 failing tests | **Fixed** |
+| H6 lists in ScrollView | **Partly fixed** — search (the unbounded one) virtualised; the rest are bounded static-catalog lists, one inside a scroll-driven animated header that needs visual verification |
+| M1 dead code · M2 dead compute · M3 unreachable UI · M5 route casts · M6 large modules · M7 per-unit writes · M8 stale verification · M9 three sheets | **Fixed** |
+| M4 `any` at API boundary | **Partly fixed** — auth boundary typed (and surfaced a real string/number id inconsistency); `homeLayoutMapper` (14) and `ordersApi` (10) remain |
+| L1 lint · L2 hardcoded version · L3 dead state · L5 duplicate key parsers | **Fixed** |
+| **H2 web tokens in localStorage** | **Not done — needs your decision.** Whether web is a shipping target determines whether this is an httpOnly-cookie change or a build gate. Cheap decision, expensive implementation. |
+| L4 i18n in OrderModificationSheet · L6 User-Agent spoof · L7 React Query for mutations | **Not done** — L6 needs a server-side fix; L4 and L7 are follow-on work |
+| L8 Telugu fonts always loaded | **Deliberately not done** — `loadLocale` accepts only `'en'` today, but the `'te'` rendering path is live in 36 places; removing the fonts would break it the moment Telugu returns |
+
+**Measured before → after:** ungated `console.*` 101 → 0 · failing tests 3 → 0 ·
+tests 97 → 143 · `React.memo` 0 → 4 · error boundaries 0 → 1 · `any` 129 → 88 ·
+largest component 1108 → 374 lines · verified-dead lines ~800 → 0.
 
 ---
 
