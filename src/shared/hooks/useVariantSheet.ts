@@ -17,12 +17,15 @@ import { logger } from '@/src/base/services/logger';
 export function useVariantSheet() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<Error | null>(null);
   const storeId = useStoreId();
   // Bumped by every open() call (both the sync and fetch paths) and by close(),
   // so a fetch whose response lands after the sheet moved on — reopened for a
   // different product, double-tapped, or dismissed — can tell it's stale and
-  // no-op instead of clobbering whatever is showing now.
+  // no-op instead of clobbering whatever is showing now. Whoever bumps this ref
+  // takes ownership of `loading`/`error` for the request it starts, so both the
+  // fast path and close() clear them immediately rather than leaving a
+  // superseded fetch's own (skipped) `finally` as the only place that would.
   const requestId = useRef(0);
 
   const open = useCallback(
@@ -32,6 +35,7 @@ export function useVariantSheet() {
 
       if (candidate.variants?.length) {
         setProduct(candidate);
+        setLoading(false);
         return;
       }
 
@@ -41,6 +45,7 @@ export function useVariantSheet() {
         if (requestId.current !== id) return;
         if (!full.variants?.length) {
           logger.error('Product detail returned no variants', candidate.id);
+          setError(new Error('This product has no variants to show.'));
           return;
         }
         setProduct({
@@ -52,10 +57,10 @@ export function useVariantSheet() {
           image: full.image,
           variants: full.variants,
         });
-      } catch (error) {
+      } catch (err) {
         if (requestId.current !== id) return;
-        logger.error('Failed to load product variants:', error);
-        setError(error);
+        logger.error('Failed to load product variants:', err);
+        setError(err instanceof Error ? err : new Error('Failed to load product variants.'));
       } finally {
         if (requestId.current === id) setLoading(false);
       }
@@ -66,6 +71,8 @@ export function useVariantSheet() {
   const close = useCallback(() => {
     requestId.current++;
     setProduct(null);
+    setLoading(false);
+    setError(null);
   }, []);
 
   return { product, loading, error, open, close };
