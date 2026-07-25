@@ -5,13 +5,24 @@ import { logger } from '@/src/base/services/logger';
 
 
 // Types for stored data
+//
+// Every field is optional because the profile comes straight off /app/auth/me
+// and is also read back from disk, where an older install may have written a
+// different shape. Consumers must treat each field as possibly absent — the
+// index signature is deliberately `unknown`, not `any`, so reaching for an
+// undeclared field is a compile error rather than a silent undefined.
 export interface UserObject {
-  id: number;
-  uuid: string;
+  /** Mongo ids arrive as strings; the legacy login mutation produced a number.
+   *  Both are real in this codebase, so callers must narrow before using it. */
+  id?: string | number;
+  uuid?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phoneNumber?: string;
-  [key: string]: any;
+  mobileNumber?: string;
+  [key: string]: unknown;
 }
 
 export interface UserPreferences {

@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { env } from '@/src/core/config/env';
 
 // Environment configuration
@@ -27,7 +28,10 @@ export const AppAuthRoutes = {
 // App configuration
 export const AppConfig = {
   name: 'Village',
-  version: '1.0.0', // This should come from package.json in production
+  // Read from app.json rather than hardcoded — this ships in the
+  // Village-App-Version header, so a stale literal made server-side version
+  // analytics wrong for every release.
+  version: Constants.expoConfig?.version ?? '0.0.0',
   bundleId: 'com.village.delivery',
 
   // API configuration

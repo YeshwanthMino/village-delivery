@@ -45,7 +45,7 @@ export const CategoriesScreen = () => {
         <View style={s.toolbarIcons}>
           <TouchableOpacity
             style={s.iconBtn}
-            onPress={() => router.push('/search' as any)}
+            onPress={() => router.push('/search')}
             activeOpacity={0.7}
           >
             <Search size={20} color="#1e293b" strokeWidth={2.2} />

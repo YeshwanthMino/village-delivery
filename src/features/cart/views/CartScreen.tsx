@@ -38,14 +38,16 @@ export const CartScreen = () => {
   // Cash on delivery is preselected so Place Order is always available; the
   // user can switch to UPI in the inline payment section below the bill.
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('cod');
-  const [loginSheetVisible, setLoginSheetVisible] = React.useState(false);
+  // Which purpose the login sheet is currently open for, or null when closed.
+  // Three independent booleans previously allowed contradictory combinations.
+  type SheetKind = 'checkout' | 'address-gate' | 'login';
+  const [sheet, setSheet] = React.useState<SheetKind | null>(null);
+  const closeSheet = () => setSheet(null);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const scrollPadding = insets.bottom + 16;
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const addr = useCartAddressViewModel();
-  const [addressLoginVisible, setAddressLoginVisible] = React.useState(false);
-  const [pureLoginVisible, setPureLoginVisible] = React.useState(false);
   const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
 
   // Stock verification (use separate selectors to avoid infinite loops)
@@ -104,10 +106,10 @@ export const CartScreen = () => {
     ? [addr.selectedAddress.addressLine1, addr.selectedAddress.villageName].filter(Boolean).join(', ')
     : undefined;
 
-  const openAddressScreen = () => router.push('/address/add' as any);
+  const openAddressScreen = () => router.push('/address/add');
   const handleAddressPress = () => {
     if (addr.isAuthenticated) openAddressScreen();
-    else setAddressLoginVisible(true);
+    else setSheet('address-gate');
   };
 
   const goToHome = () => router.push('/(dashboard)/home');
@@ -127,9 +129,7 @@ export const CartScreen = () => {
     runStockVerification();
   };
 
-  const handleCheckout = () => {
-    setLoginSheetVisible(true);
-  };
+  const handleCheckout = () => setSheet('checkout');
 
   // Places the real order once the checkout sheet reaches its 'placing' step.
   // Rejecting here surfaces the retryable error inside the sheet and keeps the
@@ -158,8 +158,8 @@ export const CartScreen = () => {
       if (result.stockInfo && result.stockInfo.length > 0) {
         logger.debug('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
         setStockConflictInfo(result.stockInfo);
-        // Close login sheet to show OrderModificationSheet exclusively
-        setLoginSheetVisible(false);
+        // Close the login sheet so OrderModificationSheet shows exclusively
+        closeSheet();
         throw new Error('Stock conflicts detected');
       }
 
@@ -176,7 +176,7 @@ export const CartScreen = () => {
   };
 
   const handleLoginComplete = () => {
-    setLoginSheetVisible(false);
+    closeSheet();
     vm.clearCart();
     router.replace('/(dashboard)/orders');
   };
@@ -310,7 +310,7 @@ export const CartScreen = () => {
         grandTotal={vm.bill.grandTotal}
         addressTag={addr.selectedAddress?.tag}
         addressLine={addressLine}
-        onLogin={() => setPureLoginVisible(true)}
+        onLogin={() => setSheet('login')}
         onSelectAddress={handleAddressPress}
         onPlaceOrder={handleCheckout}
       />
@@ -318,35 +318,30 @@ export const CartScreen = () => {
       {/* Variant sheet */}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
 
-      {/* Deferred login / checkout sheet */}
+      {/* One sheet driven by which purpose opened it. Previously three separate
+          instances behind three booleans, which mounted the whole sheet three
+          times over and allowed nonsensical combinations of the flags. */}
       <LoginBottomSheet
-        visible={loginSheetVisible}
-        onClose={() => setLoginSheetVisible(false)}
-        onComplete={handleLoginComplete}
-        onPlaceOrder={handlePlaceOrder}
-        initialStep={isAuthenticated ? 'placing' : 'phone'}
-        itemCount={vm.bill.totalCount}
-        grandTotal={Math.round(vm.bill.grandTotal)}
-      />
-
-      {/* Auth gate for the address flow */}
-      <LoginBottomSheet
-        visible={addressLoginVisible}
-        onClose={() => setAddressLoginVisible(false)}
-        onComplete={() => {
-          setAddressLoginVisible(false);
-          openAddressScreen();
-        }}
-        mode="auth"
-      />
-
-      {/* Pure login from the bottom CTA (state 1). On success the bar advances
-          on its own because isAuthenticated flips — no navigation. */}
-      <LoginBottomSheet
-        visible={pureLoginVisible}
-        onClose={() => setPureLoginVisible(false)}
-        onComplete={() => setPureLoginVisible(false)}
-        mode="auth"
+        visible={sheet !== null}
+        onClose={closeSheet}
+        {...(sheet === 'checkout'
+          ? {
+              onComplete: handleLoginComplete,
+              onPlaceOrder: handlePlaceOrder,
+              initialStep: isAuthenticated ? ('placing' as const) : ('phone' as const),
+              itemCount: vm.bill.totalCount,
+              grandTotal: Math.round(vm.bill.grandTotal),
+            }
+          : {
+              mode: 'auth' as const,
+              // The address gate continues into the address screen; the bottom-CTA
+              // login just closes, and the bar advances on its own as
+              // isAuthenticated flips.
+              onComplete: () => {
+                closeSheet();
+                if (sheet === 'address-gate') openAddressScreen();
+              },
+            })}
       />
 
       {/* Order Modification Sheet */}

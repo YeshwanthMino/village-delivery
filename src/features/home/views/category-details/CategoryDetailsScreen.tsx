@@ -72,7 +72,7 @@ export const CategoryDetailsScreen = () => {
             </View>
           </View>
           <TouchableOpacity
-            onPress={() => router.push('/search' as any)}
+            onPress={() => router.push('/search')}
             className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center"
           >
             <Search size={18} color="#334155" />

@@ -231,7 +231,7 @@ function EmptyOrders() {
       </Text>
 
       <TouchableOpacity
-        onPress={() => router.push('/(dashboard)/home' as any)}
+        onPress={() => router.push('/(dashboard)/home')}
         className="bg-green-600 rounded-2xl px-8 py-3"
         activeOpacity={0.85}
       >
@@ -292,7 +292,7 @@ export const OrdersScreen = () => {
     for (const item of order.items) {
       for (let i = 0; i < item.quantity; i++) addToCart(item.productId);
     }
-    router.push('/cart' as any);
+    router.push('/cart');
   };
 
   const hasOrders = allOrders.length > 0;
@@ -313,7 +313,7 @@ export const OrdersScreen = () => {
   }
 
   const navigate = (orderId: string) =>
-    router.push({ pathname: '/order-detail', params: { orderId } } as any);
+    router.push({ pathname: '/order-detail', params: { orderId } });
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>

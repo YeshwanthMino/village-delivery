@@ -44,7 +44,7 @@ export const SelectLocationScreen = () => {
 
   const goHome = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/(dashboard)/home' as any);
+    else router.replace('/(dashboard)/home');
   };
 
   const run = async (p: Promise<boolean>) => {
@@ -141,7 +141,7 @@ export const SelectLocationScreen = () => {
 
           {/* Set location on map */}
           <TouchableOpacity
-            onPress={() => router.push('/location/map' as any)}
+            onPress={() => router.push('/location/map')}
             activeOpacity={0.7}
             className="flex-row items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 mt-3"
           >

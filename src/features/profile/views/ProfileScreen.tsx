@@ -101,12 +101,12 @@ export const ProfileScreen = () => {
             <ProfileRow
               icon={<Package size={20} color="#16a34a" />}
               label={t('profile_orders')}
-              onPress={() => router.push('/(dashboard)/orders' as any)}
+              onPress={() => router.push('/(dashboard)/orders')}
             />
             <ProfileRow
               icon={<MapPin size={20} color="#16a34a" />}
               label={t('profile_address_book')}
-              onPress={() => router.push('/address/add?manage=1' as any)}
+              onPress={() => router.push('/address/add?manage=1')}
             />
           </>
         ) : null}
@@ -120,7 +120,7 @@ export const ProfileScreen = () => {
         <ProfileRow
           icon={<Info size={20} color="#16a34a" />}
           label={t('profile_about')}
-          onPress={() => router.push('/about' as any)}
+          onPress={() => router.push('/about')}
         />
         <ProfileRow
           icon={<MessageCircle size={20} color="#16a34a" />}

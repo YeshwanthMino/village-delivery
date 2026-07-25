@@ -51,11 +51,11 @@ export const MapPickerScreen = () => {
 
   const goHome = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/(dashboard)/home' as any);
+    else router.replace('/(dashboard)/home');
   };
 
   const onConfirm = async () => {
-    if (await vm.confirm()) router.replace('/(dashboard)/home' as any);
+    if (await vm.confirm()) router.replace('/(dashboard)/home');
   };
 
   const onUseCurrent = async () => {

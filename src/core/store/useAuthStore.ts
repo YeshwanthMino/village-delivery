@@ -2,7 +2,7 @@
  * Auth Store - Zustand
  * Manages authentication state
  */
-import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { StoredPrefs, type UserObject } from '@/src/base/services/remote/storage/StoredPrefs';
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { getStoreIdSync } from '@/src/core/utils/getStoreId';
@@ -14,7 +14,7 @@ import { logger } from '@/src/base/services/logger';
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: any | null;
+  user: UserObject | null;
   accessToken: string | null;
   refreshToken: string | null;
   error: string | null;
@@ -26,7 +26,7 @@ interface AuthActions {
   // Auth actions
   setAuthenticated: (isAuthenticated: boolean) => void;
   setLoading: (isLoading: boolean) => void;
-  setUser: (user: any) => void;
+  setUser: (user: UserObject | null) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setError: (error: string | null) => void;
 
@@ -72,7 +72,7 @@ function errMessage(e: unknown): string {
 export const useAuthStore = create<AuthStore>((set, get) => {
   const finalizeAuth = async (tokens: AuthTokens) => {
     await apiClient.saveTokens(tokens);
-    let profile: any = null;
+    let profile: UserObject | null = null;
     try {
       profile = await appAuth.getMe(requireStoreId());
       await StoredPrefs.setUserProfile(profile);

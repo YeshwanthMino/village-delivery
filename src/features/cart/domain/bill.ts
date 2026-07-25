@@ -19,6 +19,7 @@ import {
 } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
+import { parseCartKey } from './cartKey';
 
 /**
  * Build a self-contained cart snapshot from a product. Pass a variant index
@@ -87,18 +88,11 @@ export function getCartItems(
     }
 
     // Legacy fallback: resolve against the static catalog (e.g. reorder).
-    const dashVIdx = key.lastIndexOf('-v');
-    if (dashVIdx !== -1) {
-      const productId = key.substring(0, dashVIdx);
-      const variantIndex = parseInt(key.substring(dashVIdx + 2), 10);
-      const product = ALL_PRODUCTS.find(p => p.id === productId);
-      if (!product || !product.variants || !product.variants[variantIndex]) continue;
-      items.push({ ...productSnapshot(product, variantIndex), count });
-    } else {
-      const product = ALL_PRODUCTS.find(p => p.id === key);
-      if (!product) continue;
-      items.push({ ...productSnapshot(product, null), count });
-    }
+    const { productId, variantIndex } = parseCartKey(key);
+    const product = ALL_PRODUCTS.find(p => p.id === productId);
+    if (!product) continue;
+    if (variantIndex !== null && !product.variants?.[variantIndex]) continue;
+    items.push({ ...productSnapshot(product, variantIndex), count });
   }
   return items;
 }

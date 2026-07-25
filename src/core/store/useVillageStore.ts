@@ -1,6 +1,7 @@
 import { CartRecord, CartSnapshot, CartSnapshotRecord } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
+import { parseCartKey } from '@/src/features/cart/domain/cartKey';
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
@@ -44,14 +45,6 @@ const initialState: VillageState = {
   locale: 'en',
   dynamicPrices: {},
 };
-
-function parseCartKey(key: string): { productId: string; variantIndex: number | null } {
-  const match = key.match(/^(.+)-v(\d+)$/);
-  if (match) {
-    return { productId: match[1], variantIndex: parseInt(match[2], 10) };
-  }
-  return { productId: key, variantIndex: null };
-}
 
 interface PersistedCart {
   cart: CartRecord;

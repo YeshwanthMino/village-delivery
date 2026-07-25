@@ -135,7 +135,7 @@ export const OrderDetailScreen = () => {
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
         <View className="px-4" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
           <Pressable
-            onPress={() => router.replace('/(dashboard)/orders' as any)}
+            onPress={() => router.replace('/(dashboard)/orders')}
             className="p-1 self-start"
           >
             <ArrowLeft size={22} color="#0f172a" />
@@ -148,7 +148,7 @@ export const OrderDetailScreen = () => {
             This order does not exist or may have been removed.
           </Text>
           <Pressable
-            onPress={() => router.replace('/(dashboard)/orders' as any)}
+            onPress={() => router.replace('/(dashboard)/orders')}
             className="bg-green-500 rounded-2xl px-8 py-3"
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >
@@ -282,7 +282,7 @@ export const OrderDetailScreen = () => {
           style={{ bottom: insets.bottom, paddingBottom: insets.bottom > 0 ? 4 : 12 }}
         >
           <Pressable
-            onPress={() => { handleReorder(); router.push('/cart' as any); }}
+            onPress={() => { handleReorder(); router.push('/cart'); }}
             className="bg-green-500 rounded-2xl py-4 items-center"
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >

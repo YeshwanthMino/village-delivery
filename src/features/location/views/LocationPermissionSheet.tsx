@@ -41,7 +41,7 @@ export const LocationPermissionSheet = ({ visible, onClose, dismissable = true }
 
   const openSearch = () => {
     onClose();
-    router.push('/location' as any);
+    router.push('/location');
   };
 
   return (

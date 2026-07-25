@@ -79,7 +79,7 @@ export const DeliveryAddressScreen = () => {
 
   const backToCart = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/cart' as any);
+    else router.replace('/cart');
   };
 
   const goBack = () => {

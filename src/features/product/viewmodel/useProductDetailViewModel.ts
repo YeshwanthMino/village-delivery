@@ -99,8 +99,8 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
     selectedVariantIndex: activeVariantIndex,
     onAdd,
     onDec,
-    onViewCart: () => router.push('/cart' as any),
+    onViewCart: () => router.push('/cart'),
     onBack: () => router.back(),
-    onSearch: () => router.push('/search' as any),
+    onSearch: () => router.push('/search'),
   };
 }

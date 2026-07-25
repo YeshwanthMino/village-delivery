@@ -31,7 +31,7 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
 
   const openSearch = () => {
     onClose();
-    router.push('/location' as any);
+    router.push('/location');
   };
 
   return (

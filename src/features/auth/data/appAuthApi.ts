@@ -8,6 +8,7 @@ import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService, AppAuthRoutes } from '@/src/base/constants/AppConstants';
 import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 import { logger } from '@/src/base/services/logger';
+import type { UserObject } from '@/src/base/services/remote/storage/StoredPrefs';
 
 const BASE = WebService.villageBaseURL;
 
@@ -100,6 +101,6 @@ export async function signup(storeId: string, input: SignupInput): Promise<AuthT
   return tokens;
 }
 
-export async function getMe(storeId: string): Promise<any> {
-  return apiClient.get<any>(`${BASE}${AppAuthRoutes.me}`, storeOpts(storeId));
+export async function getMe(storeId: string): Promise<UserObject> {
+  return apiClient.get<UserObject>(`${BASE}${AppAuthRoutes.me}`, storeOpts(storeId));
 }

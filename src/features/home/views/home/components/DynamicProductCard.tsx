@@ -28,7 +28,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
   const decFromCart = useVillageStore((s) => s.decFromCart);
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } } as any);
+  const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const displayTitle = locale === 'te' && product.teluguTitle
