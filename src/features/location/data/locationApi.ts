@@ -4,6 +4,7 @@ import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { LatLng, ServiceabilityResult, Address, AddressTag, Village } from '../domain/models';
 import { mapVillage, mapVillageList, mapAddressList, mapAddress } from './mappers';
+import { logger } from '@/src/base/services/logger';
 
 const BASE = WebService.villageBaseURL;
 
@@ -62,19 +63,17 @@ function hasTitle(raw: any): boolean {
  */
 export async function findByLocation(coords: LatLng): Promise<ServiceabilityResult> {
   try {
-    console.log('[LOC] findByLocation: POST', `${BASE}/villages/find-by-location`, coords);
     const data = await apiClient.postWithoutAuth<any>(`${BASE}/villages/find-by-location`, {
       latitude: coords.latitude,
       longitude: coords.longitude,
     });
-    console.log('[LOC] findByLocation: response', JSON.stringify(data)?.slice(0, 500));
     if (hasTitle(data)) {
       return { serviceable: true, village: mapVillage(data) };
     }
-    console.log('[LOC] findByLocation: no title → not serviceable');
+    logger.debug('[LOC] findByLocation: no title → not serviceable');
     return { serviceable: false, village: null };
   } catch (err: any) {
-    console.log('[LOC] findByLocation: ERROR status=', err?.statusCode, 'msg=', err?.message ?? err);
+    logger.debug('[LOC] findByLocation: ERROR status=', err?.statusCode, 'msg=', err?.message ?? err);
     const status = err?.statusCode;
     if (status && status >= 400 && status < 500) {
       return { serviceable: false, village: null };

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { IPlatformService } from '../interfaces/IPlatformService';
+import { logger } from '@/src/base/services/logger';
 
 /**
  * Mobile implementation of platform service
@@ -39,7 +40,7 @@ export class MobilePlatformService implements IPlatformService {
     try {
       return Platform.Version ? Platform.Version.toString() : undefined;
     } catch (error) {
-      console.warn('[MobilePlatformService] Could not determine platform version:', error);
+      logger.warn('[MobilePlatformService] Could not determine platform version:', error);
       return undefined;
     }
   }

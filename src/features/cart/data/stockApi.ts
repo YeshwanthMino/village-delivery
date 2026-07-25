@@ -35,14 +35,12 @@ export async function checkCartStock(items: CheckStockItem[]): Promise<CheckStoc
   const body: CheckStockRequest = { items };
 
   try {
-    console.log('[checkCartStock] Request:', JSON.stringify(body));
 
     const resp = await apiClient.post<any>(`${BASE}/app/orders/check-stock`, body, {
       timeout: STOCK_CHECK_TIMEOUT,
     });
 
     const data = resp?.data ?? resp;
-    console.log('[checkCartStock] Success response:', JSON.stringify(data));
 
     // Handle both response formats:
     // 1. {items: [...]} format

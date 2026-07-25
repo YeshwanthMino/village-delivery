@@ -6,6 +6,7 @@
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
+import { logger } from '@/src/base/services/logger';
 
 const BASE = WebService.villageBaseURL;
 
@@ -58,15 +59,13 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   };
 
   try {
-    console.log('[createOrder] Request body:', JSON.stringify(body));
     const resp = await apiClient.post<any>(`${BASE}/app/orders`, body);
     const data = resp?.data ?? resp;
 
-    console.log('[createOrder] Success response:', JSON.stringify(data));
 
     // Check for stock conflict response (API returns stockInfo in success response)
     if (data?.stockInfo && Array.isArray(data.stockInfo) && data.stockInfo.length > 0) {
-      console.log('[createOrder] Stock conflict detected in success response:', data.stockInfo);
+      logger.debug('[createOrder] Stock conflict detected in success response:', data.stockInfo);
       return {
         orderId: null,
         raw: resp,
@@ -76,15 +75,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
     // Existing success path
     const orderId = data?._id ?? data?.id ?? data?.orderId ?? null;
-    console.log('[createOrder] Order placed successfully. OrderId:', orderId);
+    logger.debug('[createOrder] Order placed successfully. OrderId:', orderId);
     return { orderId: orderId != null ? String(orderId) : null, raw: resp };
   } catch (error: any) {
-    console.log('[createOrder] Error caught:', error?.message || error);
+    logger.debug('[createOrder] Error caught:', error?.message || error);
 
     // API may return 400 with stockInfo for stock conflicts instead of 200
     // Check rawData from error object (added by ErrorMapper)
     if (error?.rawData?.stockInfo && Array.isArray(error.rawData.stockInfo) && error.rawData.stockInfo.length > 0) {
-      console.log('[createOrder] Stock conflict detected in error.rawData:', error.rawData.stockInfo);
+      logger.debug('[createOrder] Stock conflict detected in error.rawData:', error.rawData.stockInfo);
       return {
         orderId: null,
         raw: error,
@@ -92,7 +91,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       };
     }
 
-    console.log('[createOrder] No stock conflict info found, re-throwing error');
+    logger.debug('[createOrder] No stock conflict info found, re-throwing error');
     // Re-throw if not a stock conflict
     throw error;
   }

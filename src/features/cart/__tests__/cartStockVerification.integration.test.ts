@@ -1,14 +1,14 @@
 import { useCartStockStore } from '@/src/core/store/useCartStockStore';
 import { checkCartStock } from '../data/stockApi';
 
+import { apiClient } from '@/src/base/services/remote/apiClient';
+import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
+
 jest.mock('@/src/base/services/remote/apiClient', () => ({
   apiClient: {
     post: jest.fn(),
   },
 }));
-
-import { apiClient } from '@/src/base/services/remote/apiClient';
-import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
 
 describe('Cart Stock Verification Integration', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;

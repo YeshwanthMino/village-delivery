@@ -27,6 +27,7 @@ import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore, useCartStockStore } from '@/src/core/store';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { createOrder } from '../data/orderApi';
+import { logger } from '@/src/base/services/logger';
 
 // Stable identity so the sheet does not see a "new" empty array each render.
 const EMPTY_STOCK_INFO: StockInfo[] = [];
@@ -138,7 +139,7 @@ export const CartScreen = () => {
     if (!addressId) throw new Error('Select a delivery address first.');
 
     try {
-      console.log('[handlePlaceOrder] Starting order placement');
+      logger.debug('[handlePlaceOrder] Starting order placement');
       const result = await createOrder({
         products: vm.cartItems.map(item => ({
           productId: item.productId,
@@ -151,11 +152,11 @@ export const CartScreen = () => {
         isPriority: false,
       });
 
-      console.log('[handlePlaceOrder] createOrder returned:', result);
+      logger.debug('[handlePlaceOrder] createOrder returned:', result);
 
       // Check for stock conflicts
       if (result.stockInfo && result.stockInfo.length > 0) {
-        console.log('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
+        logger.debug('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
         setStockConflictInfo(result.stockInfo);
         // Close login sheet to show OrderModificationSheet exclusively
         setLoginSheetVisible(false);
@@ -164,12 +165,12 @@ export const CartScreen = () => {
 
       // Success path
       if (result.orderId) {
-        console.log('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
+        logger.debug('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
         vm.clearCart();
         router.replace('/(dashboard)/orders');
       }
     } catch (error) {
-      console.log('[handlePlaceOrder] Error:', error);
+      logger.debug('[handlePlaceOrder] Error:', error);
       throw error;
     }
   };

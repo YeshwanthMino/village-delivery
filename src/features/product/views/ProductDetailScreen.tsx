@@ -51,7 +51,7 @@ export const ProductDetailScreen = () => {
       <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         {header}
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-slate-500 text-center mb-4">Couldn't load this product.</Text>
+          <Text className="text-slate-500 text-center mb-4">Couldn&apos;t load this product.</Text>
           <TouchableOpacity onPress={() => vm.refetch()} className="border-2 border-green-600 rounded-xl px-6 py-3">
             <Text className="text-green-700 font-bold">Retry</Text>
           </TouchableOpacity>

@@ -28,7 +28,7 @@ interface CartStockState {
 }
 
 interface CartStockActions {
-  verifyCartStock: (items: Array<{ productId: string; variantId?: string; quantity: number }>) => Promise<void>;
+  verifyCartStock: (items: { productId: string; variantId?: string; quantity: number }[]) => Promise<void>;
   setError: (error: string | null) => void;
   clearStockState: () => void;
 }

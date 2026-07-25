@@ -7,6 +7,7 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService, AppAuthRoutes } from '@/src/base/constants/AppConstants';
 import { AuthTokens } from '@/src/base/services/remote/apiTypes';
+import { logger } from '@/src/base/services/logger';
 
 const BASE = WebService.villageBaseURL;
 
@@ -64,7 +65,7 @@ export async function verifyLogin(
       { mobileNumber, otp },
       storeOpts(storeId, deviceId),
     );
-    console.log('[appAuth] login-verify raw:', JSON.stringify(resp));
+    logger.debug('[appAuth] login-verify raw:', JSON.stringify(resp));
     const tokens = parseTokens(resp);
     if (tokens) return { status: 'ok', tokens };
     // 2xx without tokens → unregistered number, needs signup.
@@ -93,7 +94,7 @@ export async function signup(storeId: string, input: SignupInput): Promise<AuthT
     body,
     storeOpts(storeId, deviceId),
   );
-  console.log('[appAuth] login-signup raw:', JSON.stringify(resp));
+  logger.debug('[appAuth] login-signup raw:', JSON.stringify(resp));
   const tokens = parseTokens(resp);
   if (!tokens) throw new Error('Signup did not return a token');
   return tokens;

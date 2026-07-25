@@ -96,7 +96,7 @@ const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick, error,
 
       <Text style={s.title}>Enter your mobile number</Text>
       <Text style={s.subtitle}>
-        We'll send a 6-digit OTP to verify. Your number stays private.
+        We&apos;ll send a 6-digit OTP to verify. Your number stays private.
       </Text>
 
       {/* SIM pick chip — Android only */}

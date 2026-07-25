@@ -22,20 +22,11 @@ interface CartItemRowProps {
 export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRowProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
+  const setQuantity = useVillageStore(state => state.setQuantity);
   const { locale } = useTranslation();
 
-  const handleRemoveItem = () => {
-    console.log('[CartItemRow] === REMOVE BUTTON PRESSED ===');
-    console.log('[CartItemRow] Item details:', { key: item.key, productId: item.productId, name: item.name, quantity: item.count });
-
-    // Remove entire quantity - call decFromCart for each unit
-    for (let i = 0; i < item.count; i++) {
-      console.log(`[CartItemRow] Calling decFromCart (${i + 1}/${item.count})`, item.key);
-      decFromCart(item.key);
-    }
-
-    console.log('[CartItemRow] === ITEM REMOVAL COMPLETED ===');
-  };
+  // Drop the whole line in a single store write rather than decrementing per unit.
+  const handleRemoveItem = () => setQuantity(item.key, 0);
 
   const displayName = locale === 'te' && item.nameTE ? item.nameTE : item.name;
 
@@ -44,12 +35,6 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
     : 0;
 
   const isOutOfStock = stockStatus && !stockStatus.inStock;
-
-  React.useEffect(() => {
-    if (isOutOfStock) {
-      console.log('[CartItemRow] Item out of stock detected:', { key: item.key, productId: item.productId, name: item.name });
-    }
-  }, [isOutOfStock, item.key, item.productId, item.name]);
 
   return (
     <View className={`bg-white border rounded-2xl p-2.5 flex-row items-center gap-3 ${

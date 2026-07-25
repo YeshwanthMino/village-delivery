@@ -45,7 +45,7 @@ export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Pro
         id: product.id,
         categoryId: product.categoryId || '',
         name: product.title,
-        nameTE: product.teluguTitle,
+        nameTE: product.teluguTitle ?? '',
         weight: '',
         price: product.price,
         mrp: product.mrp,

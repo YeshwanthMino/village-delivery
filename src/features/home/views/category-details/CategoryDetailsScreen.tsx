@@ -11,6 +11,7 @@ import { SubcategoryRail } from './components/SubcategoryRail';
 import { useCategoryDetailsViewModel } from '../../viewmodel/categories/useCategoryDetailsViewModel';
 import { useStoreId } from '@/src/core/utils/getStoreId';
 import { getProductDetail } from '@/src/features/product/data/productDetailApi';
+import { logger } from '@/src/base/services/logger';
 
 export const CategoryDetailsScreen = () => {
   const router = useRouter();
@@ -39,7 +40,7 @@ export const CategoryDetailsScreen = () => {
         variants: fullProduct.variants,
       });
     } catch (error) {
-      console.error('Failed to fetch product details:', error);
+      logger.error('Failed to fetch product details:', error);
     } finally {
       setIsLoadingVariants(false);
     }

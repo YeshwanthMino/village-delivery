@@ -5,6 +5,7 @@ import { IStorageService, StorageServiceFactory } from '../storage';
 import { IS_WEB } from '@/src/core/utils/platform';
 import { ErrorMapper } from './errorMapper';
 import { StoredPrefs } from './storage/StoredPrefs';
+import { logger } from '@/src/base/services/logger';
 
 interface FetchOptions extends RequestInit {
   withAuth?: boolean;
@@ -88,7 +89,7 @@ class ApiClient {
         'Village-Client-Device': `${deviceModel} (${osVersion})`,
       };
     } catch (error) {
-      console.warn('Failed to initialize platform headers:', error);
+      logger.warn('Failed to initialize platform headers:', error);
     }
   }
 
@@ -132,7 +133,7 @@ class ApiClient {
         return { Authorization: `${tokenType} ${token}` };
       }
     } catch (error) {
-      console.warn('Failed to get auth token:', error);
+      logger.warn('Failed to get auth token:', error);
     }
     return {};
   }
@@ -284,7 +285,7 @@ class ApiClient {
     try {
       await this.getStorageService();
     } catch (error) {
-      console.warn('Failed to initialize storage:', error);
+      logger.warn('Failed to initialize storage:', error);
     }
   }
 

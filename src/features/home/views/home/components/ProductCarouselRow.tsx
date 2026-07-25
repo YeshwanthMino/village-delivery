@@ -8,6 +8,7 @@ import { DynamicProductCard } from './DynamicProductCard';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { useStoreId } from '@/src/core/utils/getStoreId';
 import { getProductDetail } from '@/src/features/product/data/productDetailApi';
+import { logger } from '@/src/base/services/logger';
 
 interface Props {
   section: ProductCarouselSection;
@@ -40,7 +41,7 @@ export const ProductCarouselRow = ({ section }: Props) => {
         variants: fullProduct.variants,
       });
     } catch (error) {
-      console.error('Failed to fetch product details:', error);
+      logger.error('Failed to fetch product details:', error);
     } finally {
       setIsLoadingVariants(false);
     }

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import {
-  ALL_PRODUCTS,
   computeBill,
   getCartItems,
 } from '@/src/features/home/data/static/villageData';
@@ -26,19 +25,9 @@ export const useCartViewModel = () => {
     [cartItems, couponApplied]
   );
 
-  // Top 8 products not in cart, sorted by rating × reviews
-  const fbtProducts = useMemo(() => {
-    const cartProductIds = new Set(cartItems.map(item => item.productId));
-    return ALL_PRODUCTS
-      .filter(p => !cartProductIds.has(p.id))
-      .sort((a, b) => b.rating * b.reviews - a.rating * a.reviews)
-      .slice(0, 8);
-  }, [cartItems]);
-
   return {
     cartItems,
     bill,
-    fbtProducts,
     cartCount,
     couponApplied,
     toggleCoupon: () => setCouponApplied(v => !v),

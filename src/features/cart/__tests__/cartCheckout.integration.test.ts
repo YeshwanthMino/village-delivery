@@ -1,5 +1,6 @@
-import { createOrder } from '../data/orderApi';
-import { CreateOrderResult } from '../data/orderApi';
+import { createOrder , CreateOrderResult } from '../data/orderApi';
+
+import { apiClient } from '@/src/base/services/remote/apiClient';
 
 // Mock apiClient
 jest.mock('@/src/base/services/remote/apiClient', () => ({
@@ -7,8 +8,6 @@ jest.mock('@/src/base/services/remote/apiClient', () => ({
     post: jest.fn(),
   },
 }));
-
-import { apiClient } from '@/src/base/services/remote/apiClient';
 
 describe('Cart Checkout with Stock Conflicts', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;

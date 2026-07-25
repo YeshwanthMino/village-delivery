@@ -53,7 +53,7 @@ const VIEW_BANNER: Record<ViewStatus, { bg: string; text: string; label: string;
 
 // ── Status timeline ───────────────────────────────────────────────────────────
 
-const TIMELINE_STEPS: Array<{ key: ViewStatus; labelKey: string }> = [
+const TIMELINE_STEPS: { key: ViewStatus; labelKey: string }[] = [
   { key: 'preparing',        labelKey: 'status_preparing'        },
   { key: 'out_for_delivery', labelKey: 'status_out_for_delivery' },
   { key: 'delivered',        labelKey: 'status_delivered'        },

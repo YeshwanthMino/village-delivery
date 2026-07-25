@@ -11,6 +11,7 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { Order, OrderItem, OrderStatus, Bill } from '@/src/base/types/village.types';
+import { logger } from '@/src/base/services/logger';
 
 const BASE = WebService.villageBaseURL;
 
@@ -136,7 +137,7 @@ export async function listOrders(skip = 0, limit = 24): Promise<Order[]> {
   const resp = await apiClient.get<any>(
     `${BASE}/app/orders?sort=_id%3Adesc&skip=${skip}&limit=${limit}`,
   );
-  if (__DEV__) console.log('[orders] list raw:', JSON.stringify(resp)?.slice(0, 1000));
+  logger.debug('[orders] list raw:', JSON.stringify(resp)?.slice(0, 1000));
   const list = resp?.data ?? resp?.orders ?? resp?.results ?? resp;
   if (!Array.isArray(list)) return [];
   return list.map(mapOrder).filter((o): o is Order => o !== null);
@@ -144,6 +145,6 @@ export async function listOrders(skip = 0, limit = 24): Promise<Order[]> {
 
 export async function getOrderDetail(id: string): Promise<Order | null> {
   const resp = await apiClient.get<any>(`${BASE}/app/orders/${id}`);
-  if (__DEV__) console.log('[orders] detail raw:', JSON.stringify(resp)?.slice(0, 1000));
+  logger.debug('[orders] detail raw:', JSON.stringify(resp)?.slice(0, 1000));
   return mapOrder(resp?.data ?? resp);
 }

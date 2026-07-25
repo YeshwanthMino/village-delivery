@@ -9,6 +9,7 @@ import { getStoreIdSync } from '@/src/core/utils/getStoreId';
 import * as appAuth from '@/src/features/auth/data/appAuthApi';
 import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 import { create } from 'zustand';
+import { logger } from '@/src/base/services/logger';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -76,7 +77,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       profile = await appAuth.getMe(requireStoreId());
       await StoredPrefs.setUserProfile(profile);
     } catch (e) {
-      console.warn('getMe failed after auth:', e);
+      logger.warn('getMe failed after auth:', e);
     }
     set({
       isAuthenticated: true,
@@ -103,7 +104,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       await StoredPrefs.setUserProfile(profile);
       set({ user: profile });
     } catch (e) {
-      console.warn('Background profile refresh failed:', e);
+      logger.warn('Background profile refresh failed:', e);
     }
   };
 
@@ -123,7 +124,6 @@ export const useAuthStore = create<AuthStore>((set, get) => {
 
   // Async actions
   checkExistingAuth: async () => {
-    console.log('checkExistingAuth: Starting...');
     set({ isLoading: true, error: null });
 
     try {
@@ -131,15 +131,8 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       const refreshToken = await StoredPrefs.getRefreshToken();
       const mobileNumber = await StoredPrefs.getUsername();
 
-      console.log('checkExistingAuth: Retrieved tokens', {
-        hasAccessToken: !!accessToken,
-        accessTokenLength: accessToken?.length || 0,
-        hasRefreshToken: !!refreshToken,
-      });
-
       // Check for access token only (refresh token might be empty for now)
       if (accessToken) {
-        console.log('Found existing access token - Setting authenticated to TRUE');
         // Restore the cached profile immediately so the name shows on launch
         // (even offline); then refresh it from the server in the background.
         const cachedProfile = await StoredPrefs.getUserProfile();
@@ -153,14 +146,13 @@ export const useAuthStore = create<AuthStore>((set, get) => {
         });
         void refreshProfile();
       } else {
-        console.log('No existing access token found - User NOT authenticated');
         set({
           isAuthenticated: false,
           isLoading: false,
         });
       }
     } catch (error) {
-      console.error('Failed to check existing auth:', error);
+      logger.error('Failed to check existing auth:', error);
       set({
         isAuthenticated: false,
         isLoading: false,
@@ -223,10 +215,9 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       await StoredPrefs.clearCredentials();
       await StoredPrefs.setUsername(null);
 
-      console.log('Logged out successfully');
       set({ ...initialState });
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Logout failed',

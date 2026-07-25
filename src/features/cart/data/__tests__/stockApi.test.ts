@@ -1,13 +1,13 @@
 import { checkCartStock } from '../stockApi';
 
+import { apiClient } from '@/src/base/services/remote/apiClient';
+import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
+
 jest.mock('@/src/base/services/remote/apiClient', () => ({
   apiClient: {
     post: jest.fn(),
   },
 }));
-
-import { apiClient } from '@/src/base/services/remote/apiClient';
-import { ErrorMapper } from '@/src/base/services/remote/errorMapper';
 
 describe('Stock API', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;

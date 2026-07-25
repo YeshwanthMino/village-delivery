@@ -6,8 +6,7 @@ import {
   villageFromAddress,
   selectedAddressLabel,
 } from '../addressSelection';
-import type { Village } from '../models';
-import type { Address } from '../models';
+import type { Village , Address } from '../models';
 
 const make = (id: string, isDefault = false): Address => ({
   id,
