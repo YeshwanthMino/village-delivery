@@ -9,6 +9,7 @@ import { WebService } from '@/src/base/constants/AppConstants';
 import { mapProduct, isProductActive } from '@/src/features/home/data/homeLayoutMapper';
 import { mapApiProduct } from '@/src/features/home/data/productMapper';
 import { ProductDetail } from './productDetail.types';
+import { toUnits } from '@/src/shared/utils/currency';
 
 function num(v: any): number {
   const n = Number(v);
@@ -20,9 +21,11 @@ export function mapProductDetail(p: any): ProductDetail {
   const fullProduct = mapApiProduct(p);
 
   // If product has variants, use first variant's price; otherwise use product-level price
+  // Variant prices are already in units (mapApiProduct converts at the boundary);
+  // the product-level fallbacks are raw rupees off the payload, so convert those.
   const firstVariant = fullProduct.variants?.[0];
-  const mrp = firstVariant?.mrp ?? num(p?.mrp);
-  const price = firstVariant?.price ?? num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
+  const mrp = firstVariant?.mrp ?? toUnits(num(p?.mrp));
+  const price = firstVariant?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   // Use first variant's image if available, otherwise product image

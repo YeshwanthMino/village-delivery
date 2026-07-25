@@ -47,11 +47,11 @@ describe('selectCartCount', () => {
     const state = useVillageStore.getState();
     expect(selectCartCount(state)).toBe(1);
 
-    // registerDynamicPrices fires on every home-layout load and touches no cart
-    // state, but seven view models run this selector on every store
-    // notification — so it must be a cache hit, not a fresh reduce.
+    // Toggling a favourite touches no cart state, but seven view models run this
+    // selector on every store notification — so it must be a cache hit, not a
+    // fresh reduce.
     const spy = jest.spyOn(Object, 'values');
-    useVillageStore.getState().registerDynamicPrices({ apple: 5 });
+    useVillageStore.getState().toggleFav('apple');
     selectCartCount(useVillageStore.getState());
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();

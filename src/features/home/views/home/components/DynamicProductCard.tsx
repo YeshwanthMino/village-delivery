@@ -10,7 +10,7 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
-import { toUnits } from '@/src/shared/utils/currency';
+import { rupees } from '@/src/shared/utils/currency';
 
 interface Props {
   product: HomeProduct;
@@ -70,8 +70,8 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
       name: product.title,
       nameTE: product.teluguTitle,
       weight: '',
-      price: toUnits(product.price),
-      mrp: toUnits(product.mrp),
+      price: product.price,
+      mrp: product.mrp,
       imageUrl: product.image,
     }, stock);
   };
@@ -109,9 +109,9 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
         </TouchableOpacity>
 
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-slate-900 font-bold text-sm">₹{Math.round(product.price)}</Text>
+          <Text className="text-slate-900 font-bold text-sm">{rupees(product.price)}</Text>
           {product.discountPct > 0 ? (
-            <Text className="text-slate-400 text-xs line-through ml-1.5">₹{Math.round(product.mrp)}</Text>
+            <Text className="text-slate-400 text-xs line-through ml-1.5">{rupees(product.mrp)}</Text>
           ) : null}
         </View>
 

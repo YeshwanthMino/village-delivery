@@ -1,5 +1,6 @@
 // src/features/product/data/__tests__/productDetailApi.test.ts
 import { mapProductDetail } from '../productDetailApi';
+import { rupees } from '@/src/shared/utils/currency';
 
 const RAW = {
   _id: '69f2c9520469cfb86fcdd71a',
@@ -19,9 +20,11 @@ describe('mapProductDetail', () => {
     const d = mapProductDetail(RAW);
     expect(d.id).toBe('69f2c9520469cfb86fcdd71a');
     expect(d.title).toBe('Natu Kodi gudlu');
-    expect(d.price).toBe(20);
-    expect(d.mrp).toBe(25);
-    expect(d.discountPct).toBe(20); // (25-20)/25 = 20%
+    // The mapper converts rupees to internal units at the boundary, so assert
+    // through rupees(): the payload said 20/25 and the customer must read 20/25.
+    expect(rupees(d.price)).toBe('₹20');
+    expect(rupees(d.mrp)).toBe('₹25');
+    expect(d.discountPct).toBe(20); // (25-20)/25 = 20%, unaffected by scaling
     expect(d.categoryTitle).toBe('Dairy & Eggs');
   });
 
@@ -31,13 +34,13 @@ describe('mapProductDetail', () => {
   });
 
   it('prefers dealPrice, then listPrice, then mrp for price', () => {
-    expect(mapProductDetail({ ...RAW, dealPrice: undefined }).price).toBe(20); // listPrice
-    expect(mapProductDetail({ ...RAW, dealPrice: undefined, listPrice: undefined }).price).toBe(25); // mrp
+    expect(rupees(mapProductDetail({ ...RAW, dealPrice: undefined }).price)).toBe('₹20'); // listPrice
+    expect(rupees(mapProductDetail({ ...RAW, dealPrice: undefined, listPrice: undefined }).price)).toBe('₹25'); // mrp
   });
 
   it('reports 0 discount when fallback price equals mrp', () => {
     const d = mapProductDetail({ ...RAW, dealPrice: undefined, listPrice: undefined });
-    expect(d.price).toBe(25);
+    expect(rupees(d.price)).toBe('₹25');
     expect(d.discountPct).toBe(0);
   });
 

@@ -10,7 +10,7 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailViewModel } from '../viewmodel/useProductDetailViewModel';
 import { ProductImageCarousel } from './components/ProductImageCarousel';
 import { ProductCartBar } from './components/ProductCartBar';
-import { toUnits } from '@/src/shared/utils/currency';
+import { rupees } from '@/src/shared/utils/currency';
 
 export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
@@ -113,10 +113,10 @@ export const ProductDetailScreen = () => {
         name: d.title,
         nameTE: d.teluguTitle,
         weight: selectedVariant.name,
-        price: toUnits(selectedVariant.price),
-        mrp: toUnits(selectedVariant.mrp),
-        listPrice: selectedVariant.listPrice ? toUnits(selectedVariant.listPrice) : undefined,
-        dealPrice: selectedVariant.dealPrice ? toUnits(selectedVariant.dealPrice) : undefined,
+        price: selectedVariant.price,
+        mrp: selectedVariant.mrp,
+        listPrice: selectedVariant.listPrice ? selectedVariant.listPrice : undefined,
+        dealPrice: selectedVariant.dealPrice ? selectedVariant.dealPrice : undefined,
         imageUrl: selectedVariant.image,
         images: selectedVariant.images,
         taxType: selectedVariant.taxType,
@@ -160,9 +160,9 @@ export const ProductDetailScreen = () => {
           </Text>
 
           <View className="flex-row items-baseline gap-2 flex-wrap mt-3">
-            <Text className="text-slate-900 font-extrabold text-2xl">₹{Math.round(displayPrice)}</Text>
+            <Text className="text-slate-900 font-extrabold text-2xl">{rupees(displayPrice)}</Text>
             {displayMrp > displayPrice ? (
-              <Text className="text-slate-400 text-base line-through">₹{Math.round(displayMrp)}</Text>
+              <Text className="text-slate-400 text-base line-through">{rupees(displayMrp)}</Text>
             ) : null}
             {displayDiscount > 0 ? (
               <Text className="text-green-700 font-bold text-base">{displayDiscount}% Off</Text>
@@ -196,9 +196,9 @@ export const ProductDetailScreen = () => {
                           {variant.name}
                         </Text>
                         <View className="flex-row items-center gap-2 mt-1">
-                          <Text className="text-slate-900 font-bold">₹{Math.round(variant.price)}</Text>
+                          <Text className="text-slate-900 font-bold">{rupees(variant.price)}</Text>
                           {variant.mrp > variant.price && (
-                            <Text className="text-slate-400 text-xs line-through">₹{Math.round(variant.mrp)}</Text>
+                            <Text className="text-slate-400 text-xs line-through">{rupees(variant.mrp)}</Text>
                           )}
                           {variantDiscount > 0 && (
                             <Text className="text-green-600 text-xs font-semibold">{variantDiscount}% off</Text>

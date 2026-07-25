@@ -41,12 +41,13 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
 
-  // Check if this is an API product (has image) or catalog product (has emoji)
+  // Whether the product came from the API or the static catalog only decides how
+  // it is *illustrated* (image vs emoji). Prices are in units from either source
+  // now that the mappers convert at the boundary, so formatting is unconditional.
   const isApiProduct = !!product.image;
 
-  // Display price: API prices are already in rupees, catalog prices need * 20
-  const displayPrice = isApiProduct ? `₹${product.price}` : rupees(product.price);
-  const displayMrp = isApiProduct ? `₹${product.mrp}` : rupees(product.mrp);
+  const displayPrice = rupees(product.price);
+  const displayMrp = rupees(product.mrp);
 
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden flex-1">

@@ -1,14 +1,12 @@
 // src/features/home/viewmodel/home/useHomeLayoutViewModel.ts
 
 import { useCallback, useEffect, useState } from 'react';
-import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { getHomeLayout } from '../../data/homeLayoutApi';
 import { HomeSection } from '../../data/homeLayout.types';
 import { useStoreId } from '@/src/core/utils/getStoreId';
 
 export function useHomeLayoutViewModel(slug = 'app-home-page-layout') {
   const storeId = useStoreId();
-  const registerDynamicPrices = useVillageStore((s) => s.registerDynamicPrices);
 
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,20 +19,12 @@ export function useHomeLayoutViewModel(slug = 'app-home-page-layout') {
     try {
       const layout = await getHomeLayout(storeId, slug);
       setSections(layout.sections);
-      // Register real prices so cart totals resolve dynamic products.
-      const prices: Record<string, number> = {};
-      for (const section of layout.sections) {
-        if (section.kind === 'productCarousel') {
-          for (const p of section.products) prices[p.id] = p.price;
-        }
-      }
-      if (Object.keys(prices).length) registerDynamicPrices(prices);
     } catch {
       setError('failed');
     } finally {
       setLoading(false);
     }
-  }, [storeId, slug, registerDynamicPrices]);
+  }, [storeId, slug]);
 
   useEffect(() => {
     void load();

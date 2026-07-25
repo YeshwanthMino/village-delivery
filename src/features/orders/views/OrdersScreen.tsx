@@ -12,6 +12,7 @@ import { useOrdersViewModel } from '../viewmodel/useOrdersViewModel';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useVillageStore } from '@/src/core/store';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
+import { orderItemSnapshot } from '@/src/features/cart/domain/reorder';
 
 // ── Status presentation ──────────────────────────────────────────────────────
 
@@ -274,6 +275,7 @@ export const OrdersScreen = () => {
   const router = useRouter();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const addToCart = useVillageStore(s => s.addToCart);
+  const setQuantity = useVillageStore((s) => s.setQuantity);
   const clearCart = useVillageStore(s => s.clearCart);
   const { allOrders, activeOrders, pastOrders, isLoading, isError, refetch, isRefetching } = useOrdersViewModel();
   const [loginVisible, setLoginVisible] = useState(false);
@@ -290,7 +292,12 @@ export const OrdersScreen = () => {
   const reorder = (order: Order) => {
     clearCart();
     for (const item of order.items) {
-      for (let i = 0; i < item.quantity; i++) addToCart(item.productId);
+      const snapshot = orderItemSnapshot(item);
+      // Snapshot + one write per line: without the snapshot the line resolves
+      // against the static catalog and is dropped; the per-unit loop cost a
+      // store notification per unit.
+      addToCart(snapshot.key, snapshot);
+      setQuantity(snapshot.key, item.quantity);
     }
     router.push('/cart');
   };

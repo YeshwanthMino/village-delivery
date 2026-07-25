@@ -4,16 +4,26 @@
 // Extracts comprehensive data from variants including images, pricing, taxes, and stock.
 
 import { Product, Variant } from '@/src/base/types/village.types';
+import { toUnits } from '@/src/shared/utils/currency';
 
 function num(v: any): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * The API sends real rupees; everything downstream of a mapper carries internal
+ * units (see shared/utils/currency). Converting here — the boundary — is what
+ * lets productSnapshot copy a price verbatim and be right for every source.
+ */
+function toPriceUnits(v: any): number {
+  return toUnits(num(v));
+}
+
 function mapVariant(v: any): Variant {
-  const mrp = num(v?.mrp);
-  const listPrice = num(v?.listPrice);
-  const dealPrice = num(v?.dealPrice);
+  const mrp = toPriceUnits(v?.mrp);
+  const listPrice = toPriceUnits(v?.listPrice);
+  const dealPrice = toPriceUnits(v?.dealPrice);
   const price = dealPrice > 0 ? dealPrice : listPrice > 0 ? listPrice : mrp;
   const stock = num(v?.stockId?.stock ?? v?.stock);
   const images = Array.isArray(v?.images) ? v.images : [];

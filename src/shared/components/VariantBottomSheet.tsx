@@ -65,10 +65,10 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
               const discount = variant.mrp > variant.price
                 ? Math.round((1 - variant.price / variant.mrp) * 100)
                 : 0;
-              // API prices are already in rupees, catalog prices need * 20
-              const isApiProduct = !!product.image;
-              const displayPrice = isApiProduct ? `₹${variant.price}` : rupees(variant.price);
-              const displayMrp = isApiProduct ? `₹${variant.mrp}` : rupees(variant.mrp);
+              // Prices are in units regardless of source — the mappers convert at
+              // the API boundary — so there is no per-source branch to make.
+              const displayPrice = rupees(variant.price);
+              const displayMrp = rupees(variant.mrp);
 
               const stock = variant.stock ?? 0;
               const canAdd = count < stock;

@@ -14,6 +14,7 @@ import {
 } from './homeLayout.types';
 
 import { Product, Variant } from '@/src/base/types/village.types';
+import { toUnits } from '@/src/shared/utils/currency';
 
 function num(v: any): number {
   const n = Number(v);
@@ -34,8 +35,9 @@ export function isProductActive(p: any): boolean {
 }
 
 function mapVariant(v: any): Variant {
-  const mrp = num(v?.mrp);
-  const price = num(v?.dealPrice ?? v?.listPrice ?? v?.mrp);
+  // Rupees in, internal units out — see shared/utils/currency.
+  const mrp = toUnits(num(v?.mrp));
+  const price = toUnits(num(v?.dealPrice ?? v?.listPrice ?? v?.mrp));
   // Get stock from stockId nested object if available
   const stock = v?.stockId?.stock ?? num(v?.stock);
 
@@ -100,8 +102,8 @@ export function mapProduct(p: any): HomeProduct {
 
   // Use variant data if available, fallback to product data
   const variantOrProduct = firstVariant || p;
-  const mrp = num(variantOrProduct?.mrp);
-  const price = num(variantOrProduct?.dealPrice ?? variantOrProduct?.listPrice ?? variantOrProduct?.mrp);
+  const mrp = toUnits(num(variantOrProduct?.mrp));
+  const price = toUnits(num(variantOrProduct?.dealPrice ?? variantOrProduct?.listPrice ?? variantOrProduct?.mrp));
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   // Use variant image if available, otherwise product image

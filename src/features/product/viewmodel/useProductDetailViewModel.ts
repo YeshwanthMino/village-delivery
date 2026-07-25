@@ -5,7 +5,6 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailQuery } from '../data/queries/useProductDetailQuery';
 import { ProductDetail } from '../data/productDetail.types';
 import { CartSnapshot } from '@/src/base/types/village.types';
-import { toUnits } from '@/src/shared/utils/currency';
 
 export function useProductDetailViewModel(selectedVariantIndex?: number | null) {
   const router = useRouter();
@@ -48,10 +47,10 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
         name: detail.title,
         nameTE: detail.teluguTitle,
         weight: selectedVariant.name,
-        price: toUnits(selectedVariant.price),
-        mrp: toUnits(selectedVariant.mrp),
-        listPrice: selectedVariant.listPrice ? toUnits(selectedVariant.listPrice) : undefined,
-        dealPrice: selectedVariant.dealPrice ? toUnits(selectedVariant.dealPrice) : undefined,
+        price: selectedVariant.price,
+        mrp: selectedVariant.mrp,
+        listPrice: selectedVariant.listPrice ? selectedVariant.listPrice : undefined,
+        dealPrice: selectedVariant.dealPrice ? selectedVariant.dealPrice : undefined,
         imageUrl: selectedVariant.image,
         images: selectedVariant.images,
         taxType: selectedVariant.taxType,
@@ -70,8 +69,8 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
         name: detail.title,
         nameTE: detail.teluguTitle,
         weight: '',
-        price: toUnits(detail.price),
-        mrp: toUnits(detail.mrp),
+        price: detail.price,
+        mrp: detail.mrp,
         imageUrl: detail.image,
         images: detail.images,
       };
