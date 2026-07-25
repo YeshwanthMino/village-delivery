@@ -2,12 +2,12 @@ import { ArrowLeft, Search, X } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FloatingCartPill } from '@/src/shared/components';
@@ -128,24 +128,27 @@ export const SearchScreen = () => {
           )}
         </View>
       ) : (
-        <ScrollView
+        // Search results are unbounded — mapping them inside a ScrollView mounted
+        // every card, with its image, before the first frame could paint.
+        <FlatList
+          data={vm.results}
+          keyExtractor={(product) => product.id}
+          numColumns={2}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: scrollPadding }}
+          columnWrapperStyle={{ gap: 12, marginBottom: 12 }}
           keyboardShouldPersistTaps="handled"
-        >
-          <View className="flex-row flex-wrap gap-3">
-            {vm.results.map((product) => (
-              <View key={product.id} style={{ width: '47.5%' }}>
-                <DynamicProductCard
-                  product={product}
-                  width="100%"
-                  onOpenVariants={handleOpenVariants}
-                />
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+          renderItem={({ item }) => (
+            <View style={{ width: '47.5%' }}>
+              <DynamicProductCard
+                product={item}
+                width="100%"
+                onOpenVariants={handleOpenVariants}
+              />
+            </View>
+          )}
+        />
       )}
 
       {/* ── Overlays ── */}

@@ -11,7 +11,7 @@ jest.mock('@/src/base/services/remote/storage/StoredPrefs', () => ({
   },
 }));
 
-import { useVillageStore } from '../useVillageStore';
+import { useVillageStore, selectCartCount } from '../useVillageStore';
 
 const reset = () => useVillageStore.setState({ cart: {}, cartSnapshots: {} });
 
@@ -28,6 +28,42 @@ const snapshot = (key: string) => ({
   weight: '',
   price: 10,
   mrp: 20,
+});
+
+describe('selectCartCount', () => {
+  beforeEach(reset);
+
+  test('totals the quantities across lines', () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('apple', snapshot('apple'));
+    addToCart('apple', snapshot('apple'));
+    addToCart('banana', snapshot('banana'));
+
+    expect(selectCartCount(useVillageStore.getState())).toBe(3);
+  });
+
+  test('does not recompute when an unrelated slice changes', () => {
+    useVillageStore.getState().addToCart('apple', snapshot('apple'));
+    const state = useVillageStore.getState();
+    expect(selectCartCount(state)).toBe(1);
+
+    // registerDynamicPrices fires on every home-layout load and touches no cart
+    // state, but seven view models run this selector on every store
+    // notification — so it must be a cache hit, not a fresh reduce.
+    const spy = jest.spyOn(Object, 'values');
+    useVillageStore.getState().registerDynamicPrices({ apple: 5 });
+    selectCartCount(useVillageStore.getState());
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  test('recomputes once the cart itself changes', () => {
+    useVillageStore.getState().addToCart('apple', snapshot('apple'));
+    expect(selectCartCount(useVillageStore.getState())).toBe(1);
+
+    useVillageStore.getState().addToCart('banana', snapshot('banana'));
+    expect(selectCartCount(useVillageStore.getState())).toBe(2);
+  });
 });
 
 describe('cart persistence', () => {

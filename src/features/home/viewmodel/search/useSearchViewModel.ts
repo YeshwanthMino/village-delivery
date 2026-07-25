@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { useProductSearchQuery } from '@/src/features/home/data/queries/useProductSearchQuery';
 
 export const useSearchViewModel = () => {
@@ -19,7 +19,7 @@ export const useSearchViewModel = () => {
     return () => clearTimeout(id);
   }, [query]);
 
-  const cartCount = useVillageStore((state) => state.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
 
   const { data, isLoading, isFetching } = useProductSearchQuery(
     debouncedQuery,

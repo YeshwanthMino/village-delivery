@@ -175,6 +175,26 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
   },
 }));
 
+/**
+ * Total item count across the cart.
+ *
+ * Zustand runs every selector on every store notification, so calling
+ * `state.cartCount()` inside a selector re-reduced the whole cart on unrelated
+ * updates — locale changes, favourite toggles, and `registerDynamicPrices`,
+ * which fires on each home-layout load — once per mounted view model. Seven of
+ * them subscribe. Caching on `cart` identity makes those a pointer comparison.
+ */
+let countedCart: CartRecord | null = null;
+let countedTotal = 0;
+
+export const selectCartCount = (state: VillageStore): number => {
+  if (state.cart !== countedCart) {
+    countedCart = state.cart;
+    countedTotal = Object.values(state.cart).reduce((sum, count) => sum + count, 0);
+  }
+  return countedTotal;
+};
+
 // Persist the cart on every change rather than inside each action, so no future
 // mutation can forget to save. Fire-and-forget keeps the actions synchronous;
 // a failed write just means the cart is not restored after process death.

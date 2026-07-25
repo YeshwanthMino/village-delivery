@@ -10,6 +10,7 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
+import { toUnits } from '@/src/shared/utils/currency';
 
 interface Props {
   product: HomeProduct;
@@ -17,16 +18,18 @@ interface Props {
   onOpenVariants?: (product: Product) => void;
 }
 
-export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Props) => {
+const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
-  const cart = useVillageStore((s) => s.cart);
+  // Subscribe to this card's own line, not the whole cart object: addToCart
+  // replaces `cart`, so selecting it re-rendered every card in every rail on any
+  // stepper tap.
+  const count = useVillageStore((s) => s.cart[product.id] ?? 0);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
   const { t, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } } as any);
 
-  const count = cart[product.id] ?? 0;
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const displayTitle = locale === 'te' && product.teluguTitle
     ? product.teluguTitle
@@ -35,7 +38,6 @@ export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Pro
   const stock = product.stock ?? 0;
   const canAdd = count < stock;
 
-  // API prices are real rupees; cart pipeline works in "units" (display ×20).
   const handleAdd = () => {
     // If product has multiple variants and callback is provided, open variant sheet
     if (hasMultipleVariants && onOpenVariants) {
@@ -68,8 +70,8 @@ export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Pro
       name: product.title,
       nameTE: product.teluguTitle,
       weight: '',
-      price: product.price / 20,
-      mrp: product.mrp / 20,
+      price: toUnits(product.price),
+      mrp: toUnits(product.mrp),
       imageUrl: product.image,
     }, stock);
   };
@@ -140,3 +142,7 @@ export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Pro
     </View>
   );
 };
+
+// Rails render many of these; without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const DynamicProductCard = React.memo(DynamicProductCardComponent);

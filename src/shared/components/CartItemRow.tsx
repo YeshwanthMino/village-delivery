@@ -19,7 +19,7 @@ interface CartItemRowProps {
   onOutOfStockPress?: () => void;
 }
 
-export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRowProps) => {
+const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress }: CartItemRowProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
   const setQuantity = useVillageStore(state => state.setQuantity);
@@ -126,3 +126,7 @@ export const CartItemRow = ({ item, stockStatus, onOutOfStockPress }: CartItemRo
     </View>
   );
 };
+
+// The cart list re-renders on every stock-verification and quantity change. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const CartItemRow = React.memo(CartItemRowComponent);

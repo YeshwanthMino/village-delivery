@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { CategoryItem } from '@/src/features/home/data/homeLayout.types';
 import { useCategoryProductsQuery } from '@/src/features/home/data/queries/useCategoryProductsQuery';
 
@@ -10,7 +10,7 @@ export const useCategoryDetailsViewModel = () => {
     title?: string;
     subcategories?: string;
   }>();
-  const cartCount = useVillageStore((s) => s.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
 
   // Rail = sibling sub-categories passed from the previous page. Fall back to a
   // single item built from the route when the param is missing/malformed.

@@ -15,7 +15,7 @@ interface ProductCardProps {
   openVariants: (product: Product) => void;
 }
 
-export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
+const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
   const cart = useVillageStore(state => state.cart);
   const favs = useVillageStore(state => state.favs);
   const addToCart = useVillageStore(state => state.addToCart);
@@ -181,3 +181,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
     </View>
   );
 };
+
+// Grids and rails render many of these. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const ProductCard = React.memo(ProductCardComponent);

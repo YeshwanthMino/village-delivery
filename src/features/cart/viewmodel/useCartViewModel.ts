@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Product } from '@/src/base/types/village.types';
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
 
 export const useCartViewModel = () => {
@@ -10,7 +10,7 @@ export const useCartViewModel = () => {
   const decFromCart = useVillageStore(state => state.decFromCart);
   const setQuantity = useVillageStore(state => state.setQuantity);
   const clearCart = useVillageStore(state => state.clearCart);
-  const cartCount = useVillageStore(state => state.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
 
   const [couponApplied, setCouponApplied] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);

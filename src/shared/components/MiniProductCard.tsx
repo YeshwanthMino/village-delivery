@@ -13,7 +13,7 @@ interface MiniProductCardProps {
   openVariants: (product: Product) => void;
 }
 
-export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps) => {
+const MiniProductCardComponent = ({ product, openVariants }: MiniProductCardProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const { t, locale } = useTranslation();
   const hasVariants = !!product.variants?.length;
@@ -60,3 +60,7 @@ export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps)
     </View>
   );
 };
+
+// Rendered in horizontal rails. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const MiniProductCard = React.memo(MiniProductCardComponent);

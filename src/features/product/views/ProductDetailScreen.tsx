@@ -10,6 +10,7 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailViewModel } from '../viewmodel/useProductDetailViewModel';
 import { ProductImageCarousel } from './components/ProductImageCarousel';
 import { ProductCartBar } from './components/ProductCartBar';
+import { toUnits } from '@/src/shared/utils/currency';
 
 export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
@@ -112,10 +113,10 @@ export const ProductDetailScreen = () => {
         name: d.title,
         nameTE: d.teluguTitle,
         weight: selectedVariant.name,
-        price: selectedVariant.price / 20,
-        mrp: selectedVariant.mrp / 20,
-        listPrice: selectedVariant.listPrice ? selectedVariant.listPrice / 20 : undefined,
-        dealPrice: selectedVariant.dealPrice ? selectedVariant.dealPrice / 20 : undefined,
+        price: toUnits(selectedVariant.price),
+        mrp: toUnits(selectedVariant.mrp),
+        listPrice: selectedVariant.listPrice ? toUnits(selectedVariant.listPrice) : undefined,
+        dealPrice: selectedVariant.dealPrice ? toUnits(selectedVariant.dealPrice) : undefined,
         imageUrl: selectedVariant.image,
         images: selectedVariant.images,
         taxType: selectedVariant.taxType,
