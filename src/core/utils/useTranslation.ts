@@ -31,7 +31,11 @@ export function useTranslation() {
     return interpolate(translate('option_count', locale), count);
   }
 
-  return { t, tEta, tItemCount, tDiscount, tOptionCount, locale };
+  function tVariantCartLabel(count: number): string {
+    return interpolate(translate('variant_cart_label', locale), count);
+  }
+
+  return { t, tEta, tItemCount, tDiscount, tOptionCount, tVariantCartLabel, locale };
 }
 
 /**

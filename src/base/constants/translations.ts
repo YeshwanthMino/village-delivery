@@ -45,6 +45,7 @@ export const TRANSLATIONS: TranslationMap = {
   item_count:       { te: '{n} వస్తువు', en: '{n} item' },
   discount_badge:   { te: '{n}% తగ్గింపు', en: '{n}% OFF' },
   option_count:     { te: '{n} ఎంపికలు', en: '{n} options' },
+  variant_cart_label: { te: 'కార్ట్‌లో {n}, ఎంపికలు మార్చండి', en: '{n} in cart, change options' },
   // Category names keyed by category id
   cat_fruits:       { te: 'పండ్లు', en: 'Fruits' },
   cat_vegetables:   { te: 'కూరగాయలు', en: 'Vegetables' },

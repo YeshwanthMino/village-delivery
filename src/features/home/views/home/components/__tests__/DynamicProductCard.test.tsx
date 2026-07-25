@@ -89,6 +89,9 @@ describe('DynamicProductCard, multi-variant', () => {
     expect(screen.getByText('3')).toBeTruthy();          // 1 + 2
     expect(screen.getByText('1 pc (1 L)')).toBeTruthy(); // last touched
     expect(screen.getByText('₹1165')).toBeTruthy();
+    // Badge mirrors the last-touched variant's own discount (42%), not the
+    // product's default-variant discountPct (48%).
+    expect(screen.getByText('42% OFF')).toBeTruthy();
   });
 
   it('reopens the sheet from the stepper rather than editing the cart', () => {
@@ -128,16 +131,19 @@ describe('DynamicProductCard, no variants', () => {
     // for variants.length >= 1 while this card only does so for > 1, so a
     // product this card renders as "plain" can still carry a `${id}-v0` cart
     // line from being added on another screen. The plain stepper's own buttons
-    // only ever touch the bare `p2` key, so its display and gating must ignore
-    // that phantom line rather than folding it into the total.
+    // only ever touch the bare `p2` key, so its display and gating — including
+    // which mode it renders in — must ignore that phantom line rather than
+    // folding it into the total (a stepper stuck at "0" with a dead "-" is the
+    // same symptom as the original bug, just relocated).
     useVillageStore.setState({ cart: { 'p2-v0': 2 }, cartSnapshots: {}, lastVariantKey: {} });
 
     render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
 
-    // Own count (0) is shown, not the total across every cart line for p2 (2).
-    expect(screen.getByText('0')).toBeTruthy();
+    // No bare-key line for p2 exists yet, so this renders ADD, not a stepper
+    // showing the phantom line's total.
+    expect(screen.getByText('ADD')).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId('stepper-inc'));
+    fireEvent.press(screen.getByText('ADD'));
     expect(useVillageStore.getState().cart.p2).toBe(1);
     expect(useVillageStore.getState().cart['p2-v0']).toBe(2); // untouched
     expect(screen.getByText('1')).toBeTruthy();

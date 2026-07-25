@@ -27,7 +27,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
   // (possible today because ProductCard's sheet threshold differs from this
   // card's, so a product classified "plain" here can still carry a variant line).
   const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
-  const { t, tOptionCount, tDiscount, locale } = useTranslation();
+  const { t, tOptionCount, tDiscount, tVariantCartLabel, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
@@ -46,6 +46,13 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
 
   const stock = product.stock ?? 0;
   const canAdd = ownCount < stock;
+
+  // view.mode is derived from the product-wide total (every variant-keyed
+  // line included), which is right for the sheet-opening stepper but wrong
+  // for the plain branch: a phantom `${id}-v0` line (see ownCount above) would
+  // otherwise flip a zero-own-count product into a stepper whose "-" silently
+  // no-ops. The plain branch must gate on ownCount instead.
+  const mode = view.opensSheet ? view.mode : ownCount > 0 ? 'stepper' : 'add';
 
   // Badge mirrors the price row above it: view.price/view.mrp track whichever
   // variant was last touched, so the discount must be recomputed from those,
@@ -139,7 +146,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
         </View>
 
         <View className="mt-2">
-          {view.mode === 'add' ? (
+          {mode === 'add' ? (
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
@@ -156,7 +163,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
             <TouchableOpacity
               onPress={openSheet}
               accessibilityRole="button"
-              accessibilityLabel={`${view.count} in cart, change options`}
+              accessibilityLabel={tVariantCartLabel(view.count)}
               className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
             >
               {/* The − / count / + below are display only — the whole row opens
