@@ -2,15 +2,15 @@
 //
 // Fetches the product list for a single (sub-)category via the flattened
 // all-products endpoint. Public-ish endpoint keyed by the x-store-id header.
-// Returns full Product objects with variants.
+// Maps to HomeProduct for display in category grid.
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
-import { Product } from '@/src/base/types/village.types';
-import { mapProductWithVariants, isProductActive } from './homeLayoutMapper';
+import { HomeProduct } from './homeLayout.types';
+import { mapProduct, isProductActive } from './homeLayoutMapper';
 
 export interface CategoryProductsResult {
-  products: Product[];
+  products: HomeProduct[];
   total: number;
   name: string;
 }
@@ -29,7 +29,7 @@ export async function getCategoryProducts(
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];
   const products = rawProducts
     .filter(isProductActive)
-    .map(mapProductWithVariants);
+    .map(mapProduct);
 
   const meta = Array.isArray(data?.results) ? data.results[0] : undefined;
   return {

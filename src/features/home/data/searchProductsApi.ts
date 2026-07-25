@@ -1,15 +1,15 @@
 // src/features/home/data/searchProductsApi.ts
 //
 // Full-text product search via the /app/product endpoint. Public-ish endpoint
-// keyed by the x-store-id header. Returns full Product objects with variants.
+// keyed by the x-store-id header. Maps to HomeProduct for display in search results.
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
-import { Product } from '@/src/base/types/village.types';
-import { mapProductWithVariants, isProductActive } from './homeLayoutMapper';
+import { HomeProduct } from './homeLayout.types';
+import { mapProduct, isProductActive } from './homeLayoutMapper';
 
 export interface SearchProductsResult {
-  products: Product[];
+  products: HomeProduct[];
   total: number;
 }
 
@@ -37,7 +37,7 @@ export async function searchProducts(
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];
   const products = rawProducts
     .filter(isProductActive)
-    .map(mapProductWithVariants);
+    .map(mapProduct);
 
   const meta = Array.isArray(data?.results) ? data.results[0] : undefined;
   return {

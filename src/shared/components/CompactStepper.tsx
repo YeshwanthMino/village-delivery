@@ -25,7 +25,10 @@ export const CompactStepper = ({ count, onAdd, onDec, maxQuantity, testIDSuffix 
       >
         <Minus size={14} color="#15803d" />
       </TouchableOpacity>
-      <Text className="flex-1 text-green-700 font-extrabold text-sm text-center">
+      <Text
+        testID={`stepper-count${suffix}`}
+        className="flex-1 text-green-700 font-extrabold text-sm text-center"
+      >
         {count}
       </Text>
       <TouchableOpacity

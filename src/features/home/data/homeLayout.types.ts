@@ -27,9 +27,11 @@ export interface HomeProduct {
   price: number; // dealPrice ?? listPrice ?? mrp
   discountPct: number; // 0 when no discount
   inStock: boolean;
+  stock?: number; // available quantity
   slug?: string;
   link?: string;
   categoryId?: string;
+  hasVariants?: boolean; // product has multiple variant options
 }
 
 export interface BannerSection {

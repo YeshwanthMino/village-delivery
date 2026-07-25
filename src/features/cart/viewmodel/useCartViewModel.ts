@@ -12,6 +12,7 @@ export const useCartViewModel = () => {
   const cartSnapshots = useVillageStore(state => state.cartSnapshots);
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
+  const setQuantity = useVillageStore(state => state.setQuantity);
   const clearCart = useVillageStore(state => state.clearCart);
   const cartCount = useVillageStore(state => state.cartCount());
 
@@ -46,6 +47,7 @@ export const useCartViewModel = () => {
     closeVariants: () => setVariantProduct(null),
     addToCart,
     decFromCart,
+    setQuantity,
     clearCart,
   };
 };

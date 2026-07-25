@@ -1,4 +1,4 @@
-import { useCartStockStore } from '../useCartStockStore';
+import { useCartStockStore, stockKey } from '../useCartStockStore';
 import * as stockApi from '@/src/features/cart/data/stockApi';
 
 jest.mock('@/src/features/cart/data/stockApi');
@@ -45,6 +45,32 @@ describe('useCartStockStore', () => {
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
     expect(state.lastChecked).not.toBeNull();
+  });
+
+  test('keeps two variants of one product distinct', async () => {
+    // Same productId, different variantIds — keying by productId alone let the
+    // later response overwrite the earlier one, so both cart rows showed the
+    // same availability.
+    jest.spyOn(stockApi, 'checkCartStock').mockResolvedValue({
+      items: [
+        { productId: 'prod1', variantId: 'var-500g', inStock: true, availableQuantity: 4 },
+        { productId: 'prod1', variantId: 'var-1kg', inStock: false, availableQuantity: 0 },
+      ],
+    });
+
+    await useCartStockStore.getState().verifyCartStock([
+      { productId: 'prod1', variantId: 'var-500g', quantity: 1 },
+      { productId: 'prod1', variantId: 'var-1kg', quantity: 1 },
+    ]);
+
+    const { stockStatus } = useCartStockStore.getState();
+    expect(stockStatus['var-500g']).toEqual({ inStock: true, availableQuantity: 4 });
+    expect(stockStatus['var-1kg']).toEqual({ inStock: false, availableQuantity: 0 });
+  });
+
+  test('stockKey addresses variant lines by variantId and plain lines by productId', () => {
+    expect(stockKey({ productId: 'prod1' })).toBe('prod1');
+    expect(stockKey({ productId: 'prod1', variantId: 'var-1kg' })).toBe('var-1kg');
   });
 
   test('verifyCartStock handles empty items array', async () => {

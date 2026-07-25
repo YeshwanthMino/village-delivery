@@ -26,6 +26,8 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
   const hasVariants = !!product.variants?.length;
   const cartKey = product.id;
   const count = cart[cartKey] ?? 0;
+  const stock = product.stock ?? 0;
+  const canAdd = stock === 0 ? false : (stock === undefined || count < stock);
 
   const variantCount = hasVariants
     ? (product.variants?.reduce((sum, _, i) => sum + (cart[`${product.id}-v${i}`] ?? 0), 0) ?? 0)
@@ -159,15 +161,17 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
             )
           ) : count === 0 ? (
             <TouchableOpacity
-              onPress={() => addToCart(product.id, productSnapshot(product, null))}
-              className="border-2 border-green-600 rounded-lg h-11 items-center justify-center"
+              disabled={!canAdd}
+              onPress={() => addToCart(product.id, productSnapshot(product, null), stock)}
+              className={`border-2 rounded-lg h-11 items-center justify-center ${canAdd ? 'border-green-600' : 'border-slate-300 opacity-50'}`}
             >
-              <Text className="text-green-700 font-bold text-base" style={teFont}>{t('add')}</Text>
+              <Text className={`font-bold text-base ${canAdd ? 'text-green-700' : 'text-slate-400'}`} style={teFont}>{t('add')}</Text>
             </TouchableOpacity>
           ) : (
             <CompactStepper
               count={count}
-              onAdd={() => addToCart(product.id, productSnapshot(product, null))}
+              maxQuantity={stock}
+              onAdd={() => addToCart(product.id, productSnapshot(product, null), stock)}
               onDec={() => decFromCart(product.id)}
             />
           )}

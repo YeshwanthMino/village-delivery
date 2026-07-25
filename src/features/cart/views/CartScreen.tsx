@@ -17,6 +17,9 @@ import {
 } from '@/src/shared/components';
 import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
+import { buildStockCheckItems } from '@/src/features/cart/domain/stockCheckItems';
+import { stockKey } from '@/src/core/store/useCartStockStore';
+import type { CartLineItem } from '@/src/base/types/village.types';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
@@ -24,6 +27,9 @@ import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { useAuthStore, useCartStockStore } from '@/src/core/store';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { createOrder } from '../data/orderApi';
+
+// Stable identity so the sheet does not see a "new" empty array each render.
+const EMPTY_STOCK_INFO: StockInfo[] = [];
 
 export const CartScreen = () => {
   const router = useRouter();
@@ -48,19 +54,45 @@ export const CartScreen = () => {
   const verifyCartStock = useCartStockStore(state => state.verifyCartStock);
   const clearStockError = useCartStockStore(state => state.setError);
 
-  // Verify stock when cart items change
+  const stockCheckItems = React.useMemo(
+    () => buildStockCheckItems(vm.cartItems),
+    [vm.cartItems],
+  );
+  // Depend on the *contents*, not the array identity or just its length. Keying
+  // on length meant changing an existing line's quantity never re-verified it,
+  // so an over-quantity conflict only surfaced after Place Order failed.
+  const stockCheckSignature = React.useMemo(
+    () => stockCheckItems.map(i => `${i.variantId ?? i.productId}:${i.quantity}`).join('|'),
+    [stockCheckItems],
+  );
+
+  // Memoised so the sheet's reset effect is not handed a fresh array identity on
+  // every CartScreen render (see OrderModificationSheet's signature comment).
+  const sheetCartItems = React.useMemo(
+    () => vm.cartItems.map(item => ({
+      productId: item.productId,
+      name: item.name,
+      weight: item.weight,
+      price: item.price,
+      image: item.imageUrl ?? '',
+      count: item.count,
+    })),
+    [vm.cartItems],
+  );
+
+  const runStockVerification = React.useCallback(() => {
+    if (stockCheckItems.length === 0) return;
+    void verifyCartStock(stockCheckItems).catch(() => {
+      // The store already records the message; the banner below renders it.
+    });
+    // stockCheckItems is captured via the signature so a re-ordered but
+    // equivalent cart does not refire the request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stockCheckSignature, verifyCartStock]);
+
   React.useEffect(() => {
-    if (vm.cartItems.length > 0) {
-      const itemsToCheck = vm.cartItems.map(item => ({
-        productId: item.productId,
-        ...(item.variantId ? { variantId: item.variantId } : {}),
-        quantity: item.count,
-      }));
-      void verifyCartStock(itemsToCheck).catch(error => {
-        console.warn('[CartScreen] Stock verification failed:', error);
-      });
-    }
-  }, [vm.cartItems.length]); // Re-check when cart items count changes
+    runStockVerification();
+  }, [runStockVerification]);
 
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
@@ -79,12 +111,11 @@ export const CartScreen = () => {
 
   const goToHome = () => router.push('/(dashboard)/home');
 
-  const handleOutOfStockPress = (productId: string) => {
-    const stock = stockStatus[productId];
+  const handleOutOfStockPress = (item: CartLineItem) => {
+    const stock = stockStatus[stockKey(item)];
     if (stock && !stock.inStock) {
-      // Create a StockInfo object for the out-of-stock item
       setStockConflictInfo([{
-        productId,
+        productId: item.productId,
         availableStock: stock.availableQuantity ?? 0,
       }]);
     }
@@ -92,16 +123,7 @@ export const CartScreen = () => {
 
   const handleRetryStockVerification = () => {
     clearStockError(null);
-    if (vm.cartItems.length > 0) {
-      const itemsToCheck = vm.cartItems.map(item => ({
-        productId: item.productId,
-        ...(item.variantId ? { variantId: item.variantId } : {}),
-        quantity: item.count,
-      }));
-      void verifyCartStock(itemsToCheck).catch(error => {
-        console.warn('[CartScreen] Stock verification retry failed:', error);
-      });
-    }
+    runStockVerification();
   };
 
   const handleCheckout = () => {
@@ -159,37 +181,14 @@ export const CartScreen = () => {
   };
 
   const handleManualAdjustment = (adjustedQuantities: Record<string, number>) => {
-    console.log('[CartScreen] handleManualAdjustment called with:', adjustedQuantities);
-
-    // Apply adjusted quantities to cart
+    // One store write per line. The previous loop called addToCart/decFromCart
+    // once per *unit*, so adjusting an item by 10 fired ten notifications and
+    // ten render passes — and bypassed addToCart's maxQuantity guard.
     for (const [productId, newQuantity] of Object.entries(adjustedQuantities)) {
       const cartItem = vm.cartItems.find(i => i.productId === productId);
-      if (!cartItem) {
-        console.warn('[CartScreen] Cart item not found for productId:', productId);
-        continue;
-      }
-
-      console.log('[CartScreen] Adjusting item:', {
-        productId,
-        key: cartItem.key,
-        oldQuantity: cartItem.count,
-        newQuantity
-      });
-
-      const diff = newQuantity - cartItem.count;
-      if (diff > 0) {
-        for (let i = 0; i < diff; i++) {
-          vm.addToCart(cartItem.key);
-        }
-      } else if (diff < 0) {
-        // Use cartItem.key instead of productId for decFromCart
-        for (let i = 0; i < Math.abs(diff); i++) {
-          console.log('[CartScreen] Calling decFromCart with key:', cartItem.key);
-          vm.decFromCart(cartItem.key);
-        }
-      }
+      if (!cartItem) continue;
+      vm.setQuantity(cartItem.key, newQuantity);
     }
-    console.log('[CartScreen] Manual adjustment completed');
     // Clear the conflict state so the sheet closes
     setStockConflictInfo(null);
   };
@@ -283,8 +282,8 @@ export const CartScreen = () => {
                 <CartItemRow
                   key={item.key}
                   item={item}
-                  stockStatus={stockStatus[item.productId]}
-                  onOutOfStockPress={() => handleOutOfStockPress(item.productId)}
+                  stockStatus={stockStatus[stockKey(item)]}
+                  onOutOfStockPress={() => handleOutOfStockPress(item)}
                 />
               ))}
             </View>
@@ -352,15 +351,8 @@ export const CartScreen = () => {
       {/* Order Modification Sheet */}
       <OrderModificationSheet
         visible={stockConflictInfo !== null}
-        stockInfo={stockConflictInfo ?? []}
-        cartItems={vm.cartItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          weight: item.weight,
-          price: item.price,
-          image: item.imageUrl ?? '',
-          count: item.count,
-        }))}
+        stockInfo={stockConflictInfo ?? EMPTY_STOCK_INFO}
+        cartItems={sheetCartItems}
         onClose={() => setStockConflictInfo(null)}
         onRetryCheckout={handlePlaceOrder}
         onManualAdjustment={handleManualAdjustment}

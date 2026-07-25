@@ -40,6 +40,7 @@ function mapVariant(v: any): Variant {
   const stock = v?.stockId?.stock ?? num(v?.stock);
 
   return {
+    id: String(v?._id ?? ''),
     name: String(v?.title ?? ''),
     price,
     mrp,
@@ -93,15 +94,28 @@ export function isCategoryActive(c: any): boolean {
 }
 
 export function mapProduct(p: any): HomeProduct {
-  const mrp = num(p?.mrp);
-  const price = num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
+  // If product has variants, use first variant's data; otherwise use product-level data
+  const hasVariants = Array.isArray(p?.variantIds) && p.variantIds.length > 0;
+  const firstVariant = hasVariants ? p.variantIds[0] : null;
+
+  // Use variant data if available, fallback to product data
+  const variantOrProduct = firstVariant || p;
+  const mrp = num(variantOrProduct?.mrp);
+  const price = num(variantOrProduct?.dealPrice ?? variantOrProduct?.listPrice ?? variantOrProduct?.mrp);
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
-  const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) || '';
+
+  // Use variant image if available, otherwise product image
+  const image = firstVariant?.landingImage ||
+                (Array.isArray(firstVariant?.images) ? firstVariant.images[0] : undefined) ||
+                p?.landingImage ||
+                (Array.isArray(p?.images) ? p.images[0] : undefined) ||
+                '';
+
   const slug = p?.slug || undefined;
 
   // Get stock from variants if available, otherwise fallback to root stock
   let totalStock = num(p?.stock);
-  if (Array.isArray(p?.variantIds) && p.variantIds.length > 0) {
+  if (hasVariants) {
     // Sum stock from all variants
     totalStock = p.variantIds.reduce((sum: number, v: any) => {
       const variantStock = v?.stockId?.stock ?? num(v?.stock);
@@ -118,9 +132,11 @@ export function mapProduct(p: any): HomeProduct {
     price,
     discountPct,
     inStock: totalStock > 0,
+    stock: totalStock,
     slug,
     link: slug ? `/${slug}` : undefined,
     categoryId: p?.categoryId || undefined,
+    hasVariants: hasVariants && p.variantIds.length > 1,
   };
 }
 

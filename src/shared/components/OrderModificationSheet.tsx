@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, View, ScrollView, Image } from 'react-native';
 import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
@@ -45,27 +45,26 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   const [retryError, setRetryError] = useState<string | null>(null);
   const [state, setState] = useState<'conflicts' | 'all-sorted'>('conflicts');
 
+  // The parent builds both `stockInfo` and `cartItems` inline, so their array
+  // identities change on every parent render even when nothing about the
+  // conflict has. Keying the reset effect on identity therefore wiped the user's
+  // in-progress edits whenever anything else on CartScreen re-rendered (stock
+  // verification finishing, payment method toggling, auth changing). Depend on
+  // the *content* instead, so a reset only happens on genuinely new information.
+  const conflictSignature = stockInfo
+    .map(c => `${c.productId}:${c.availableStock}`)
+    .join('|');
+  const cartSignature = cartItems.map(i => `${i.productId}:${i.count}`).join('|');
+
   useEffect(() => {
-    if (!visible) {
-      console.log('[OrderModificationSheet] Sheet closed or hidden');
-      return;
-    }
+    if (!visible) return;
 
-    console.log('[OrderModificationSheet] Sheet opened with stockInfo:', stockInfo);
-
-    // Build localQuantities based on stockInfo
+    // Seed each conflicted line at the most the customer can actually have.
     const quantities: Record<string, number> = {};
     for (const conflict of stockInfo) {
       const cartItem = cartItems.find(i => i.productId === conflict.productId);
       if (!cartItem) continue;
-
-      if (conflict.availableStock === 0) {
-        quantities[conflict.productId] = 0;
-      } else if (conflict.availableStock < cartItem.count) {
-        quantities[conflict.productId] = conflict.availableStock;
-      } else {
-        quantities[conflict.productId] = cartItem.count;
-      }
+      quantities[conflict.productId] = Math.min(conflict.availableStock, cartItem.count);
     }
 
     setLocalQuantities(quantities);
@@ -73,23 +72,33 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
     setIsLoading(false);
     setRetryError(null);
     setState('conflicts');
-  }, [visible, stockInfo, cartItems]);
+    // stockInfo/cartItems are read above but intentionally excluded: the
+    // signatures below capture their content, and depending on the arrays
+    // themselves is the bug this effect is guarding against.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, conflictSignature, cartSignature]);
 
-  // Close sheet if all items have been removed (all quantities = 0)
+  // Close the sheet once every conflicted line has been zeroed out.
+  const onManualAdjustmentRef = useRef(onManualAdjustment);
+  const onCloseRef = useRef(onClose);
+  onManualAdjustmentRef.current = onManualAdjustment;
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!visible || stockInfo.length === 0) return;
 
-    const allRemoved = stockInfo.every(conflict => {
-      const qty = localQuantities[conflict.productId] ?? 0;
-      return qty === 0;
-    });
+    const allRemoved = stockInfo.every(
+      conflict => (localQuantities[conflict.productId] ?? 0) === 0,
+    );
 
     if (allRemoved && manuallyAdjusted.size > 0) {
-      console.log('[OrderModificationSheet] All items removed, auto-closing sheet');
-      onManualAdjustment?.(localQuantities);
-      onClose();
+      onManualAdjustmentRef.current?.(localQuantities);
+      onCloseRef.current();
     }
-  }, [localQuantities, manuallyAdjusted, stockInfo, visible, onManualAdjustment, onClose]);
+    // Callbacks are read through refs so that a parent re-render passing new
+    // inline closures cannot re-trigger the close.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localQuantities, manuallyAdjusted, conflictSignature, visible]);
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum, cartItem) => {

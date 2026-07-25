@@ -3,18 +3,22 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Minus, Plus } from 'lucide-react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { HomeProduct } from '../../../data/homeLayout.types';
+import { Product } from '@/src/base/types/village.types';
 
 interface Props {
   product: HomeProduct;
   width?: DimensionValue;
+  onOpenVariants?: (product: Product) => void;
 }
 
-export const DynamicProductCard = ({ product, width = 150 }: Props) => {
+export const DynamicProductCard = ({ product, width = 150, onOpenVariants }: Props) => {
+  const [isLoading, setIsLoading] = useState(false);
   const cart = useVillageStore((s) => s.cart);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
@@ -24,10 +28,39 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
 
   const count = cart[product.id] ?? 0;
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
-  const displayTitle = locale === 'te' && product.teluguTitle ? product.teluguTitle : product.title;
+  const displayTitle = locale === 'te' && product.teluguTitle
+    ? product.teluguTitle
+    : product.title || 'Product';
+  const hasMultipleVariants = product.hasVariants;
+  const stock = product.stock ?? 0;
+  const canAdd = count < stock;
 
   // API prices are real rupees; cart pipeline works in "units" (display ×20).
-  const handleAdd = () =>
+  const handleAdd = () => {
+    // If product has multiple variants and callback is provided, open variant sheet
+    if (hasMultipleVariants && onOpenVariants) {
+      // Create a minimal Product object for the callback
+      // The parent component should fetch full product with variants
+      const minimalProduct: Product = {
+        id: product.id,
+        categoryId: product.categoryId || '',
+        name: product.title,
+        nameTE: product.teluguTitle,
+        weight: '',
+        price: product.price,
+        mrp: product.mrp,
+        rating: 0,
+        reviews: 0,
+      };
+      onOpenVariants(minimalProduct);
+      return;
+    }
+    // If product has variants but no callback, go to detail page
+    if (hasMultipleVariants) {
+      openDetail();
+      return;
+    }
+    // Otherwise, add directly to cart
     addToCart(product.id, {
       key: product.id,
       productId: product.id,
@@ -38,7 +71,8 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
       price: product.price / 20,
       mrp: product.mrp / 20,
       imageUrl: product.image,
-    });
+    }, stock);
+  };
 
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width }}>
@@ -87,7 +121,7 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
               className={`rounded-xl py-2 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
               <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
-                ADD
+                {hasMultipleVariants ? 'OPTIONS' : 'ADD'}
               </Text>
             </TouchableOpacity>
           ) : (
@@ -96,8 +130,8 @@ export const DynamicProductCard = ({ product, width = 150 }: Props) => {
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>
               <Text className="text-white font-bold text-sm">{count}</Text>
-              <TouchableOpacity onPress={handleAdd} hitSlop={6}>
-                <Plus size={16} color="#ffffff" />
+              <TouchableOpacity onPress={handleAdd} disabled={!canAdd} hitSlop={6} style={{ opacity: canAdd ? 1 : 0.5 }}>
+                <Plus size={16} color={canAdd ? '#ffffff' : '#d1d5db'} />
               </TouchableOpacity>
             </View>
           )}

@@ -9,14 +9,16 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 interface Props {
   count: number;
   inStock?: boolean;
+  maxQuantity?: number;
   onAdd: () => void;
   onDec: () => void;
   onViewCart: () => void;
 }
 
-export const ProductCartBar = ({ count, inStock = true, onAdd, onDec, onViewCart }: Props) => {
+export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDec, onViewCart }: Props) => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const canAdd = maxQuantity === undefined || count < maxQuantity;
 
   if (!inStock) {
     return (
@@ -50,8 +52,8 @@ export const ProductCartBar = ({ count, inStock = true, onAdd, onDec, onViewCart
               <Minus size={20} color="#ffffff" />
             </TouchableOpacity>
             <Text className="text-white font-extrabold text-base">{count}</Text>
-            <TouchableOpacity onPress={onAdd} hitSlop={8}>
-              <Plus size={20} color="#ffffff" />
+            <TouchableOpacity onPress={onAdd} disabled={!canAdd} hitSlop={8} style={{ opacity: canAdd ? 1 : 0.5 }}>
+              <Plus size={20} color={canAdd ? '#ffffff' : '#d1d5db'} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity

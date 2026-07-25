@@ -1015,8 +1015,9 @@ export function sortProducts(list: Product[], sortKey: SortKey): Product[] {
 }
 
 /**
- * Build a self-contained cart snapshot from a static catalog product. Pass a
- * variant index for variant lines (key `${id}-v${i}`), or null for the base.
+ * Build a self-contained cart snapshot from a product. Pass a variant index
+ * for variant lines (key `${id}-v${i}`), or null for the base product.
+ * Captures full variant data to preserve the exact product state at add-to-cart time.
  */
 export function productSnapshot(
   product: Product,
@@ -1028,14 +1029,23 @@ export function productSnapshot(
       key: `${product.id}-v${variantIndex}`,
       productId: product.id,
       variantIndex,
+      variantId: variant.id,
       name: product.name,
       nameTE: product.nameTE,
       weight: variant.name,
       price: variant.price,
       mrp: variant.mrp,
+      listPrice: variant.listPrice,
+      dealPrice: variant.dealPrice,
       emoji: product.emoji,
       gradientFrom: product.gradientFrom,
       gradientTo: product.gradientTo,
+      imageUrl: variant.image,
+      images: variant.images,
+      taxType: variant.taxType,
+      taxRate: variant.taxRate,
+      hasFreeItem: variant.hasFreeItem,
+      hsn: variant.hsn,
     };
   }
   return {
@@ -1050,6 +1060,8 @@ export function productSnapshot(
     emoji: product.emoji,
     gradientFrom: product.gradientFrom,
     gradientTo: product.gradientTo,
+    imageUrl: product.image,
+    images: product.images,
   };
 }
 

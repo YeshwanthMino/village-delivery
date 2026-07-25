@@ -6,7 +6,21 @@ export interface StockStatus {
   availableQuantity?: number;
 }
 
+/**
+ * Address a cart line's stock. The backend tracks inventory per variant, so a
+ * cart holding two variants of one product (e.g. Toor Dal 500g and 1kg) needs
+ * two distinct entries — keying by productId alone let one overwrite the other
+ * and showed both rows the same availability.
+ *
+ * Use this on both sides of `stockStatus`: writes in `verifyCartStock` and reads
+ * in the cart UI must agree.
+ */
+export function stockKey(item: { productId: string; variantId?: string }): string {
+  return item.variantId ?? item.productId;
+}
+
 interface CartStockState {
+  /** Keyed by `stockKey(item)`, not by productId. */
   stockStatus: Record<string, StockStatus>;
   isLoading: boolean;
   error: string | null;
@@ -14,7 +28,7 @@ interface CartStockState {
 }
 
 interface CartStockActions {
-  verifyCartStock: (items: Array<{ productId: string; quantity: number }>) => Promise<void>;
+  verifyCartStock: (items: Array<{ productId: string; variantId?: string; quantity: number }>) => Promise<void>;
   setError: (error: string | null) => void;
   clearStockState: () => void;
 }
@@ -52,7 +66,7 @@ export const useCartStockStore = create<CartStockStore>((set) => ({
 
       const stockStatusMap: Record<string, StockStatus> = {};
       response.items.forEach((item) => {
-        stockStatusMap[item.productId] = {
+        stockStatusMap[stockKey(item)] = {
           inStock: item.inStock,
           availableQuantity: item.availableQuantity,
         };
@@ -81,6 +95,6 @@ export const cartStockSelectors = {
   selectIsLoading: (state: CartStockStore) => state.isLoading,
   selectError: (state: CartStockStore) => state.error,
   selectLastChecked: (state: CartStockStore) => state.lastChecked,
-  selectIsInStock: (productId: string) => (state: CartStockStore) =>
-    state.stockStatus[productId]?.inStock ?? true,
+  selectIsInStock: (item: { productId: string; variantId?: string }) => (state: CartStockStore) =>
+    state.stockStatus[stockKey(item)]?.inStock ?? true,
 };

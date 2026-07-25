@@ -109,6 +109,58 @@ describe('OrderModificationSheet', () => {
     });
   });
 
+  // prod2 has 3 of 3 available here so stepping it down leaves the row visible
+  // (a row adjusted to 0 is hidden, and zeroing every row auto-closes the sheet).
+  const adjustableProps = {
+    ...mockProps,
+    stockInfo: [
+      { productId: 'prod1', availableStock: 0 },
+      { productId: 'prod2', availableStock: 3 },
+    ],
+  };
+
+  it('keeps a manual adjustment when the parent re-renders with equivalent props', () => {
+    const { rerender } = render(<OrderModificationSheet {...adjustableProps} />);
+
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('3');
+    fireEvent.press(screen.getByTestId('stepper-dec-prod2'));
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('2');
+
+    // CartScreen builds `cartItems` inline with .map(), so every parent render
+    // hands the sheet a fresh array with identical contents. That must not be
+    // read as "new conflicts" and reset what the user just did.
+    rerender(
+      <OrderModificationSheet
+        {...adjustableProps}
+        stockInfo={adjustableProps.stockInfo.map(s => ({ ...s }))}
+        cartItems={mockCartItems.map(i => ({ ...i }))}
+      />
+    );
+
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('2');
+  });
+
+  it('re-initialises when the conflicts themselves actually change', () => {
+    const { rerender } = render(<OrderModificationSheet {...adjustableProps} />);
+
+    fireEvent.press(screen.getByTestId('stepper-dec-prod2'));
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('2');
+
+    // A genuinely different availability is new information from the server and
+    // should re-seed the quantities.
+    rerender(
+      <OrderModificationSheet
+        {...adjustableProps}
+        stockInfo={[
+          { productId: 'prod1', availableStock: 0 },
+          { productId: 'prod2', availableStock: 1 },
+        ]}
+      />
+    );
+
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('1');
+  });
+
   it('closes sheet when X button tapped', () => {
     const mockOnClose = jest.fn();
     render(

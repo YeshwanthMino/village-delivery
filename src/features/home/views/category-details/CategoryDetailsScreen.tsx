@@ -1,18 +1,49 @@
 import { ArrowLeft, Search } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FloatingCartPill } from '@/src/shared/components';
+import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
+import { Product } from '@/src/base/types/village.types';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { SubcategoryRail } from './components/SubcategoryRail';
 import { useCategoryDetailsViewModel } from '../../viewmodel/categories/useCategoryDetailsViewModel';
+import { useStoreId } from '@/src/core/utils/getStoreId';
+import { getProductDetail } from '@/src/features/product/data/productDetailApi';
 
 export const CategoryDetailsScreen = () => {
   const router = useRouter();
   const vm = useCategoryDetailsViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
+  const storeId = useStoreId();
+
+  const handleOpenVariants = async (product: Product) => {
+    setIsLoadingVariants(true);
+    try {
+      const fullProduct = await getProductDetail(storeId, product.id);
+      setSelectedProduct({
+        id: fullProduct.id,
+        categoryId: '',
+        name: fullProduct.title,
+        nameTE: fullProduct.teluguTitle || '',
+        weight: '',
+        price: fullProduct.price,
+        mrp: fullProduct.mrp,
+        rating: 0,
+        reviews: 0,
+        image: fullProduct.image,
+        variants: fullProduct.variants,
+      });
+    } catch (error) {
+      console.error('Failed to fetch product details:', error);
+    } finally {
+      setIsLoadingVariants(false);
+    }
+  };
 
   useEffect(() => {
     slideAnim.setValue(390);
@@ -75,11 +106,15 @@ export const CategoryDetailsScreen = () => {
               keyExtractor={(p) => p.id}
               numColumns={2}
               showsVerticalScrollIndicator={false}
-              columnWrapperStyle={{ gap: 10, paddingHorizontal: 10 }}
+              columnWrapperStyle={{ gap: 10, paddingHorizontal: 10, justifyContent: 'flex-start' }}
               contentContainerStyle={{ paddingVertical: 10, gap: 10, paddingBottom: 96 }}
               renderItem={({ item }) => (
-                <View style={{ flex: 1 }}>
-                  <DynamicProductCard product={item} width="100%" />
+                <View style={{ flex: 1, maxWidth: '50%' }}>
+                  <DynamicProductCard
+                    product={item}
+                    width="100%"
+                    onOpenVariants={handleOpenVariants}
+                  />
                 </View>
               )}
               ListFooterComponent={
@@ -107,6 +142,11 @@ export const CategoryDetailsScreen = () => {
       {vm.cartCount > 0 && (
         <FloatingCartPill count={vm.cartCount} onPress={() => router.push('/cart')} bottomOffset={0} />
       )}
+
+      <VariantBottomSheet
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
     </SafeAreaView>
   );
 };

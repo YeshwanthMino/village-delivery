@@ -1,8 +1,21 @@
 export interface Variant {
+  id?: string;
   name: string;
+  nameTE?: string;
+  slug?: string;
+  description?: string;
   price: number;
   mrp: number;
+  listPrice?: number;
+  dealPrice?: number;
   stock?: number;
+  image?: string;
+  images?: string[];
+  taxType?: string;
+  taxRate?: number;
+  hasFreeItem?: boolean;
+  hsn?: string;
+  active?: boolean;
 }
 
 export interface Product {
@@ -20,6 +33,11 @@ export interface Product {
   gradientTo?: string;
   // API products use images instead of emojis
   image?: string;
+  images?: string[];
+  description?: string;
+  manufacturerId?: string;
+  brandId?: string;
+  stock?: number;
   variants?: Variant[];
 }
 
@@ -41,20 +59,31 @@ export type CartRecord = Record<string, number>;
  *
  * Prices are stored in catalog "units" (display multiplies by 20 via `rupees`).
  * API products, whose `price` is in real rupees, are divided by 20 on capture.
+ *
+ * When a variant is selected, includes full variant data (images, pricing tiers,
+ * tax info) to preserve the exact product state at add-to-cart time.
  */
 export interface CartSnapshot {
   key: string;
   productId: string;
   variantIndex: number | null;
+  variantId?: string;
   name: string;
   nameTE?: string;
   weight: string;
   price: number;
   mrp: number;
+  listPrice?: number;
+  dealPrice?: number;
   emoji?: string;
   gradientFrom?: string;
   gradientTo?: string;
   imageUrl?: string;
+  images?: string[];
+  taxType?: string;
+  taxRate?: number;
+  hasFreeItem?: boolean;
+  hsn?: string;
 }
 
 export type CartSnapshotRecord = Record<string, CartSnapshot>;

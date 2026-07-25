@@ -1,11 +1,12 @@
 // src/features/product/views/ProductDetailScreen.tsx
 
-import { ArrowLeft, Search } from 'lucide-react-native';
-import React from 'react';
+import { ArrowLeft, Search, ChevronDown } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DynamicProductCard } from '@/src/features/home/views/home/components/DynamicProductCard';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailViewModel } from '../viewmodel/useProductDetailViewModel';
 import { ProductImageCarousel } from './components/ProductImageCarousel';
 import { ProductCartBar } from './components/ProductCartBar';
@@ -14,6 +15,11 @@ export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const cart = useVillageStore((s) => s.cart);
+  const addToCart = useVillageStore((s) => s.addToCart);
+  const decFromCart = useVillageStore((s) => s.decFromCart);
+
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
   const header = (
@@ -68,13 +74,80 @@ export const ProductDetailScreen = () => {
   }
 
   const displayTitle = locale === 'te' && d.teluguTitle ? d.teluguTitle : d.title;
+  const hasVariants = d.variants && d.variants.length > 1;
+  const selectedVariant = hasVariants ? d.variants?.[selectedVariantIndex] : undefined;
+
+  // Calculate stock for selected variant or product
+  const variantStock = selectedVariant?.stock ?? 0;
+  const productInStock = hasVariants ? variantStock > 0 : d.inStock;
+
+  // Display price for selected variant or product
+  const displayPrice = selectedVariant ? selectedVariant.price : d.price;
+  const displayMrp = selectedVariant ? selectedVariant.mrp : d.mrp;
+  const displayDiscount = displayMrp > displayPrice && displayMrp > 0
+    ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100)
+    : 0;
+
+  // Calculate cart count for selected variant
+  // For products with variants (even just 1), use variant key
+  let variantCount = 0;
+  const hasAnyVariants = d.variants && d.variants.length > 0;
+  if (hasAnyVariants && selectedVariantIndex !== undefined) {
+    variantCount = cart[`${d.id}-v${selectedVariantIndex}`] ?? 0;
+  } else {
+    variantCount = cart[d.id] ?? 0;
+  }
+
+  // Handlers for variant-aware add/dec
+  const handleAddVariant = () => {
+    if (!d || !selectedVariant) return;
+
+    // For products with variants (including single-variant), use variant key
+    if (hasAnyVariants && selectedVariantIndex !== undefined) {
+      const snapshot = {
+        key: `${d.id}-v${selectedVariantIndex}`,
+        productId: d.id,
+        variantIndex: selectedVariantIndex,
+        variantId: selectedVariant.id,
+        name: d.title,
+        nameTE: d.teluguTitle,
+        weight: selectedVariant.name,
+        price: selectedVariant.price / 20,
+        mrp: selectedVariant.mrp / 20,
+        listPrice: selectedVariant.listPrice ? selectedVariant.listPrice / 20 : undefined,
+        dealPrice: selectedVariant.dealPrice ? selectedVariant.dealPrice / 20 : undefined,
+        imageUrl: selectedVariant.image,
+        images: selectedVariant.images,
+        taxType: selectedVariant.taxType,
+        taxRate: selectedVariant.taxRate,
+        hasFreeItem: selectedVariant.hasFreeItem,
+        hsn: selectedVariant.hsn,
+      };
+      const maxQuantity = selectedVariant.stock ?? 0;
+      addToCart(`${d.id}-v${selectedVariantIndex}`, snapshot, maxQuantity);
+    } else {
+      // No variants - add as base product
+      vm.onAdd();
+    }
+  };
+
+  const handleDecVariant = () => {
+    if (!d) return;
+
+    // For products with variants (including single-variant), use variant key
+    if (hasAnyVariants && selectedVariantIndex !== undefined) {
+      decFromCart(`${d.id}-v${selectedVariantIndex}`);
+    } else {
+      vm.onDec();
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
       {header}
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
-        <ProductImageCarousel images={d.images} discountPct={d.discountPct} />
+        <ProductImageCarousel images={selectedVariant?.images || d.images} discountPct={displayDiscount} />
 
         <View className="px-4 pt-4">
           {d.categoryTitle ? (
@@ -86,15 +159,65 @@ export const ProductDetailScreen = () => {
           </Text>
 
           <View className="flex-row items-baseline gap-2 flex-wrap mt-3">
-            <Text className="text-slate-900 font-extrabold text-2xl">₹{Math.round(d.price)}</Text>
-            {d.mrp > d.price ? (
-              <Text className="text-slate-400 text-base line-through">₹{Math.round(d.mrp)}</Text>
+            <Text className="text-slate-900 font-extrabold text-2xl">₹{Math.round(displayPrice)}</Text>
+            {displayMrp > displayPrice ? (
+              <Text className="text-slate-400 text-base line-through">₹{Math.round(displayMrp)}</Text>
             ) : null}
-            {d.discountPct > 0 ? (
-              <Text className="text-green-700 font-bold text-base">{d.discountPct}% Off</Text>
+            {displayDiscount > 0 ? (
+              <Text className="text-green-700 font-bold text-base">{displayDiscount}% Off</Text>
             ) : null}
           </View>
           <Text className="text-slate-400 text-xs mt-0.5">MRP (inclusive of all taxes)</Text>
+
+          {/* Variant selector */}
+          {hasVariants && d.variants && d.variants.length > 0 ? (
+            <View className="mt-5">
+              <Text className="text-slate-900 font-bold text-base mb-3">
+                {d.variants.length === 1 ? 'Available Option' : t('choose_variant') || 'Select Variant'}
+              </Text>
+              <View className="gap-2">
+                {d.variants.map((variant, idx) => {
+                  const variantDiscount = variant.mrp > variant.price && variant.mrp > 0
+                    ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100)
+                    : 0;
+                  const isSelected = idx === selectedVariantIndex;
+
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => setSelectedVariantIndex(idx)}
+                      className={`border-2 rounded-xl p-3 flex-row items-center justify-between ${
+                        isSelected ? 'border-green-600 bg-green-50' : 'border-slate-200'
+                      }`}
+                    >
+                      <View className="flex-1">
+                        <Text className={`font-semibold ${isSelected ? 'text-green-700' : 'text-slate-900'}`}>
+                          {variant.name}
+                        </Text>
+                        <View className="flex-row items-center gap-2 mt-1">
+                          <Text className="text-slate-900 font-bold">₹{Math.round(variant.price)}</Text>
+                          {variant.mrp > variant.price && (
+                            <Text className="text-slate-400 text-xs line-through">₹{Math.round(variant.mrp)}</Text>
+                          )}
+                          {variantDiscount > 0 && (
+                            <Text className="text-green-600 text-xs font-semibold">{variantDiscount}% off</Text>
+                          )}
+                        </View>
+                        {variant.stock !== undefined && variant.stock === 0 && (
+                          <Text className="text-red-600 text-xs mt-1 font-semibold">{t('out_of_stock') || 'Out of Stock'}</Text>
+                        )}
+                      </View>
+                      {isSelected && (
+                        <View className="w-6 h-6 rounded-full bg-green-600 items-center justify-center ml-2">
+                          <Text className="text-white font-bold text-sm">✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
 
           {d.description.trim().length > 0 ? (
             <View className="mt-5">
@@ -120,7 +243,7 @@ export const ProductDetailScreen = () => {
         ) : null}
       </ScrollView>
 
-      <ProductCartBar count={vm.count} inStock={d.inStock} onAdd={vm.onAdd} onDec={vm.onDec} onViewCart={vm.onViewCart} />
+      <ProductCartBar count={variantCount} inStock={productInStock} maxQuantity={variantStock} onAdd={handleAddVariant} onDec={handleDecVariant} onViewCart={vm.onViewCart} />
     </SafeAreaView>
   );
 };

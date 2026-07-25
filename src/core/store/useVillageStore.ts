@@ -15,8 +15,12 @@ interface VillageState {
 }
 
 interface VillageActions {
-  addToCart: (key: string, snapshot?: CartSnapshot) => void;
+  addToCart: (key: string, snapshot?: CartSnapshot, maxQuantity?: number) => void;
   decFromCart: (key: string) => void;
+  /** Set a line to an exact quantity in a single write. Prefer this over looping
+   *  addToCart/decFromCart: each of those is its own store notification, so
+   *  adjusting by n fired n render passes across every subscriber. */
+  setQuantity: (key: string, quantity: number, maxQuantity?: number) => void;
   toggleFav: (productId: string) => void;
   clearCart: () => void;
   setLocale: (locale: Locale) => Promise<void>;
@@ -51,18 +55,23 @@ function parseCartKey(key: string): { productId: string; variantIndex: number | 
 export const useVillageStore = create<VillageStore>((set, get) => ({
   ...initialState,
 
-  addToCart: (key, snapshot) =>
-    set((state) => ({
-      cart: {
-        ...state.cart,
-        [key]: (state.cart[key] ?? 0) + 1,
-      },
-      // Capture the snapshot once, on first add. Increments reuse it.
-      cartSnapshots:
-        snapshot && !state.cartSnapshots[key]
-          ? { ...state.cartSnapshots, [key]: snapshot }
-          : state.cartSnapshots,
-    })),
+  addToCart: (key, snapshot, maxQuantity) =>
+    set((state) => {
+      const current = state.cart[key] ?? 0;
+      if (maxQuantity !== undefined && current >= maxQuantity) {
+        return state;
+      }
+      return {
+        cart: {
+          ...state.cart,
+          [key]: current + 1,
+        },
+        cartSnapshots:
+          snapshot && !state.cartSnapshots[key]
+            ? { ...state.cartSnapshots, [key]: snapshot }
+            : state.cartSnapshots,
+      };
+    }),
 
   decFromCart: (key) =>
     set((state) => {
@@ -73,6 +82,19 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         return { cart: rest, cartSnapshots: restSnapshots };
       }
       return { cart: { ...state.cart, [key]: current - 1 } };
+    }),
+
+  setQuantity: (key, quantity, maxQuantity) =>
+    set((state) => {
+      const capped = maxQuantity !== undefined ? Math.min(quantity, maxQuantity) : quantity;
+
+      if (capped <= 0) {
+        const { [key]: _removed, ...cart } = state.cart;
+        const { [key]: _snap, ...cartSnapshots } = state.cartSnapshots;
+        return { cart, cartSnapshots };
+      }
+
+      return { cart: { ...state.cart, [key]: capped } };
     }),
 
   toggleFav: (productId) =>
