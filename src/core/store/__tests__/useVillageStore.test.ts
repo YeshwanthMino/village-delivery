@@ -11,9 +11,14 @@ jest.mock('@/src/base/services/remote/storage/StoredPrefs', () => ({
   },
 }));
 
-import { useVillageStore, selectCartCount } from '../useVillageStore';
+import {
+  useVillageStore,
+  selectCartCount,
+  selectLastVariantSnapshot,
+  selectProductCartCount,
+} from '../useVillageStore';
 
-const reset = () => useVillageStore.setState({ cart: {}, cartSnapshots: {} });
+const reset = () => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
 
 // Persistence is fire-and-forget so mutations stay synchronous; let the
 // microtask queue drain before asserting on what was written.
@@ -81,6 +86,7 @@ describe('cart persistence', () => {
     expect(saved).toEqual({
       cart: { apple: 1 },
       cartSnapshots: { apple: expect.objectContaining({ key: 'apple' }) },
+      lastVariantKey: { apple: 'apple' },
     });
   });
 
@@ -116,7 +122,7 @@ describe('cart persistence', () => {
     useVillageStore.getState().clearCart();
     await flushPersist();
 
-    expect(mockStore.get(StorageKeys.CART)).toEqual({ cart: {}, cartSnapshots: {} });
+    expect(mockStore.get(StorageKeys.CART)).toEqual({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
   });
 });
 
@@ -173,5 +179,127 @@ describe('useVillageStore.setQuantity', () => {
 
     expect(useVillageStore.getState().cart['banana']).toBe(1);
     expect(useVillageStore.getState().cartSnapshots['banana']).toBeDefined();
+  });
+});
+
+const variantSnapshot = (productId: string, index: number, price: number) => ({
+  key: `${productId}-v${index}`,
+  productId,
+  variantIndex: index,
+  name: 'Figaro Extra Virgin Olive Oil',
+  nameTE: '',
+  weight: index === 0 ? '1 pc (250 ml)' : '1 pc (1 L)',
+  price,
+  mrp: price * 2,
+});
+
+describe('lastVariantKey', () => {
+  beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
+
+  test('points at the most recently added variant of a product', () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+
+    expect(selectLastVariantSnapshot('p1')(useVillageStore.getState())?.weight).toBe('1 pc (1 L)');
+  });
+
+  test('a decrement counts as a touch', () => {
+    const { addToCart, decFromCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    decFromCart('p1-v0');
+
+    expect(selectLastVariantSnapshot('p1')(useVillageStore.getState())?.weight).toBe('1 pc (250 ml)');
+  });
+
+  test('falls back to another line of the same product when the pointed-at line leaves', () => {
+    const { addToCart, decFromCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    decFromCart('p1-v1');
+
+    expect(selectLastVariantSnapshot('p1')(useVillageStore.getState())?.weight).toBe('1 pc (250 ml)');
+  });
+
+  test('clears the entry once the product has no lines left', () => {
+    const { addToCart, decFromCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    decFromCart('p1-v0');
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBeUndefined();
+    expect(selectLastVariantSnapshot('p1')(useVillageStore.getState())).toBeUndefined();
+  });
+
+  test('setQuantity to zero releases the entry too', () => {
+    const { addToCart, setQuantity } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    setQuantity('p1-v0', 0);
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBeUndefined();
+  });
+
+  test('survives a persistence round-trip', async () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    await flushPersist();
+    // The reset below is itself a store mutation, so it fires the persist
+    // subscriber too — capture what was actually flushed first, then put it
+    // back afterwards so the simulated "app restart" doesn't clobber it.
+    const persisted = mockStore.get(StorageKeys.CART);
+
+    useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
+    mockStore.set(StorageKeys.CART, persisted);
+    await useVillageStore.getState().hydrateCart();
+
+    expect(useVillageStore.getState().lastVariantKey.p1).toBe('p1-v1');
+  });
+
+  test('hydrating a cart persisted before this field existed does not throw', async () => {
+    // Reset first: setState fires the persist subscriber too, and doing the
+    // reset before seeding the mock keeps that write from overwriting the
+    // pre-migration payload this test cares about.
+    useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
+    mockStore.set(StorageKeys.CART, { cart: { 'p1-v0': 1 }, cartSnapshots: {} });
+    await useVillageStore.getState().hydrateCart();
+
+    expect(useVillageStore.getState().cart['p1-v0']).toBe(1);
+    expect(useVillageStore.getState().lastVariantKey).toEqual({});
+  });
+
+  test('clearCart drops every entry', () => {
+    const { addToCart, clearCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    clearCart();
+
+    expect(useVillageStore.getState().lastVariantKey).toEqual({});
+  });
+});
+
+describe('selectProductCartCount', () => {
+  beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
+
+  test('sums every variant line of one product and ignores others', () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p1-v1', variantSnapshot('p1', 1, 58.25));
+    addToCart('p2-v0', variantSnapshot('p2', 0, 10));
+
+    expect(selectProductCartCount('p1')(useVillageStore.getState())).toBe(3);
+  });
+
+  test('counts a variant-less line keyed by the product id', () => {
+    useVillageStore.getState().addToCart('p3', snapshot('p3'));
+    expect(selectProductCartCount('p3')(useVillageStore.getState())).toBe(1);
+  });
+
+  test('does not count a different product whose id shares a prefix', () => {
+    const { addToCart } = useVillageStore.getState();
+    addToCart('p1-v0', variantSnapshot('p1', 0, 15.5));
+    addToCart('p10-v0', variantSnapshot('p10', 0, 20));
+
+    expect(selectProductCartCount('p1')(useVillageStore.getState())).toBe(1);
   });
 });
