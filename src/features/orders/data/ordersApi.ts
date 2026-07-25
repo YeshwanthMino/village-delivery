@@ -21,16 +21,22 @@ const BASE = WebService.villageBaseURL;
 
 // The active store's `x-store-id` header is injected centrally by apiClient.
 
-/** Pick the first defined value among candidate keys on an object. */
-function pick(obj: any, keys: string[]): any {
+/**
+ * Pick the first defined value among candidate keys on an object of unknown
+ * shape. The orders response is undocumented (see module comment) and has been
+ * observed under several different field names for the same concept, so this
+ * stays intentionally loose rather than declaring one shape and being wrong.
+ */
+function pick(obj: unknown, keys: string[]): unknown {
   if (!obj || typeof obj !== 'object') return undefined;
+  const record = obj as Record<string, unknown>;
   for (const k of keys) {
-    if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+    if (record[k] !== undefined && record[k] !== null) return record[k];
   }
   return undefined;
 }
 
-function toUnits(rupeeAmount: any): number {
+function toUnits(rupeeAmount: unknown): number {
   const n = Number(rupeeAmount);
   return Number.isFinite(n) ? toRupeeUnits(n) : 0;
 }
@@ -43,17 +49,17 @@ const STATUS_MAP: Record<string, OrderStatus> = {
   cancelled: 'cancelled', canceled: 'cancelled', rejected: 'cancelled', failed: 'cancelled', returned: 'cancelled',
 };
 
-function mapStatus(raw: any): OrderStatus {
+function mapStatus(raw: unknown): OrderStatus {
   const key = String(raw ?? '').toLowerCase().replace(/[^a-z]/g, '');
   return STATUS_MAP[key] ?? 'placed';
 }
 
-function mapPaymentMethod(raw: any): 'cod' | 'upi' {
+function mapPaymentMethod(raw: unknown): 'cod' | 'upi' {
   const key = String(raw ?? '').toLowerCase();
   return key.includes('upi') || key.includes('online') || key.includes('prepaid') ? 'upi' : 'cod';
 }
 
-function mapAddress(raw: any): string {
+function mapAddress(raw: unknown): string {
   if (!raw) return '';
   if (typeof raw === 'string') return raw;
   const parts = [
@@ -66,8 +72,9 @@ function mapAddress(raw: any): string {
   return parts.map(String).join(', ');
 }
 
-function mapItem(raw: any): OrderItem {
-  const product = raw?.product && typeof raw.product === 'object' ? raw.product : {};
+function mapItem(raw: unknown): OrderItem {
+  const productRaw = pick(raw, ['product']);
+  const product = productRaw && typeof productRaw === 'object' ? productRaw : {};
   const productId = String(pick(raw, ['productId', 'product']) ?? pick(product, ['_id', 'id']) ?? '');
   const name = String(pick(raw, ['name', 'title']) ?? pick(product, ['title', 'name']) ?? 'Item');
   const nameTE = String(pick(raw, ['nameTE', 'titleTE']) ?? pick(product, ['titleTE', 'nameTE']) ?? name);
@@ -84,7 +91,7 @@ function mapItem(raw: any): OrderItem {
   return { productId, name, nameTE, emoji, image, weight, price, mrp, quantity };
 }
 
-function buildBill(items: OrderItem[], orderTotalRupees: any): Bill {
+function buildBill(items: OrderItem[], orderTotalRupees: unknown): Bill {
   let itemTotal = 0;
   let mrpTotal = 0;
   let totalCount = 0;
@@ -108,9 +115,9 @@ function buildBill(items: OrderItem[], orderTotalRupees: any): Bill {
   };
 }
 
-export function mapOrder(raw: any): Order | null {
+export function mapOrder(raw: unknown): Order | null {
   if (!raw || typeof raw !== 'object') return null;
-  const node = raw?.data ?? raw;
+  const node = pick(raw, ['data']) ?? raw;
 
   const id = String(pick(node, ['_id', 'id', 'orderId']) ?? '');
   if (!id) return null;
@@ -133,17 +140,17 @@ export function mapOrder(raw: any): Order | null {
 }
 
 export async function listOrders(skip = 0, limit = 24): Promise<Order[]> {
-  const resp = await apiClient.get<any>(
+  const resp = await apiClient.get<unknown>(
     `${BASE}/app/orders?sort=_id%3Adesc&skip=${skip}&limit=${limit}`,
   );
   logger.debug('[orders] list raw:', JSON.stringify(resp)?.slice(0, 1000));
-  const list = resp?.data ?? resp?.orders ?? resp?.results ?? resp;
+  const list = pick(resp, ['data', 'orders', 'results']) ?? resp;
   if (!Array.isArray(list)) return [];
   return list.map(mapOrder).filter((o): o is Order => o !== null);
 }
 
 export async function getOrderDetail(id: string): Promise<Order | null> {
-  const resp = await apiClient.get<any>(`${BASE}/app/orders/${id}`);
+  const resp = await apiClient.get<unknown>(`${BASE}/app/orders/${id}`);
   logger.debug('[orders] detail raw:', JSON.stringify(resp)?.slice(0, 1000));
-  return mapOrder(resp?.data ?? resp);
+  return mapOrder(pick(resp, ['data']) ?? resp);
 }
