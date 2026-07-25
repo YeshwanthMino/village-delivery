@@ -1,5 +1,5 @@
 // src/features/home/data/__tests__/homeLayoutMapper.test.ts
-import { isCategoryActive, isProductActive, mapHomeLayout, mapProduct } from '../homeLayoutMapper';
+import { isCategoryActive, isProductActive, mapHomeLayout, mapProduct, mapProductWithVariants } from '../homeLayoutMapper';
 import { mapApiProduct } from '../productMapper';
 import { rupees } from '@/src/shared/utils/currency';
 
@@ -193,5 +193,16 @@ describe('mapProduct variants', () => {
     expect(product.hasVariants).toBe(false);
     expect(product.stock).toBe(7);
     expect(product.inStock).toBe(true);
+  });
+});
+
+describe('mapProductWithVariants price units', () => {
+  it('converts the variant-less fallback price and mrp to units, like every other mapper', () => {
+    // No variantIds, so productPrice/productMrp fall back to the raw-JSON
+    // rupee values — those must go through toUnits() same as everywhere else,
+    // or rupees() double-converts them (the c60933e class of bug).
+    const product = mapProductWithVariants({ _id: 'p1', title: 'Loose Rice', mrp: 100, dealPrice: 80 });
+    expect(rupees(product.price)).toBe('₹80');
+    expect(rupees(product.mrp)).toBe('₹100');
   });
 });

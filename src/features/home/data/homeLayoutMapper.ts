@@ -44,8 +44,8 @@ export function mapProductWithVariants(p: any): Product {
 
   // Use first variant's price for product-level price, or fallback to dealPrice/listPrice/mrp
   const firstVariant = variants[0];
-  const productPrice = firstVariant?.price ?? num(p?.dealPrice ?? p?.listPrice ?? p?.mrp);
-  const productMrp = firstVariant?.mrp ?? num(p?.mrp);
+  const productPrice = firstVariant?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
+  const productMrp = firstVariant?.mrp ?? toUnits(num(p?.mrp));
 
   // Extract image from product or first variant
   const image = p?.landingImage || (Array.isArray(p?.images) ? p.images[0] : undefined) ||
