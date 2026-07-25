@@ -15,6 +15,7 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
+import { mapVariant } from './productMapper';
 
 function num(v: any): number {
   const n = Number(v);
@@ -32,25 +33,6 @@ function byId(arr: any[], id: string): any {
  */
 export function isProductActive(p: any): boolean {
   return p?.active !== false;
-}
-
-function mapVariant(v: any): Variant {
-  // Rupees in, internal units out — see shared/utils/currency.
-  const mrp = toUnits(num(v?.mrp));
-  const price = toUnits(num(v?.dealPrice ?? v?.listPrice ?? v?.mrp));
-  // Get stock from stockId nested object if available
-  const stock = v?.stockId?.stock ?? num(v?.stock);
-  const images = Array.isArray(v?.images) ? v.images : [];
-  const image = v?.landingImage || images[0];
-
-  return {
-    id: String(v?._id ?? ''),
-    name: String(v?.title ?? ''),
-    price,
-    mrp,
-    stock,
-    image: image ? String(image) : undefined,
-  };
 }
 
 /**
@@ -100,13 +82,17 @@ export function isCategoryActive(c: any): boolean {
 
 export function mapProduct(p: any): HomeProduct {
   // If product has variants, use first variant's data; otherwise use product-level data
-  const hasVariants = Array.isArray(p?.variantIds) && p.variantIds.length > 0;
-  const firstVariant = hasVariants ? p.variantIds[0] : null;
+  const hasAnyVariants = Array.isArray(p?.variantIds) && p.variantIds.length > 0;
+  const firstVariant = hasAnyVariants ? p.variantIds[0] : null;
+  // Unpopulated refs (a raw ObjectId string instead of the variant object)
+  // would otherwise map to a nameless, ₹0 row the sheet renders as selectable.
+  const variants = hasAnyVariants
+    ? p.variantIds.filter((v: any) => v && typeof v === 'object').map(mapVariant)
+    : undefined;
+  const first = variants?.[0];
 
-  // Use variant data if available, fallback to product data
-  const variantOrProduct = firstVariant || p;
-  const mrp = toUnits(num(variantOrProduct?.mrp));
-  const price = toUnits(num(variantOrProduct?.dealPrice ?? variantOrProduct?.listPrice ?? variantOrProduct?.mrp));
+  const mrp = first?.mrp ?? toUnits(num(p?.mrp));
+  const price = first?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
   const discountPct = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   // Use variant image if available, otherwise product image
@@ -119,14 +105,9 @@ export function mapProduct(p: any): HomeProduct {
   const slug = p?.slug || undefined;
 
   // Get stock from variants if available, otherwise fallback to root stock
-  let totalStock = num(p?.stock);
-  if (hasVariants) {
-    // Sum stock from all variants
-    totalStock = p.variantIds.reduce((sum: number, v: any) => {
-      const variantStock = v?.stockId?.stock ?? num(v?.stock);
-      return sum + variantStock;
-    }, 0);
-  }
+  const totalStock = variants
+    ? variants.reduce((sum: number, v: Variant) => sum + (v.stock ?? 0), 0)
+    : num(p?.stock);
 
   return {
     id: String(p?._id ?? ''),
@@ -141,8 +122,8 @@ export function mapProduct(p: any): HomeProduct {
     slug,
     link: slug ? `/${slug}` : undefined,
     categoryId: p?.categoryId || undefined,
-    hasVariants: hasVariants && p.variantIds.length > 1,
-    variants: hasVariants ? p.variantIds.map(mapVariant) : undefined,
+    hasVariants: hasAnyVariants && p.variantIds.length > 1,
+    variants,
   };
 }
 

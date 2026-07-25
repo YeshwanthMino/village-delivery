@@ -1,5 +1,7 @@
 // src/features/home/data/__tests__/homeLayoutMapper.test.ts
 import { isCategoryActive, isProductActive, mapHomeLayout, mapProduct } from '../homeLayoutMapper';
+import { mapApiProduct } from '../productMapper';
+import { rupees } from '@/src/shared/utils/currency';
 
 describe('isProductActive', () => {
   it('treats active:false as inactive', () => {
@@ -110,14 +112,13 @@ describe('mapProduct variants', () => {
   it('keeps every variant on the mapped product, in rupee-to-unit terms', () => {
     const product = mapProduct(raw);
     expect(product.variants).toHaveLength(2);
-    expect(product.variants?.[0]).toMatchObject({
-      id: 'v1',
-      name: '1 pc (250 ml)',
-      price: 310 / 20,
-      mrp: 599 / 20,
-      stock: 4,
-      image: 'https://cdn/250.jpg',
-    });
+    const first = product.variants?.[0];
+    expect(first?.id).toBe('v1');
+    expect(first?.name).toBe('1 pc (250 ml)');
+    expect(rupees(first!.price)).toBe('₹310');
+    expect(rupees(first!.mrp)).toBe('₹599');
+    expect(first?.stock).toBe(4);
+    expect(first?.image).toBe('https://cdn/250.jpg');
   });
 
   it('falls back to the first gallery image when there is no landingImage', () => {
@@ -133,5 +134,44 @@ describe('mapProduct variants', () => {
 
   it('leaves variants undefined when the response has none', () => {
     expect(mapProduct({ _id: 'p2', title: 'Loose rice', mrp: 100 }).variants).toBeUndefined();
+  });
+
+  // The variant sheet's ADD button reads tax/free-item fields off these
+  // variants (bill.ts productSnapshot); a card mapper that silently strips
+  // them would submit an incomplete order. mapProduct and mapApiProduct must
+  // agree on every field, not just price and stock.
+  it('agrees field-for-field with mapApiProduct (the source of truth for variant shape)', () => {
+    expect(mapProduct(raw).variants).toEqual(mapApiProduct(raw).variants);
+  });
+
+  it('preserves variant order — cart keys are ${productId}-v${index}', () => {
+    expect(mapProduct(raw).variants!.map((v) => v.id)).toEqual(['v1', 'v2']);
+  });
+
+  it('keeps the card price in sync with the first variant', () => {
+    const product = mapProduct(raw);
+    expect(product.price).toBe(product.variants![0].price);
+  });
+
+  it('coerces a string stockId.stock to a number', () => {
+    const withStringStock = {
+      _id: 'p3',
+      title: 'Ghee',
+      variantIds: [{ _id: 'v1', title: '500 g', mrp: 500, dealPrice: 450, stockId: { stock: '4' } }],
+    };
+    const stock = mapProduct(withStringStock).variants?.[0].stock;
+    expect(stock).toBe(4);
+    expect(typeof stock).toBe('number');
+  });
+
+  it('drops unpopulated variant refs (raw ObjectId strings) instead of mapping a nameless row', () => {
+    const withUnpopulatedRef = {
+      _id: 'p4',
+      title: 'Rice',
+      variantIds: ['64f0000000000000000000aa', raw.variantIds[0]],
+    };
+    const product = mapProduct(withUnpopulatedRef);
+    expect(product.variants).toHaveLength(1);
+    expect(product.variants?.[0].id).toBe('v1');
   });
 });

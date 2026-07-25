@@ -20,7 +20,7 @@ function toPriceUnits(v: any): number {
   return toUnits(num(v));
 }
 
-function mapVariant(v: any): Variant {
+export function mapVariant(v: any): Variant {
   const mrp = toPriceUnits(v?.mrp);
   const listPrice = toPriceUnits(v?.listPrice);
   const dealPrice = toPriceUnits(v?.dealPrice);
