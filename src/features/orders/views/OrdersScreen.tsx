@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LogIn, CheckCircle2, Package, Truck, XCircle, RotateCcw } from 'lucide-react-native';
 import { Order, OrderItem, OrderStatus } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { useOrdersViewModel } from '../viewmodel/useOrdersViewModel';

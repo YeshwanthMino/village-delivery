@@ -1,7 +1,7 @@
 import { Home } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import type { CheckoutState } from '@/src/features/cart/domain/checkoutState';
 import type { AddressTag } from '@/src/features/location/domain/models';

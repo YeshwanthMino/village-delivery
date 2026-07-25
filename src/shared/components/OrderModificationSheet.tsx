@@ -3,7 +3,7 @@ import { Text, TouchableOpacity, View, ScrollView, Image } from 'react-native';
 import { X } from 'lucide-react-native';
 import { VillageBottomSheet } from './VillageBottomSheet';
 import { CompactStepper } from './CompactStepper';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 
 export interface StockInfo {
   productId: string;

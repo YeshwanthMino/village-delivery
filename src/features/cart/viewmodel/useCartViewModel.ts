@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import {
-  computeBill,
-  getCartItems,
-} from '@/src/features/home/data/static/villageData';
+import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
 
 export const useCartViewModel = () => {
   const cart = useVillageStore(state => state.cart);

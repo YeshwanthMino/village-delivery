@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CartItemRow } from '../CartItemRow';
 import { CartLineItem } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 
 jest.mock('@/src/core/store', () => ({
   useVillageStore: jest.fn(selector => {

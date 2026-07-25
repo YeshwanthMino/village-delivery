@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/src/base/query/queryKeys';
-import { ALL_PRODUCTS } from '../static/villageData';
+import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { getAllProducts } from '../productsApi';
 import { useStoreId } from '@/src/core/utils/getStoreId';
 

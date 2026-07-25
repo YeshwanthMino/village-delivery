@@ -3,7 +3,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { AlertCircle, Trash2 } from 'lucide-react-native';
 import { CartLineItem } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useVillageStore } from '@/src/core/store';
 import { FullWidthStepper } from './FullWidthStepper';
 import { useTranslation } from '@/src/core/utils/useTranslation';

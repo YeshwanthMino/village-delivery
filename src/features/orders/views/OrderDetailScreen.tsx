@@ -13,7 +13,7 @@ import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Order } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { interpolate } from '@/src/base/constants/translations';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { BillSummaryCard } from '@/src/shared/components/BillSummaryCard';

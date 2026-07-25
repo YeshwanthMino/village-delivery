@@ -1,5 +1,6 @@
-import { CartRecord, CartSnapshot, CartSnapshotRecord, Order } from '@/src/base/types/village.types';
+import { CartRecord, CartSnapshot, CartSnapshotRecord } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
+import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
@@ -10,7 +11,6 @@ interface VillageState {
   cartSnapshots: CartSnapshotRecord;
   favs: Record<string, boolean>;
   locale: Locale;
-  orders: Order[];
   dynamicPrices: Record<string, number>;
 }
 
@@ -25,6 +25,8 @@ interface VillageActions {
   clearCart: () => void;
   setLocale: (locale: Locale) => Promise<void>;
   loadLocale: () => Promise<void>;
+  /** Restore the persisted cart. Call once on app start. */
+  hydrateCart: () => Promise<void>;
   registerDynamicPrices: (prices: Record<string, number>) => void;
 }
 
@@ -40,7 +42,6 @@ const initialState: VillageState = {
   cartSnapshots: {},
   favs: {},
   locale: 'en',
-  orders: [], // TEMP: empty for UI testing
   dynamicPrices: {},
 };
 
@@ -52,8 +53,29 @@ function parseCartKey(key: string): { productId: string; variantIndex: number | 
   return { productId: key, variantIndex: null };
 }
 
+interface PersistedCart {
+  cart: CartRecord;
+  cartSnapshots: CartSnapshotRecord;
+}
+
+function isPersistedCart(value: unknown): value is PersistedCart {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Partial<PersistedCart>;
+  return typeof candidate.cart === 'object' && candidate.cart !== null;
+}
+
 export const useVillageStore = create<VillageStore>((set, get) => ({
   ...initialState,
+
+  hydrateCart: async () => {
+    try {
+      const saved = await StoredPrefs.getCustomData<unknown>(StorageKeys.CART);
+      if (!isPersistedCart(saved)) return;
+      set({ cart: saved.cart, cartSnapshots: saved.cartSnapshots ?? {} });
+    } catch {
+      // A missing or unreadable cart is not worth failing app start over.
+    }
+  },
 
   addToCart: (key, snapshot, maxQuantity) =>
     set((state) => {
@@ -147,8 +169,19 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       } else {
         price = product.price;
       }
-      total += price * count * 20;
+      total += price * count * UNITS_PER_RUPEE;
     }
     return total;
   },
 }));
+
+// Persist the cart on every change rather than inside each action, so no future
+// mutation can forget to save. Fire-and-forget keeps the actions synchronous;
+// a failed write just means the cart is not restored after process death.
+useVillageStore.subscribe((state, prev) => {
+  if (state.cart === prev.cart && state.cartSnapshots === prev.cartSnapshots) return;
+  void StoredPrefs.setCustomData(StorageKeys.CART, {
+    cart: state.cart,
+    cartSnapshots: state.cartSnapshots,
+  }).catch(() => {});
+});

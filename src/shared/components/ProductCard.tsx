@@ -5,7 +5,8 @@ import { Text, TouchableOpacity, View, Image } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
-import { rupees, productSnapshot } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
+import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { CompactStepper } from './CompactStepper';
 import { useTranslation, localizeWeight } from '@/src/core/utils/useTranslation';
 

@@ -23,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import { requestPhoneNumber } from '@/src/native/PhoneHint';
+import { rupees } from '@/src/shared/utils/currency';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -506,7 +507,7 @@ const SuccessStep = ({ phone, onDone, grandTotal, itemCount }: SuccessStepProps)
       </View>
       <Text style={s.centeredTitle}>Order placed!</Text>
       <Text style={[s.centeredSubtitle, { textAlign: 'center', maxWidth: 240 }]}>
-        {itemCount} {itemCount === 1 ? 'item' : 'items'} · ₹{grandTotal} · arriving in{' '}
+        {itemCount} {itemCount === 1 ? 'item' : 'items'} · {rupees(grandTotal)} · arriving in{' '}
         <Text style={{ fontWeight: '800', color: '#0f172a' }}>12 min</Text>
       </Text>
       <View style={s.smsConfirm}>

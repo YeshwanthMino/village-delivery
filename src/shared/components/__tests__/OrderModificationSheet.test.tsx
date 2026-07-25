@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { OrderModificationSheet } from '../OrderModificationSheet';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 
 describe('OrderModificationSheet', () => {
   const mockStockInfo = [

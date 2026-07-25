@@ -73,6 +73,10 @@ export const StorageKeys = {
   IS_FIRST_LAUNCH: 'isFirstLaunch',
   LAST_APP_VERSION: 'lastAppVersion',
 
+  // Cart — survives process death, which is routine on the low-RAM devices
+  // this app targets.
+  CART: 'cart',
+
   // Location
   SERVICEABLE_VILLAGE: 'serviceable_village',
   SELECTED_ADDRESS_ID: 'selected_address_id',

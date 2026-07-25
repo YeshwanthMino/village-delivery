@@ -21,6 +21,7 @@ const FONT_TIMEOUT_MS = 3000;
 
 export default function RootLayout() {
   const loadLocale = useVillageStore((s) => s.loadLocale);
+  const hydrateCart = useVillageStore((s) => s.hydrateCart);
   const [fontTimedOut, setFontTimedOut] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -30,7 +31,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadLocale();
-  }, [loadLocale]);
+    // Restore the cart before first paint so a customer returning after the OS
+    // reclaimed the process does not find it empty.
+    void hydrateCart();
+  }, [loadLocale, hydrateCart]);
 
   useEffect(() => {
     const id = setTimeout(() => setFontTimedOut(true), FONT_TIMEOUT_MS);

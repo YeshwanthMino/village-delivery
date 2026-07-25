@@ -10,15 +10,14 @@
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
+import { toUnits as toRupeeUnits } from '@/src/shared/utils/currency';
 import { Order, OrderItem, OrderStatus, Bill } from '@/src/base/types/village.types';
 import { logger } from '@/src/base/services/logger';
 
 const BASE = WebService.villageBaseURL;
 
-// The display layer (rupees()) multiplies catalog "units" by 20; the API sends
-// real rupees. Divide on the way in so bills/prices render correctly — the same
-// convention CartSnapshot uses for API products.
-const UNIT_DIVISOR = 20;
+// The API sends real rupees; the app carries prices in internal units. Convert
+// on the way in — see shared/utils/currency for the convention.
 
 // The active store's `x-store-id` header is injected centrally by apiClient.
 
@@ -31,9 +30,9 @@ function pick(obj: any, keys: string[]): any {
   return undefined;
 }
 
-function toUnits(rupees: any): number {
-  const n = Number(rupees);
-  return Number.isFinite(n) ? n / UNIT_DIVISOR : 0;
+function toUnits(rupeeAmount: any): number {
+  const n = Number(rupeeAmount);
+  return Number.isFinite(n) ? toRupeeUnits(n) : 0;
 }
 
 const STATUS_MAP: Record<string, OrderStatus> = {
