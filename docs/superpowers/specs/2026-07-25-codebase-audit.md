@@ -9,8 +9,9 @@
 
 ## 0. Resolution status
 
-All findings were addressed across seven commits (`c5d6501`..`1a967a3`), each
-verified with `tsc --noEmit`, `eslint`, and the full suite.
+Every finding except H2 is now resolved, across two work sessions and the
+commits from `c5d6501` through `7254641`, each verified with `tsc --noEmit`,
+`eslint`, and the full test suite.
 
 | Finding | Status |
 |---|---|
@@ -18,15 +19,31 @@ verified with `tsc --noEmit`, `eslint`, and the full suite.
 | H1 ungated logging · H3 no memo · H4 cartCount selector · H5 money math in mock file · H7 no error boundary · H8 failing tests | **Fixed** |
 | H6 lists in ScrollView | **Partly fixed** — search (the unbounded one) virtualised; the rest are bounded static-catalog lists, one inside a scroll-driven animated header that needs visual verification |
 | M1 dead code · M2 dead compute · M3 unreachable UI · M5 route casts · M6 large modules · M7 per-unit writes · M8 stale verification · M9 three sheets | **Fixed** |
-| M4 `any` at API boundary | **Partly fixed** — auth boundary typed (and surfaced a real string/number id inconsistency); `homeLayoutMapper` (14) and `ordersApi` (10) remain |
-| L1 lint · L2 hardcoded version · L3 dead state · L5 duplicate key parsers | **Fixed** |
+| M4 `any` at API boundary | **Fixed** — all three named files (`homeLayoutMapper`, `productMapper`, `ordersApi`) typed at the raw-JSON boundary; auth boundary typed earlier, surfacing a real string/number id inconsistency |
+| L1 lint · L2 hardcoded version · L3 dead state · L4 i18n · L5 duplicate key parsers · L7 React Query for order placement | **Fixed** |
 | **H2 web tokens in localStorage** | **Not done — needs your decision.** Whether web is a shipping target determines whether this is an httpOnly-cookie change or a build gate. Cheap decision, expensive implementation. |
-| L4 i18n in OrderModificationSheet · L6 User-Agent spoof · L7 React Query for mutations | **Not done** — L6 needs a server-side fix; L4 and L7 are follow-on work |
-| L8 Telugu fonts always loaded | **Deliberately not done** — `loadLocale` accepts only `'en'` today, but the `'te'` rendering path is live in 36 places; removing the fonts would break it the moment Telugu returns |
+| L6 User-Agent spoof | **Not done — needs a server-side fix.** The workaround is correctly documented in `apiClient.ts`; nothing to change client-side until the API relaxes its filter. |
+| L8 Telugu fonts always loaded | **Deliberately not done** — `loadLocale` accepts only `'en'` today, but the `'te'` rendering path is live in 36+ places; removing the fonts would break it the moment Telugu returns |
+
+**Also found and fixed, not in the original audit:** API product prices
+rendered 20× too high in the cart (a ₹45 item read as ₹900) — `Product.price`
+carried two different units depending on whether it came from the static demo
+catalog or the API, and `productSnapshot` copied it verbatim. Fixed at the
+mapper boundary (see the `c60933e` commit) rather than patching call sites.
+Reorder from order history produced an empty cart for the same class of
+reason (no snapshot was built for API-sourced order lines).
+
+**Noticed but out of scope, not fixed:** `ordersApi.mapItem`'s
+`pick(raw, ['productId', 'product'])` treats `'product'` as a candidate value
+for `productId`, so when a line has `product` but no `productId`, it returns
+the whole product object stringified (`"[object Object]"`) instead of falling
+through to `product._id`. Pinned in `ordersApi.test.ts` with a comment; not
+fixed, since no test previously covered it and it's unrelated to the typing
+pass that found it.
 
 **Measured before → after:** ungated `console.*` 101 → 0 · failing tests 3 → 0 ·
-tests 97 → 143 · `React.memo` 0 → 4 · error boundaries 0 → 1 · `any` 129 → 88 ·
-largest component 1108 → 374 lines · verified-dead lines ~800 → 0.
+tests 97 → 232 · `React.memo` 0 → 4 · error boundaries 0 → 1 · `any` 129 → 61 ·
+largest component 1108 → 381 lines · verified-dead lines ~800 → 0.
 
 ---
 
