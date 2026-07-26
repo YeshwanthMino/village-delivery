@@ -73,7 +73,9 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
             <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
           )}
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
+              <View style={styles.progressGlow} />
+            </View>
           </View>
         </View>
 
@@ -92,11 +94,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: 10,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#3D5FE8',
     borderRadius: 17,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    shadowColor: '#16a34a',
+    shadowColor: '#3D5FE8',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -108,19 +110,37 @@ const styles = StyleSheet.create({
   count: { color: '#ffffff', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 },
   dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 16 },
   total: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
-  nudge: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
+  nudge: { color: '#A9C1FF', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
   nudgeAmount: { color: '#ffffff', fontWeight: '800' },
-  saved: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
+  saved: { color: '#A9C1FF', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
   savedAmount: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   progressTrack: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderRadius: 3,
-    marginTop: 6,
-    overflow: 'hidden',
+    marginTop: 8,
+    overflow: 'visible',
     width: '100%',
   },
-  progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 3 },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 3,
+    justifyContent: 'center',
+  },
+  progressGlow: {
+    position: 'absolute',
+    right: -4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#ffffff',
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 6,
+  },
   iconBox: {
     width: ICON_SIZE,
     height: ICON_SIZE,
