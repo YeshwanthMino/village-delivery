@@ -9,6 +9,8 @@ import type { AddressTag } from '@/src/features/location/domain/models';
 interface CheckoutBarProps {
   state: CheckoutState;
   grandTotal: number;
+  /** Rupee shortfall to the minimum order value — only used in the 'below_minimum' state. */
+  amountToMinimum?: number;
   /** Selected address tag + one-line summary — shown in the 'place' state. */
   addressTag?: AddressTag;
   addressLine?: string;
@@ -20,14 +22,33 @@ interface CheckoutBarProps {
 export const CheckoutBar = ({
   state,
   grandTotal,
+  amountToMinimum,
   addressTag,
   addressLine,
   onLogin,
   onSelectAddress,
   onPlaceOrder,
 }: CheckoutBarProps) => {
-  const { t, locale } = useTranslation();
+  const { t, tShopMoreToPlaceOrder, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
+
+  if (state === 'below_minimum') {
+    const shortfall = amountToMinimum ?? 0;
+    const progress = Math.min(1, grandTotal / (grandTotal + shortfall));
+
+    return (
+      <View style={styles.wrap}>
+        <View style={styles.blockedBar}>
+          <Text style={[styles.blockedText, teFont]}>
+            {tShopMoreToPlaceOrder(rupees(shortfall))}
+          </Text>
+          <View style={styles.blockedProgressTrack}>
+            <View style={[styles.blockedProgressFill, { width: `${progress * 100}%` }]} />
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   // States 'login' / 'address' are a single full-width green button.
   if (state !== 'place') {
@@ -156,4 +177,24 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   cta: { color: '#ffffff', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
+
+  blockedBar: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 16,
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  blockedText: { color: '#64748b', fontWeight: '700', fontSize: 13, textAlign: 'center' },
+  blockedProgressTrack: {
+    height: 3,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    marginTop: 8,
+    overflow: 'hidden',
+    width: 160,
+  },
+  blockedProgressFill: { height: '100%', backgroundColor: '#94a3b8', borderRadius: 3 },
 });
