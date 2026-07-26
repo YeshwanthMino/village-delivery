@@ -250,6 +250,9 @@ export const TRANSLATIONS: TranslationMap = {
   location_denied_inline: { te: 'మీరు లొకేషన్ యాక్సెస్ నిరాకరించారు. “మళ్ళీ ప్రయత్నించండి” నొక్కండి లేదా కింద సేవ్ చేసిన చిరునామా ఎంచుకోండి.', en: 'You denied location access. Tap “Try Again”, or choose a saved address below.' },
   // Toolbar + change-location sheet + loading gate
   delivery_in:            { te: 'డెలివరీ',                        en: 'Delivery in' },
+  arriving_from:          { te: 'నుండి వస్తోంది',                  en: 'Arriving from' },
+  nearest_store:          { te: 'మీ సమీప స్టోర్',                  en: 'your nearest store' },
+  delivery_eta_minutes:   { te: '30 నిమిషాలు',                    en: '30 min' },
   detecting_location:     { te: 'లొకేషన్ గుర్తిస్తోంది…',          en: 'Detecting location…' },
   finding_address:        { te: 'మీ చిరునామా కనుగొంటోంది',         en: 'Finding your address' },
   change_delivery_location:{ te: 'డెలివరీ లొకేషన్ మార్చండి',       en: 'Change delivery location' },
