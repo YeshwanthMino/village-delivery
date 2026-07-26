@@ -97,9 +97,9 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                     ) : count === 0 ? (
                       <TouchableOpacity
                         onPress={() => addToCart(key, productSnapshot(product, i), stock)}
-                        className="border-2 border-[#3D5FE8] rounded-lg h-9 px-4 items-center justify-center"
+                        className="border-2 border-green-600 rounded-lg h-9 px-4 items-center justify-center"
                       >
-                        <Text className="text-[#3D5FE8] font-bold text-sm">{t('add')}</Text>
+                        <Text className="text-green-700 font-bold text-sm">{t('add')}</Text>
                       </TouchableOpacity>
                     ) : (
                       <CompactStepper

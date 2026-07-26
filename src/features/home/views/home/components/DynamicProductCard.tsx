@@ -150,13 +150,13 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
-              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-[#3D5FE8]' : 'border-slate-200'}`}
+              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
-              <Text className={`font-bold text-sm ${product.inStock ? 'text-[#3D5FE8]' : 'text-slate-400'}`}>
+              <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
                 {t('add')}
               </Text>
               {view.optionsCount > 0 ? (
-                <Text className="text-[#3D5FE8] text-[10px] opacity-70">{tOptionCount(view.optionsCount)}</Text>
+                <Text className="text-green-700 text-[10px] opacity-70">{tOptionCount(view.optionsCount)}</Text>
               ) : null}
             </TouchableOpacity>
           ) : view.opensSheet ? (
@@ -164,7 +164,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               onPress={openSheet}
               accessibilityRole="button"
               accessibilityLabel={tVariantCartLabel(view.count)}
-              className="flex-row items-center justify-between bg-[#3D5FE8] rounded-xl px-2 py-2"
+              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
             >
               {/* The − / count / + below are display only — the whole row opens
                   the sheet as one control, so these two Views intentionally
@@ -178,7 +178,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               </View>
             </TouchableOpacity>
           ) : (
-            <View className="flex-row items-center justify-between bg-[#3D5FE8] rounded-xl px-2 py-2">
+            <View className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2">
               <TouchableOpacity testID="stepper-dec" onPress={() => decFromCart(product.id)} hitSlop={6}>
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>
