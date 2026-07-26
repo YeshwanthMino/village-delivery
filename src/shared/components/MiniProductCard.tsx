@@ -47,10 +47,10 @@ const MiniProductCardComponent = ({ product, openVariants }: MiniProductCardProp
 
         <TouchableOpacity
           onPress={handleAdd}
-          className="border border-green-600 rounded-md h-7 items-center justify-center mt-1"
+          className="border border-[#3D5FE8] rounded-md h-7 items-center justify-center mt-1"
         >
           <Text
-            className="text-green-700 font-bold text-[10px] px-2"
+            className="text-[#3D5FE8] font-bold text-[10px] px-2"
             style={locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined}
           >
             {t('add')}

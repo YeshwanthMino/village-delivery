@@ -147,10 +147,10 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
             variantCount === 0 ? (
               <TouchableOpacity
                 onPress={() => openVariants(product)}
-                className="border-2 border-green-600 rounded-lg h-11 flex-row items-center justify-center gap-1"
+                className="border-2 border-[#3D5FE8] rounded-lg h-11 flex-row items-center justify-center gap-1"
               >
-                <Text className="text-green-700 font-bold text-base" style={teFont}>{t('add')}</Text>
-                <ChevronDown size={14} color="#15803d" />
+                <Text className="text-[#3D5FE8] font-bold text-base" style={teFont}>{t('add')}</Text>
+                <ChevronDown size={14} color="#3D5FE8" />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -165,9 +165,9 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
             <TouchableOpacity
               disabled={!canAdd}
               onPress={() => addToCart(product.id, productSnapshot(product, null), stock)}
-              className={`border-2 rounded-lg h-11 items-center justify-center ${canAdd ? 'border-green-600' : 'border-slate-300 opacity-50'}`}
+              className={`border-2 rounded-lg h-11 items-center justify-center ${canAdd ? 'border-[#3D5FE8]' : 'border-slate-300 opacity-50'}`}
             >
-              <Text className={`font-bold text-base ${canAdd ? 'text-green-700' : 'text-slate-400'}`} style={teFont}>{t('add')}</Text>
+              <Text className={`font-bold text-base ${canAdd ? 'text-[#3D5FE8]' : 'text-slate-400'}`} style={teFont}>{t('add')}</Text>
             </TouchableOpacity>
           ) : (
             <CompactStepper
