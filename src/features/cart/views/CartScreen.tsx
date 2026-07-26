@@ -101,6 +101,7 @@ export const CartScreen = () => {
   const checkoutState = deriveCheckoutState({
     isAuthenticated: addr.isAuthenticated,
     hasAddress,
+    belowMinimum: vm.bill.belowMinimum,
   });
   const addressLine = addr.selectedAddress
     ? [addr.selectedAddress.addressLine1, addr.selectedAddress.villageName].filter(Boolean).join(', ')
@@ -310,6 +311,7 @@ export const CartScreen = () => {
       <CheckoutBar
         state={checkoutState}
         grandTotal={vm.bill.grandTotal}
+        amountToMinimum={vm.bill.amountToMinimum}
         addressTag={addr.selectedAddress?.tag}
         addressLine={addressLine}
         onLogin={() => setSheet('login')}
