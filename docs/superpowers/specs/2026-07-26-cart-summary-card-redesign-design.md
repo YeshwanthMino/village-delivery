@@ -133,9 +133,12 @@ from its text content, not from padding.
     weight, ~12px, mint-tinted white (`#d1fae5`).
   - A 2px hairline progress bar below both rows, fill proportional to
     `grandTotal / (MIN_ORDER_VALUE_RUPEES / UNITS_PER_RUPEE)`.
-  - A 26px square thumbnail on the right showing the **last-added item's**
-    image (falling back to its emoji, matching `CartItemRow`'s existing
-    image/emoji fallback pattern).
+  - A stacked cluster of up to 3 thumbnails on the right, fanned/overlapping
+    (26px tiles, offset ~9px horizontally / 2px vertically each, white
+    border, front-to-back = most-to-least recently added distinct product).
+    Fewer than 3 distinct products in the cart means fewer tiles — no empty
+    placeholders. Each tile falls back to the item's emoji when it has no
+    image, matching `CartItemRow`'s existing fallback pattern.
 - **At/above ₹199:**
   - Single row: `"{count} ITEMS · {rupees(grandTotal)}"` on the left,
     `"View cart →"` action text on the right. No thumbnail, no progress bar —
@@ -158,7 +161,8 @@ checkout — it does not hide the card).
 - `deriveCheckoutState`: extend existing tests with `belowMinimum: true`
   cases, confirming it wins over `login`/`address`.
 - `CartSummaryCard`: snapshot/render tests for both states (below/at-minimum),
-  thumbnail fallback (image vs. emoji), and that tap always fires `onPress`.
+  thumbnail-cluster count (1, 2, 3+ distinct products), thumbnail fallback
+  (image vs. emoji), and that tap always fires `onPress`.
 - `CheckoutBar`: render test for the new blocked state (non-interactive,
   correct nudge text).
 
@@ -167,7 +171,3 @@ checkout — it does not hide the card).
 1. The ₹199 gate compares against **`grandTotal`** (post-coupon), not
    `itemTotal`. If coupons should be excluded from eligibility, this needs to
    change to `itemTotal`.
-2. The thumbnail shows the **last-added item** (mirrors the reference
-   screenshot). No explicit sign-off was given on this specific point during
-   design — flagging it here for confirmation rather than assuming silence
-   means yes.
