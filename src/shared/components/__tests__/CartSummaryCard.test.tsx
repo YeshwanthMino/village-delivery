@@ -13,13 +13,19 @@ jest.mock('@/src/core/store', () => ({
   ),
 }));
 
+// jest.mock factories can only reference out-of-scope variables prefixed
+// with "mock" (Jest's hoisting rule) — hence the name here.
+const mockRawTemplates: Record<string, string> = {
+  order_ready_to_place: 'Ready to place your order!',
+  shop_more_to_place_order: 'Shop for {n} more to place order',
+  saved_amount: 'SAVED {n}',
+};
+
 jest.mock('@/src/core/utils/useTranslation', () => ({
   useTranslation: () => ({
     locale: 'en',
-    t: (key: string) => (key === 'order_ready_to_place' ? 'Ready to place your order!' : key),
+    t: (key: string) => mockRawTemplates[key] ?? key,
     tCartSummaryCount: (n: number) => `${n} ITEMS`,
-    tShopMoreToPlaceOrder: (amount: string) => `Shop for ${amount} more to place order`,
-    tSavedAmount: (amount: string) => `SAVED ${amount}`,
   }),
 }));
 

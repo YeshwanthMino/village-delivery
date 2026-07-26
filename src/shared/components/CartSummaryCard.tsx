@@ -14,10 +14,18 @@ interface CartSummaryCardProps {
 const TAB_BAR_CONTENT_HEIGHT = 64;
 const ICON_SIZE = 40;
 
+/** Splits a `{n}` template into the text either side of the placeholder, so
+ *  the amount itself can be rendered as a separately-styled nested `<Text>`
+ *  instead of one uniform run. */
+function splitOnAmount(template: string): [string, string] {
+  const [prefix = '', suffix = ''] = template.split('{n}');
+  return [prefix, suffix];
+}
+
 export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps) => {
   const cart = useVillageStore(state => state.cart);
   const cartSnapshots = useVillageStore(state => state.cartSnapshots);
-  const { t, tCartSummaryCount, tShopMoreToPlaceOrder, tSavedAmount } = useTranslation();
+  const { t, tCartSummaryCount } = useTranslation();
 
   const cartItems = React.useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);
   const bill = React.useMemo(() => computeBill(cartItems), [cartItems]);
@@ -31,6 +39,9 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   // bill.amountToMinimum is already clamped to 0 at/above the minimum (see
   // computeBill), so this is max(0, minimumOrderValue - cartTotal) verbatim.
   const progress = Math.min(1, Math.max(0, bill.grandTotal / bill.minOrderValue));
+
+  const [nudgePrefix, nudgeSuffix] = splitOnAmount(t('shop_more_to_place_order'));
+  const [savedPrefix, savedSuffix] = splitOnAmount(t('saved_amount'));
 
   return (
     <TouchableOpacity
@@ -47,9 +58,17 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
             <Text style={styles.total}>{rupees(bill.grandTotal)}</Text>
           </View>
           {bill.belowMinimum ? (
-            <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupeesCeil(bill.amountToMinimum))}</Text>
+            <Text style={styles.nudge}>
+              {nudgePrefix}
+              <Text style={styles.nudgeAmount}>{rupeesCeil(bill.amountToMinimum)}</Text>
+              {nudgeSuffix}
+            </Text>
           ) : bill.totalSavings > 0 ? (
-            <Text style={styles.saved}>{tSavedAmount(rupees(bill.totalSavings))}</Text>
+            <Text style={styles.saved}>
+              {savedPrefix}
+              <Text style={styles.savedAmount}>{rupees(bill.totalSavings)}</Text>
+              {savedSuffix}
+            </Text>
           ) : (
             <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
           )}
@@ -90,7 +109,9 @@ const styles = StyleSheet.create({
   dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 16 },
   total: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
   nudge: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
-  saved: { color: '#ffffff', fontWeight: '700', fontSize: 13, letterSpacing: 0.5, marginTop: 3 },
+  nudgeAmount: { color: '#ffffff', fontWeight: '800' },
+  saved: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
+  savedAmount: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   progressTrack: {
     height: 3,
     backgroundColor: 'rgba(255,255,255,0.22)',
