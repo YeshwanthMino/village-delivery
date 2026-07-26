@@ -17,7 +17,7 @@ const ICON_SIZE = 40;
 export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps) => {
   const cart = useVillageStore(state => state.cart);
   const cartSnapshots = useVillageStore(state => state.cartSnapshots);
-  const { tCartSummaryCount, tShopMoreToPlaceOrder } = useTranslation();
+  const { t, tCartSummaryCount, tShopMoreToPlaceOrder, tSavedAmount } = useTranslation();
 
   const cartItems = React.useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);
   const bill = React.useMemo(() => computeBill(cartItems), [cartItems]);
@@ -46,7 +46,16 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
             <Text style={styles.dot}>{'·'}</Text>
             <Text style={styles.total}>{rupees(bill.grandTotal)}</Text>
           </View>
-          <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupeesCeil(bill.amountToMinimum))}</Text>
+          {bill.belowMinimum ? (
+            <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupeesCeil(bill.amountToMinimum))}</Text>
+          ) : bill.totalSavings > 0 ? (
+            <>
+              <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
+              <Text style={styles.saved}>{tSavedAmount(rupees(bill.totalSavings))}</Text>
+            </>
+          ) : (
+            <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
+          )}
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
@@ -84,6 +93,7 @@ const styles = StyleSheet.create({
   dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 15 },
   total: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
   nudge: { color: '#d1fae5', fontWeight: '600', fontSize: 13, marginTop: 2 },
+  saved: { color: '#ffffff', fontWeight: '800', fontSize: 14, letterSpacing: 0.3, marginTop: 1 },
   progressTrack: {
     height: 3,
     backgroundColor: 'rgba(255,255,255,0.22)',

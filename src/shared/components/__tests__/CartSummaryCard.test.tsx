@@ -16,9 +16,10 @@ jest.mock('@/src/core/store', () => ({
 jest.mock('@/src/core/utils/useTranslation', () => ({
   useTranslation: () => ({
     locale: 'en',
-    t: (key: string) => key,
+    t: (key: string) => (key === 'order_ready_to_place' ? 'Ready to place your order!' : key),
     tCartSummaryCount: (n: number) => `${n} ITEMS`,
     tShopMoreToPlaceOrder: (amount: string) => `Shop for ${amount} more to place order`,
+    tSavedAmount: (amount: string) => `SAVED ${amount}`,
   }),
 }));
 
@@ -59,17 +60,29 @@ describe('CartSummaryCard', () => {
     expect(screen.getByTestId('cart-summary-icon')).toBeTruthy();
   });
 
-  test('at/above minimum: keeps the same compact card, no bottom-bar CTA', () => {
+  test('at/above minimum with no discount: keeps the same compact card, no shortfall/savings line, no bottom-bar CTA', () => {
     mockCart = { p1: 1 };
-    mockSnapshots = { p1: snapshot('p1', 250) };
+    mockSnapshots = { p1: snapshot('p1', 250) }; // mrp === price, no savings
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.getByText('1 ITEMS')).toBeTruthy();
     expect(screen.getByText('₹250')).toBeTruthy();
-    // Shortfall clamps to 0 (max(0, minimumOrderValue - cartTotal)), never negative.
-    expect(screen.getByText('Shop for ₹0 more to place order')).toBeTruthy();
+    expect(screen.getByText('Ready to place your order!')).toBeTruthy();
+    expect(screen.queryByText(/Shop for/)).toBeNull();
+    expect(screen.queryByText(/SAVED/)).toBeNull();
     expect(screen.queryByText('View cart →')).toBeNull();
+  });
+
+  test('at/above minimum with a discount: shows the saved amount instead of the shortfall message', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 250, { mrp: toUnits(285) }) }; // saved ₹35
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.getByText('Ready to place your order!')).toBeTruthy();
+    expect(screen.getByText('SAVED ₹35')).toBeTruthy();
+    expect(screen.queryByText(/Shop for/)).toBeNull();
   });
 
   test('shows the most-recently-added item as the icon', () => {

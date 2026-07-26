@@ -43,9 +43,13 @@ export function useTranslation() {
     return interpolate(translate('shop_more_to_place_order', locale), amountText);
   }
 
+  function tSavedAmount(amountText: string): string {
+    return interpolate(translate('saved_amount', locale), amountText);
+  }
+
   return {
     t, tEta, tItemCount, tDiscount, tOptionCount, tVariantCartLabel,
-    tCartSummaryCount, tShopMoreToPlaceOrder, locale,
+    tCartSummaryCount, tShopMoreToPlaceOrder, tSavedAmount, locale,
   };
 }
 

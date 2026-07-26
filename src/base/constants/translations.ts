@@ -95,6 +95,8 @@ export const TRANSLATIONS: TranslationMap = {
   view_cart_arrow:     { te: 'కార్ట్ చూడండి →',                                   en: 'View cart →' },
   cart_summary_count:  { te: '{n} వస్తువులు',                                     en: '{n} ITEMS' },
   shop_more_to_place_order: { te: 'ఆర్డర్ చేయడానికి ఇంకా {n} కొనండి',              en: 'Shop for {n} more to place order' },
+  order_ready_to_place: { te: 'మీ ఆర్డర్ సిద్ధంగా ఉంది!',                          en: 'Ready to place your order!' },
+  saved_amount:         { te: 'ఆదా చేసారు {n}',                                   en: 'SAVED {n}' },
 
   // Coupon row
   coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
