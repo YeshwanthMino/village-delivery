@@ -89,7 +89,7 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
           )}
           <View style={styles.progressTrack}>
             <LinearGradient
-              colors={['#8FA8FF', '#ffffff']}
+              colors={['#86efac', '#ffffff']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.progressFill, { width: `${progress * 100}%` }]}
@@ -107,7 +107,7 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
               <Text style={styles.iconEmoji}>{recentItem?.emoji}</Text>
             )}
             <View style={styles.chevronBadge}>
-              <ChevronRight size={10} color="#3D5FE8" strokeWidth={3} />
+              <ChevronRight size={10} color="#16a34a" strokeWidth={3} />
             </View>
           </View>
           <Text style={styles.viewCartCaption}>{t('view_cart')}</Text>
@@ -120,11 +120,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: 10,
-    backgroundColor: '#3D5FE8',
+    backgroundColor: '#16a34a',
     borderRadius: 17,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    shadowColor: '#3D5FE8',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
   count: { color: '#ffffff', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 },
   dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 16 },
   total: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
-  nudge: { color: '#A9C1FF', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
+  nudge: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
   nudgeAmount: { color: '#ffffff', fontWeight: '800' },
-  saved: { color: '#A9C1FF', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
+  saved: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
   savedAmount: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   progressTrack: {
     height: 3,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
-    borderColor: '#3D5FE8',
+    borderColor: '#16a34a',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
