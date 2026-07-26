@@ -14,8 +14,8 @@ interface CartSummaryCardProps {
 
 const TAB_BAR_CONTENT_HEIGHT = 64;
 const MAX_THUMBNAILS = 3;
-const CHIP_SIZE = 32;
-const CHIP_OFFSET = 12;
+const CHIP_SIZE = 26;
+const CHIP_OFFSET = 9;
 
 /** Most-recently-added distinct products first, capped at `max`. Cart keys
  *  preserve insertion order, so scanning from the end surfaces recent adds;
@@ -102,11 +102,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 10,
+    marginHorizontal: 9,
     backgroundColor: '#0f5132',
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    borderRadius: 11,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
     shadowColor: '#0f5132',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
@@ -121,14 +121,14 @@ const styles = StyleSheet.create({
   total: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
   nudge: { color: '#d1fae5', fontWeight: '600', fontSize: 12, marginTop: 2 },
   progressTrack: {
-    height: 3,
+    height: 2,
     backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 3,
+    borderRadius: 2,
     marginTop: 6,
     overflow: 'hidden',
-    width: 160,
+    width: 140,
   },
-  progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 2 },
   actionRow: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
   actionText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
   stack: { height: CHIP_SIZE + 6, marginLeft: 10 },
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CHIP_SIZE,
     height: CHIP_SIZE,
-    borderRadius: 8,
+    borderRadius: 6,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#0f5132',
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  chipImage: { width: '100%', height: '100%', borderRadius: 6 },
-  chipEmoji: { fontSize: 14 },
+  chipImage: { width: '100%', height: '100%', borderRadius: 5 },
+  chipEmoji: { fontSize: 11 },
 });
