@@ -17,7 +17,7 @@ export { BillSummaryCard } from './BillSummaryCard';
 export { CheckoutBar } from './CheckoutBar';
 export { PaymentMethodSection } from './PaymentMethodSection';
 export type { PaymentMethod } from './PaymentMethodSection';
-export { FloatingCartPill } from './FloatingCartPill';
+export { CartSummaryCard } from './CartSummaryCard';
 export { EmptyCart } from './EmptyCart';
 export { Skeleton } from './Skeleton';
 export { OrderModificationSheet } from './OrderModificationSheet';

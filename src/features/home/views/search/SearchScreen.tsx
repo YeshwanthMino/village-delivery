@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, X } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,16 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FloatingCartPill } from '@/src/shared/components';
+import { CartSummaryCard } from '@/src/shared/components';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
-import { Product } from '@/src/base/types/village.types';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { useSearchViewModel } from '../../viewmodel/search/useSearchViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
-import { useStoreId } from '@/src/core/utils/getStoreId';
-import { getProductDetail } from '@/src/features/product/data/productDetailApi';
-import { logger } from '@/src/base/services/logger';
+import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const SearchScreen = () => {
   const router = useRouter();
@@ -27,37 +24,11 @@ export const SearchScreen = () => {
   const vm = useSearchViewModel();
   const inputRef = useRef<TextInput>(null);
   const { t } = useTranslation();
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
-  const storeId = useStoreId();
+  const sheet = useVariantSheet();
   // Standalone route (no tab bar). Reserve only enough for the floating cart pill.
   const scrollPadding = 96;
 
   const goToCart = () => router.push('/cart');
-
-  const handleOpenVariants = async (product: Product) => {
-    setIsLoadingVariants(true);
-    try {
-      const fullProduct = await getProductDetail(storeId, product.id);
-      setSelectedProduct({
-        id: fullProduct.id,
-        categoryId: '',
-        name: fullProduct.title,
-        nameTE: fullProduct.teluguTitle || '',
-        weight: '',
-        price: fullProduct.price,
-        mrp: fullProduct.mrp,
-        rating: 0,
-        reviews: 0,
-        image: fullProduct.image,
-        variants: fullProduct.variants,
-      });
-    } catch (error) {
-      logger.error('Failed to fetch product details:', error);
-    } finally {
-      setIsLoadingVariants(false);
-    }
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['bottom', 'left', 'right']}>
@@ -144,7 +115,7 @@ export const SearchScreen = () => {
               <DynamicProductCard
                 product={item}
                 width="100%"
-                onOpenVariants={handleOpenVariants}
+                onOpenVariants={sheet.open}
               />
             </View>
           )}
@@ -153,12 +124,12 @@ export const SearchScreen = () => {
 
       {/* ── Overlays ── */}
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} bottomOffset={0} />
+        <CartSummaryCard onPress={goToCart} bottomOffset={0} />
       )}
 
       <VariantBottomSheet
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        product={sheet.product}
+        onClose={sheet.close}
       />
     </SafeAreaView>
   );

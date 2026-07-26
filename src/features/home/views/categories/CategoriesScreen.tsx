@@ -3,7 +3,7 @@ import { Search } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FloatingCartPill } from '@/src/shared/components';
+import { CartSummaryCard } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useCategoriesViewModel } from '../../viewmodel/categories/useCategoriesViewModel';
 import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
@@ -81,7 +81,7 @@ export const CategoriesScreen = () => {
       </ScrollView>
 
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={() => router.push('/cart')} />
+        <CartSummaryCard onPress={() => router.push('/cart')} />
       )}
     </SafeAreaView>
   );

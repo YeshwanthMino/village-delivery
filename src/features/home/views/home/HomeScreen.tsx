@@ -3,7 +3,7 @@ import { Bell, Search, ShoppingCart } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FloatingCartPill, VariantBottomSheet } from '@/src/shared/components';
+import { CartSummaryCard, VariantBottomSheet } from '@/src/shared/components';
 import { useHomeViewModel } from '../../viewmodel/home/useHomeViewModel';
 import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
 import { HomeSections } from './components/HomeSections';
@@ -196,7 +196,7 @@ export const HomeScreen = () => {
       )}
 
       {/* Overlays */}
-      {vm.cartCount > 0 && <FloatingCartPill count={vm.cartCount} onPress={goToCart} />}
+      {vm.cartCount > 0 && <CartSummaryCard onPress={goToCart} />}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
 
       <LocationPermissionSheet

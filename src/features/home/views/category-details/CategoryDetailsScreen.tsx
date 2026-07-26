@@ -1,50 +1,21 @@
 import { ArrowLeft, Search } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FloatingCartPill } from '@/src/shared/components';
+import { CartSummaryCard } from '@/src/shared/components';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
-import { Product } from '@/src/base/types/village.types';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { SubcategoryRail } from './components/SubcategoryRail';
 import { useCategoryDetailsViewModel } from '../../viewmodel/categories/useCategoryDetailsViewModel';
-import { useStoreId } from '@/src/core/utils/getStoreId';
-import { getProductDetail } from '@/src/features/product/data/productDetailApi';
-import { logger } from '@/src/base/services/logger';
+import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const CategoryDetailsScreen = () => {
   const router = useRouter();
   const vm = useCategoryDetailsViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
-  const storeId = useStoreId();
-
-  const handleOpenVariants = async (product: Product) => {
-    setIsLoadingVariants(true);
-    try {
-      const fullProduct = await getProductDetail(storeId, product.id);
-      setSelectedProduct({
-        id: fullProduct.id,
-        categoryId: '',
-        name: fullProduct.title,
-        nameTE: fullProduct.teluguTitle || '',
-        weight: '',
-        price: fullProduct.price,
-        mrp: fullProduct.mrp,
-        rating: 0,
-        reviews: 0,
-        image: fullProduct.image,
-        variants: fullProduct.variants,
-      });
-    } catch (error) {
-      logger.error('Failed to fetch product details:', error);
-    } finally {
-      setIsLoadingVariants(false);
-    }
-  };
+  const sheet = useVariantSheet();
 
   useEffect(() => {
     slideAnim.setValue(390);
@@ -114,7 +85,7 @@ export const CategoryDetailsScreen = () => {
                   <DynamicProductCard
                     product={item}
                     width="100%"
-                    onOpenVariants={handleOpenVariants}
+                    onOpenVariants={sheet.open}
                   />
                 </View>
               )}
@@ -141,12 +112,12 @@ export const CategoryDetailsScreen = () => {
       </Animated.View>
 
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={() => router.push('/cart')} bottomOffset={0} />
+        <CartSummaryCard onPress={() => router.push('/cart')} bottomOffset={0} />
       )}
 
       <VariantBottomSheet
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        product={sheet.product}
+        onClose={sheet.close}
       />
     </SafeAreaView>
   );
