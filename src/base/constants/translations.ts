@@ -252,7 +252,7 @@ export const TRANSLATIONS: TranslationMap = {
   delivery_in:            { te: 'డెలివరీ',                        en: 'Delivery in' },
   arriving_from:          { te: 'నుండి వస్తోంది',                  en: 'Arriving from' },
   nearest_store:          { te: 'మీ సమీప స్టోర్',                  en: 'your nearest store' },
-  delivery_eta_minutes:   { te: '30 నిమిషాలు',                    en: '30 min' },
+  delivery_eta_minutes:   { te: '60 నిమిషాలు',                    en: '60 min' },
   detecting_location:     { te: 'లొకేషన్ గుర్తిస్తోంది…',          en: 'Detecting location…' },
   finding_address:        { te: 'మీ చిరునామా కనుగొంటోంది',         en: 'Finding your address' },
   change_delivery_location:{ te: 'డెలివరీ లొకేషన్ మార్చండి',       en: 'Change delivery location' },
