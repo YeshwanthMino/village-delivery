@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginTop: 6,
     overflow: 'hidden',
-    width: 216,
+    width: '100%',
   },
   progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 3 },
   iconBox: {
