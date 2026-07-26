@@ -23,6 +23,9 @@ export const MOCK_ORDERS: Order[] = [
       grandTotal:     10.85,
       totalSavings:    1.50,
       totalCount:      6,
+      minOrderValue:   9.95,
+      belowMinimum:    false,
+      amountToMinimum: 0,
     },
   },
 
@@ -47,6 +50,9 @@ export const MOCK_ORDERS: Order[] = [
       grandTotal:     9.10,
       totalSavings:   1.50,
       totalCount:     4,
+      minOrderValue:   9.95,
+      belowMinimum:    true,
+      amountToMinimum: 0.85,
     },
   },
 
@@ -71,6 +77,9 @@ export const MOCK_ORDERS: Order[] = [
       grandTotal:    10.10,
       totalSavings:   1.25,
       totalCount:     3,
+      minOrderValue:   9.95,
+      belowMinimum:    false,
+      amountToMinimum: 0,
     },
   },
 
@@ -96,6 +105,9 @@ export const MOCK_ORDERS: Order[] = [
       grandTotal:     6.60,
       totalSavings:   1.50,
       totalCount:     5,
+      minOrderValue:   9.95,
+      belowMinimum:    true,
+      amountToMinimum: 3.35,
     },
   },
 
@@ -120,6 +132,9 @@ export const MOCK_ORDERS: Order[] = [
       grandTotal:     8.60,
       totalSavings:   1.75,
       totalCount:     2,
+      minOrderValue:   9.95,
+      belowMinimum:    true,
+      amountToMinimum: 1.35,
     },
   },
 ];

@@ -102,6 +102,12 @@ export interface Bill {
   grandTotal: number;
   totalSavings: number;
   totalCount: number;
+  /** The order's minimum required value (internal units) to be eligible for checkout. */
+  minOrderValue: number;
+  /** True when grandTotal is under minOrderValue. */
+  belowMinimum: boolean;
+  /** Shortfall (internal units) to reach minOrderValue; 0 when not belowMinimum. */
+  amountToMinimum: number;
 }
 
 export type SortKey = 'popular' | 'price_asc' | 'price_desc' | 'rating';

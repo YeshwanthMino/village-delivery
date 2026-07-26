@@ -100,6 +100,9 @@ export function getCartItems(
 /** Maximum rupee value of the percentage coupon. */
 const COUPON_CAP_RUPEES = 40;
 
+/** Minimum order value, in rupees, required to place an order. */
+const MIN_ORDER_VALUE_RUPEES = 199;
+
 export function computeBill(
   items: CartLineItem[],
   opts?: { couponApplied?: boolean }
@@ -123,5 +126,12 @@ export function computeBill(
   const grandTotal = itemTotal + deliveryFee + platformFee - couponDiscount;
   const totalSavings = itemDiscount + couponDiscount;
 
-  return { itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, grandTotal, totalSavings, totalCount };
+  const minOrderValue = MIN_ORDER_VALUE_RUPEES / UNITS_PER_RUPEE;
+  const belowMinimum = grandTotal < minOrderValue;
+  const amountToMinimum = belowMinimum ? minOrderValue - grandTotal : 0;
+
+  return {
+    itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount,
+    grandTotal, totalSavings, totalCount, minOrderValue, belowMinimum, amountToMinimum,
+  };
 }
