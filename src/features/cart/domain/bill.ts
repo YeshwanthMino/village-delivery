@@ -103,6 +103,23 @@ const COUPON_CAP_RUPEES = 40;
 /** Minimum order value, in rupees, required to place an order. */
 const MIN_ORDER_VALUE_RUPEES = 199;
 
+/**
+ * Derive the minimum-order-value fields from a grand total.
+ * Returns minOrderValue (threshold in units), belowMinimum (flag), and
+ * amountToMinimum (shortfall). Exported so both computeBill and buildBill
+ * (in ordersApi) apply the same ₹199 rule consistently.
+ */
+export function deriveMinOrderFields(grandTotal: number): {
+  minOrderValue: number;
+  belowMinimum: boolean;
+  amountToMinimum: number;
+} {
+  const minOrderValue = MIN_ORDER_VALUE_RUPEES / UNITS_PER_RUPEE;
+  const belowMinimum = grandTotal < minOrderValue;
+  const amountToMinimum = belowMinimum ? minOrderValue - grandTotal : 0;
+  return { minOrderValue, belowMinimum, amountToMinimum };
+}
+
 export function computeBill(
   items: CartLineItem[],
   opts?: { couponApplied?: boolean }
@@ -126,9 +143,7 @@ export function computeBill(
   const grandTotal = itemTotal + deliveryFee + platformFee - couponDiscount;
   const totalSavings = itemDiscount + couponDiscount;
 
-  const minOrderValue = MIN_ORDER_VALUE_RUPEES / UNITS_PER_RUPEE;
-  const belowMinimum = grandTotal < minOrderValue;
-  const amountToMinimum = belowMinimum ? minOrderValue - grandTotal : 0;
+  const { minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotal);
 
   return {
     itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount,

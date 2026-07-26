@@ -10,9 +10,10 @@
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
-import { toUnits as toRupeeUnits, UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
+import { toUnits as toRupeeUnits } from '@/src/shared/utils/currency';
 import { Order, OrderItem, OrderStatus, Bill } from '@/src/base/types/village.types';
 import { logger } from '@/src/base/services/logger';
+import { deriveMinOrderFields } from '@/src/features/cart/domain/bill';
 
 const BASE = WebService.villageBaseURL;
 
@@ -103,10 +104,7 @@ function buildBill(items: OrderItem[], orderTotalRupees: unknown): Bill {
   const itemDiscount = Math.max(0, mrpTotal - itemTotal);
   const grandTotal = orderTotalRupees != null ? toUnits(orderTotalRupees) : itemTotal;
 
-  const MIN_ORDER_VALUE_RUPEES = 199;
-  const minOrderValue = MIN_ORDER_VALUE_RUPEES / UNITS_PER_RUPEE;
-  const belowMinimum = grandTotal < minOrderValue;
-  const amountToMinimum = belowMinimum ? minOrderValue - grandTotal : 0;
+  const { minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotal);
 
   return {
     itemTotal,

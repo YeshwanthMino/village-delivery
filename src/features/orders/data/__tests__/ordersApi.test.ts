@@ -120,6 +120,24 @@ describe('mapOrder', () => {
     });
     expect(order?.deliveryAddress).toBe('12 MG Road, Kondapur, 500084');
   });
+
+  test('flags belowMinimum when bill total is under ₹199', () => {
+    const order = mapOrder({
+      _id: 'o1',
+      products: [{ productId: 'p1', name: 'Item', price: 100, quantity: 1 }],
+    });
+    expect(order?.bill.belowMinimum).toBe(true);
+    expect(order?.bill.amountToMinimum).toBeGreaterThan(0);
+  });
+
+  test('does not flag belowMinimum when bill total is at or above ₹199', () => {
+    const order = mapOrder({
+      _id: 'o1',
+      products: [{ productId: 'p1', name: 'Item', price: 200, quantity: 1 }],
+    });
+    expect(order?.bill.belowMinimum).toBe(false);
+    expect(order?.bill.amountToMinimum).toBe(0);
+  });
 });
 
 describe('listOrders / getOrderDetail', () => {
