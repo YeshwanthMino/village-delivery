@@ -1,6 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useVillageStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
@@ -26,6 +28,18 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   const cart = useVillageStore(state => state.cart);
   const cartSnapshots = useVillageStore(state => state.cartSnapshots);
   const { t, tCartSummaryCount } = useTranslation();
+
+  // The glowing dot at the progress bar's leading edge blinks continuously —
+  // a breathing opacity loop, not a one-shot animation.
+  const glowPulse = useSharedValue(1);
+  React.useEffect(() => {
+    glowPulse.value = withRepeat(
+      withTiming(0.35, { duration: 650, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, [glowPulse]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glowPulse.value }));
 
   const cartItems = React.useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);
   const bill = React.useMemo(() => computeBill(cartItems), [cartItems]);
@@ -73,9 +87,14 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
             <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
           )}
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
-              <View style={styles.progressGlow} />
-            </View>
+            <LinearGradient
+              colors={['#8FA8FF', '#ffffff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.progressFill, { width: `${progress * 100}%` }]}
+            >
+              <Animated.View style={[styles.progressGlow, glowStyle]} />
+            </LinearGradient>
           </View>
         </View>
 
@@ -124,7 +143,6 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#ffffff',
     borderRadius: 3,
     justifyContent: 'center',
   },
