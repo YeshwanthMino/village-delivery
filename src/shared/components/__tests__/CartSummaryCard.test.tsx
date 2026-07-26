@@ -16,7 +16,7 @@ jest.mock('@/src/core/store', () => ({
 jest.mock('@/src/core/utils/useTranslation', () => ({
   useTranslation: () => ({
     locale: 'en',
-    t: (key: string) => (key === 'view_cart_arrow' ? 'View cart →' : key),
+    t: (key: string) => key,
     tCartSummaryCount: (n: number) => `${n} ITEMS`,
     tShopMoreToPlaceOrder: (amount: string) => `Shop for ${amount} more to place order`,
   }),
@@ -47,7 +47,7 @@ describe('CartSummaryCard', () => {
     expect(toJSON()).toBeNull();
   });
 
-  test('below minimum: shows count, total, and the nudge message', () => {
+  test('below minimum: shows count, total, the nudge message, and the icon', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 100) };
 
@@ -56,40 +56,42 @@ describe('CartSummaryCard', () => {
     expect(screen.getByText('1 ITEMS')).toBeTruthy();
     expect(screen.getByText('₹100')).toBeTruthy();
     expect(screen.getByText('Shop for ₹99 more to place order')).toBeTruthy();
+    expect(screen.getByTestId('cart-summary-icon')).toBeTruthy();
   });
 
-  test('below minimum: shows a thumbnail stack capped at 3 distinct products', () => {
-    mockCart = { p1: 1, p2: 1, p3: 1, p4: 1 };
+  test('at/above minimum: keeps the same compact card, no bottom-bar CTA', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 250) };
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.getByText('1 ITEMS')).toBeTruthy();
+    expect(screen.getByText('₹250')).toBeTruthy();
+    // Shortfall clamps to 0 (max(0, minimumOrderValue - cartTotal)), never negative.
+    expect(screen.getByText('Shop for ₹0 more to place order')).toBeTruthy();
+    expect(screen.queryByText('View cart →')).toBeNull();
+  });
+
+  test('shows the most-recently-added item as the icon', () => {
+    mockCart = { p1: 1, p2: 1 };
     mockSnapshots = {
-      p1: snapshot('p1', 20),
-      p2: snapshot('p2', 20),
-      p3: snapshot('p3', 20),
-      p4: snapshot('p4', 20),
+      p1: snapshot('p1', 20, { emoji: '🥛' }),
+      p2: snapshot('p2', 20, { emoji: '🍎' }),
     };
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
-    expect(screen.getAllByTestId('cart-summary-chip')).toHaveLength(3);
+    expect(screen.getByText('🍎')).toBeTruthy();
+    expect(screen.queryByText('🥛')).toBeNull();
   });
 
-  test('below minimum: falls back to emoji when an item has no image', () => {
+  test('falls back to emoji when the item has no image', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 20, { imageUrl: undefined, emoji: '🥛' }) };
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.getByText('🥛')).toBeTruthy();
-  });
-
-  test('at/above minimum: shows "View cart" action instead of the nudge, no thumbnails', () => {
-    mockCart = { p1: 1 };
-    mockSnapshots = { p1: snapshot('p1', 250) };
-
-    render(<CartSummaryCard onPress={jest.fn()} />);
-
-    expect(screen.getByText('View cart →')).toBeTruthy();
-    expect(screen.queryByText(/Shop for/)).toBeNull();
-    expect(screen.queryAllByTestId('cart-summary-chip')).toHaveLength(0);
   });
 
   test('tapping the card calls onPress', () => {
