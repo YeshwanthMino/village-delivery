@@ -14,8 +14,8 @@ interface CartSummaryCardProps {
 
 const TAB_BAR_CONTENT_HEIGHT = 64;
 const MAX_THUMBNAILS = 3;
-const CHIP_SIZE = 26;
-const CHIP_OFFSET = 9;
+const CHIP_SIZE = 40;
+const CHIP_OFFSET = 12;
 
 /** Most-recently-added distinct products first, capped at `max`. Cart keys
  *  preserve insertion order, so scanning from the end surfaces recent adds;
@@ -102,11 +102,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 9,
+    marginHorizontal: 10,
     backgroundColor: '#0f5132',
-    borderRadius: 11,
-    paddingVertical: 4,
-    paddingHorizontal: 9,
+    borderRadius: 17,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     shadowColor: '#0f5132',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
@@ -116,27 +116,27 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   metaBlock: { flex: 1 },
   countLine: { flexDirection: 'row', alignItems: 'center' },
-  count: { color: '#ffffff', fontWeight: '700', fontSize: 13, letterSpacing: 0.2 },
-  dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 13 },
-  total: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
-  nudge: { color: '#d1fae5', fontWeight: '600', fontSize: 12, marginTop: 2 },
+  count: { color: '#ffffff', fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
+  dot: { color: 'rgba(255,255,255,0.55)', marginHorizontal: 5, fontSize: 15 },
+  total: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
+  nudge: { color: '#d1fae5', fontWeight: '600', fontSize: 13, marginTop: 2 },
   progressTrack: {
-    height: 2,
+    height: 3,
     backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 2,
+    borderRadius: 3,
     marginTop: 6,
     overflow: 'hidden',
-    width: 140,
+    width: 216,
   },
-  progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: '#ffffff', borderRadius: 3 },
   actionRow: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
-  actionText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
+  actionText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
   stack: { height: CHIP_SIZE + 6, marginLeft: 10 },
   chip: {
     position: 'absolute',
     width: CHIP_SIZE,
     height: CHIP_SIZE,
-    borderRadius: 6,
+    borderRadius: 9,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#0f5132',
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  chipImage: { width: '100%', height: '100%', borderRadius: 5 },
-  chipEmoji: { fontSize: 11 },
+  chipImage: { width: '100%', height: '100%', borderRadius: 7 },
+  chipEmoji: { fontSize: 16 },
 });
