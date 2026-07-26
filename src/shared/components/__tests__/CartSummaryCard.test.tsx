@@ -93,15 +93,21 @@ describe('CartSummaryCard', () => {
     expect(screen.queryByText(/Shop for/)).toBeNull();
   });
 
-  test('shows the most-recently-added item as the icon', () => {
-    mockCart = { p1: 1, p2: 1 };
+  test('fans up to 3 distinct products in a deck-of-cards stack', () => {
+    mockCart = { p1: 1, p2: 1, p3: 1, p4: 1 };
     mockSnapshots = {
       p1: snapshot('p1', 20, { emoji: '🥛' }),
       p2: snapshot('p2', 20, { emoji: '🍎' }),
+      p3: snapshot('p3', 20, { emoji: '🍞' }),
+      p4: snapshot('p4', 20, { emoji: '🍪' }),
     };
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
+    // Capped at 3, most-recently-added first: p4, p3, p2 — the oldest (p1) drops off.
+    expect(screen.getAllByTestId('cart-summary-chip')).toHaveLength(3);
+    expect(screen.getByText('🍪')).toBeTruthy();
+    expect(screen.getByText('🍞')).toBeTruthy();
     expect(screen.getByText('🍎')).toBeTruthy();
     expect(screen.queryByText('🥛')).toBeNull();
   });

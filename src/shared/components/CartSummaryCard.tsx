@@ -8,6 +8,7 @@ import { useVillageStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
 import { rupees, rupeesCeil } from '@/src/shared/utils/currency';
+import type { CartLineItem } from '@/src/base/types/village.types';
 
 interface CartSummaryCardProps {
   onPress: () => void;
@@ -15,7 +16,9 @@ interface CartSummaryCardProps {
 }
 
 const TAB_BAR_CONTENT_HEIGHT = 64;
-const ICON_SIZE = 40;
+const MAX_THUMBNAILS = 3;
+const CHIP_SIZE = 32;
+const CHIP_OFFSET = 11;
 
 /** Splits a `{n}` template into the text either side of the placeholder, so
  *  the amount itself can be rendered as a separately-styled nested `<Text>`
@@ -23,6 +26,22 @@ const ICON_SIZE = 40;
 function splitOnAmount(template: string): [string, string] {
   const [prefix = '', suffix = ''] = template.split('{n}');
   return [prefix, suffix];
+}
+
+/** Most-recently-added distinct products first, capped at `max`, fanned like
+ *  a hand of cards. Cart keys preserve insertion order, so scanning from the
+ *  end surfaces recent adds; a product already seen (e.g. a second variant of
+ *  the same item) is skipped so the stack never shows the same product twice. */
+function distinctRecentItems(items: CartLineItem[], max: number): CartLineItem[] {
+  const seenProductIds = new Set<string>();
+  const result: CartLineItem[] = [];
+  for (let i = items.length - 1; i >= 0 && result.length < max; i--) {
+    const item = items[i];
+    if (seenProductIds.has(item.productId)) continue;
+    seenProductIds.add(item.productId);
+    result.push(item);
+  }
+  return result;
 }
 
 export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps) => {
@@ -48,9 +67,9 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   if (bill.totalCount === 0) return null;
 
   const cardBottom = (bottomOffset ?? TAB_BAR_CONTENT_HEIGHT) + 8;
-  // Cart keys preserve insertion order, so the last entry is the most recently
-  // added line — shown as the card's icon regardless of threshold state.
-  const recentItem = cartItems[cartItems.length - 1];
+  // Most-recently-added distinct products, fanned in a deck-of-cards stack —
+  // shown regardless of threshold state.
+  const recentItems = distinctRecentItems(cartItems, MAX_THUMBNAILS);
   // bill.amountToMinimum is already clamped to 0 at/above the minimum (see
   // computeBill), so this is max(0, minimumOrderValue - cartTotal) verbatim.
   const progress = Math.min(1, Math.max(0, bill.grandTotal / bill.minOrderValue));
@@ -100,15 +119,31 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
         </View>
 
         <View style={styles.iconColumn}>
-          <View style={styles.iconBox} testID="cart-summary-icon">
-            {recentItem?.imageUrl ? (
-              <Image source={{ uri: recentItem.imageUrl }} style={styles.iconImage} contentFit="cover" />
-            ) : (
-              <Text style={styles.iconEmoji}>{recentItem?.emoji}</Text>
-            )}
-            <View style={styles.chevronBadge}>
-              <ChevronRight size={10} color="#16a34a" strokeWidth={3} />
-            </View>
+          <View
+            style={[styles.stack, { width: CHIP_SIZE + (recentItems.length - 1) * CHIP_OFFSET }]}
+            testID="cart-summary-icon"
+          >
+            {recentItems.map((item, index) => (
+              <View
+                key={item.key}
+                testID="cart-summary-chip"
+                style={[
+                  styles.chip,
+                  { left: index * CHIP_OFFSET, top: index * 3, zIndex: recentItems.length - index },
+                ]}
+              >
+                {item.imageUrl ? (
+                  <Image source={{ uri: item.imageUrl }} style={styles.chipImage} contentFit="cover" />
+                ) : (
+                  <Text style={styles.chipEmoji}>{item.emoji}</Text>
+                )}
+                {index === 0 && (
+                  <View style={styles.chevronBadge}>
+                    <ChevronRight size={9} color="#16a34a" strokeWidth={3} />
+                  </View>
+                )}
+              </View>
+            ))}
           </View>
           <Text style={styles.viewCartCaption}>{t('view_cart')}</Text>
         </View>
@@ -167,28 +202,32 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   iconColumn: { alignItems: 'center', marginLeft: 10, gap: 3 },
-  iconBox: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-    borderRadius: 9,
+  stack: { height: CHIP_SIZE + 8, marginLeft: 0 },
+  chip: {
+    position: 'absolute',
+    width: CHIP_SIZE,
+    height: CHIP_SIZE,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#16a34a',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 2,
     elevation: 3,
   },
-  iconImage: { width: '100%', height: '100%', borderRadius: 7 },
-  iconEmoji: { fontSize: 16 },
+  chipImage: { width: '100%', height: '100%', borderRadius: 6.5 },
+  chipEmoji: { fontSize: 13 },
   chevronBadge: {
     position: 'absolute',
     bottom: -5,
     right: -5,
-    width: 17,
-    height: 17,
-    borderRadius: 9,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#16a34a',
