@@ -74,14 +74,14 @@ describe('CartSummaryCard', () => {
     expect(screen.queryByText('View cart →')).toBeNull();
   });
 
-  test('at/above minimum with a discount: shows the saved amount instead of the shortfall message', () => {
+  test('at/above minimum with a discount: shows only the saved amount, no "ready to place" line', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 250, { mrp: toUnits(285) }) }; // saved ₹35
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
-    expect(screen.getByText('Ready to place your order!')).toBeTruthy();
     expect(screen.getByText('SAVED ₹35')).toBeTruthy();
+    expect(screen.queryByText('Ready to place your order!')).toBeNull();
     expect(screen.queryByText(/Shop for/)).toBeNull();
   });
 

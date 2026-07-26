@@ -49,10 +49,7 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
           {bill.belowMinimum ? (
             <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupeesCeil(bill.amountToMinimum))}</Text>
           ) : bill.totalSavings > 0 ? (
-            <>
-              <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
-              <Text style={styles.saved}>{tSavedAmount(rupees(bill.totalSavings))}</Text>
-            </>
+            <Text style={styles.saved}>{tSavedAmount(rupees(bill.totalSavings))}</Text>
           ) : (
             <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
           )}
