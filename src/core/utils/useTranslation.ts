@@ -35,7 +35,18 @@ export function useTranslation() {
     return interpolate(translate('variant_cart_label', locale), count);
   }
 
-  return { t, tEta, tItemCount, tDiscount, tOptionCount, tVariantCartLabel, locale };
+  function tCartSummaryCount(count: number): string {
+    return interpolate(translate('cart_summary_count', locale), count);
+  }
+
+  function tShopMoreToPlaceOrder(amountText: string): string {
+    return interpolate(translate('shop_more_to_place_order', locale), amountText);
+  }
+
+  return {
+    t, tEta, tItemCount, tDiscount, tOptionCount, tVariantCartLabel,
+    tCartSummaryCount, tShopMoreToPlaceOrder, locale,
+  };
 }
 
 /**
