@@ -73,11 +73,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: 10,
-    backgroundColor: '#0f5132',
+    backgroundColor: '#16a34a',
     borderRadius: 17,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    shadowColor: '#0f5132',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
