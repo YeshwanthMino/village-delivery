@@ -164,7 +164,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               onPress={openSheet}
               accessibilityRole="button"
               accessibilityLabel={tVariantCartLabel(view.count)}
-              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
+              className="flex-row items-center justify-between bg-[#3D5FE8] rounded-xl px-2 py-2"
             >
               {/* The − / count / + below are display only — the whole row opens
                   the sheet as one control, so these two Views intentionally
@@ -178,7 +178,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               </View>
             </TouchableOpacity>
           ) : (
-            <View className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2">
+            <View className="flex-row items-center justify-between bg-[#3D5FE8] rounded-xl px-2 py-2">
               <TouchableOpacity testID="stepper-dec" onPress={() => decFromCart(product.id)} hitSlop={6}>
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>

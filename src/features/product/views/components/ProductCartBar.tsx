@@ -41,13 +41,13 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
       {count === 0 ? (
         <TouchableOpacity
           onPress={onAdd}
-          className="bg-green-600 rounded-2xl h-14 items-center justify-center"
+          className="bg-[#3D5FE8] rounded-2xl h-14 items-center justify-center"
         >
           <Text className="text-white font-extrabold text-base">{t('add_to_cart')}</Text>
         </TouchableOpacity>
       ) : (
         <View className="flex-row items-center gap-3">
-          <View className="flex-row items-center justify-between bg-green-600 rounded-2xl px-4 h-14 flex-1">
+          <View className="flex-row items-center justify-between bg-[#3D5FE8] rounded-2xl px-4 h-14 flex-1">
             <TouchableOpacity onPress={onDec} hitSlop={8}>
               <Minus size={20} color="#ffffff" />
             </TouchableOpacity>
@@ -58,9 +58,9 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
           </View>
           <TouchableOpacity
             onPress={onViewCart}
-            className="border-2 border-green-600 rounded-2xl h-14 px-5 items-center justify-center flex-1"
+            className="border-2 border-[#3D5FE8] rounded-2xl h-14 px-5 items-center justify-center flex-1"
           >
-            <Text className="text-green-700 font-extrabold text-base">{t('view_cart')}</Text>
+            <Text className="text-[#3D5FE8] font-extrabold text-base">{t('view_cart')}</Text>
           </TouchableOpacity>
         </View>
       )}
