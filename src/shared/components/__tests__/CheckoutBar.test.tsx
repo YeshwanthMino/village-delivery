@@ -30,6 +30,22 @@ describe('CheckoutBar', () => {
     expect(screen.queryByText('place_order')).toBeNull();
   });
 
+  test('below_minimum: fractional shortfall displays ceiled, never ₹0', () => {
+    render(
+      <CheckoutBar
+        state="below_minimum"
+        grandTotal={toUnits(198.9)}
+        amountToMinimum={toUnits(0.1)}
+        onLogin={noop}
+        onSelectAddress={noop}
+        onPlaceOrder={noop}
+      />
+    );
+
+    expect(screen.getByText('Shop for ₹1 more to place order')).toBeTruthy();
+    expect(screen.queryByText('Shop for ₹0 more to place order')).toBeNull();
+  });
+
   test('login: shows the login button', () => {
     render(
       <CheckoutBar

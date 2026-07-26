@@ -91,7 +91,6 @@ export const TRANSLATIONS: TranslationMap = {
   start_shopping:      { te: 'షాపింగ్ ప్రారంభించండి',                             en: 'Start Shopping' },
 
   // Floating cart pill
-  one_item_cart:       { te: '1 వస్తువు కార్ట్‌లో',                               en: '1 item in cart' },
   n_items_cart:        { te: '{n} వస్తువులు కార్ట్‌లో',                            en: '{n} items in cart' },
   view_cart_arrow:     { te: 'కార్ట్ చూడండి →',                                   en: 'View cart →' },
   cart_summary_count:  { te: '{n} వస్తువులు',                                     en: '{n} ITEMS' },

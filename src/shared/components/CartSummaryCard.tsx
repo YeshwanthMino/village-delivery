@@ -4,7 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
-import { rupees } from '@/src/shared/utils/currency';
+import { rupees, rupeesCeil } from '@/src/shared/utils/currency';
 import type { CartLineItem } from '@/src/base/types/village.types';
 
 interface CartSummaryCardProps {
@@ -63,7 +63,7 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
           </View>
           {bill.belowMinimum && (
             <>
-              <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupees(bill.amountToMinimum))}</Text>
+              <Text style={styles.nudge}>{tShopMoreToPlaceOrder(rupeesCeil(bill.amountToMinimum))}</Text>
               <View style={styles.progressTrack}>
                 <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
               </View>

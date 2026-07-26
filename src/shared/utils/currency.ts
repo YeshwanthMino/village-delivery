@@ -41,3 +41,10 @@ export function toUnits(rupeeAmount: number): number {
 export function rupees(units: number): string {
   return '₹' + Math.round(units * UNITS_PER_RUPEE);
 }
+
+/** Format an internal unit amount as a rupee string, rounding up.
+ *  For shortfall-style messages ("add ₹X more") where rounding down
+ *  could display ₹0 while the threshold is still unmet. */
+export function rupeesCeil(units: number): string {
+  return '₹' + Math.ceil(units * UNITS_PER_RUPEE);
+}

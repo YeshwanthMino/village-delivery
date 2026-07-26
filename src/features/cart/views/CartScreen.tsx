@@ -312,6 +312,7 @@ export const CartScreen = () => {
         state={checkoutState}
         grandTotal={vm.bill.grandTotal}
         amountToMinimum={vm.bill.amountToMinimum}
+        minOrderValue={vm.bill.minOrderValue}
         addressTag={addr.selectedAddress?.tag}
         addressLine={addressLine}
         onLogin={() => setSheet('login')}

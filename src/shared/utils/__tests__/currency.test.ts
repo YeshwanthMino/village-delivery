@@ -1,4 +1,4 @@
-import { rupees, toUnits, UNITS_PER_RUPEE } from '../currency';
+import { rupees, rupeesCeil, toUnits, UNITS_PER_RUPEE } from '../currency';
 
 describe('currency', () => {
   test('rupees renders internal units as a rupee string', () => {
@@ -21,5 +21,11 @@ describe('currency', () => {
 
   test('UNITS_PER_RUPEE is the single source of the factor', () => {
     expect(rupees(1)).toBe(`₹${UNITS_PER_RUPEE}`);
+  });
+
+  test('rupeesCeil rounds up to whole rupees', () => {
+    expect(rupeesCeil(toUnits(0.1))).toBe('₹1'); // 0.1 rupee -> ceil to ₹1, never ₹0
+    expect(rupeesCeil(0)).toBe('₹0');
+    expect(rupeesCeil(1)).toBe('₹20'); // exact values are unaffected
   });
 });

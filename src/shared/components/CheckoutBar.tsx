@@ -1,7 +1,7 @@
 import { Home } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { rupees } from '@/src/shared/utils/currency';
+import { rupees, rupeesCeil } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import type { CheckoutState } from '@/src/features/cart/domain/checkoutState';
 import type { AddressTag } from '@/src/features/location/domain/models';
@@ -11,6 +11,8 @@ interface CheckoutBarProps {
   grandTotal: number;
   /** Rupee shortfall to the minimum order value — only used in the 'below_minimum' state. */
   amountToMinimum?: number;
+  /** Minimum order value (internal units) — only used in the 'below_minimum' state, to compute progress. */
+  minOrderValue?: number;
   /** Selected address tag + one-line summary — shown in the 'place' state. */
   addressTag?: AddressTag;
   addressLine?: string;
@@ -23,6 +25,7 @@ export const CheckoutBar = ({
   state,
   grandTotal,
   amountToMinimum,
+  minOrderValue,
   addressTag,
   addressLine,
   onLogin,
@@ -34,13 +37,13 @@ export const CheckoutBar = ({
 
   if (state === 'below_minimum') {
     const shortfall = amountToMinimum ?? 0;
-    const progress = Math.min(1, grandTotal / (grandTotal + shortfall));
+    const progress = Math.min(1, minOrderValue ? grandTotal / minOrderValue : 0);
 
     return (
       <View style={styles.wrap}>
         <View style={styles.blockedBar}>
           <Text style={[styles.blockedText, teFont]}>
-            {tShopMoreToPlaceOrder(rupees(shortfall))}
+            {tShopMoreToPlaceOrder(rupeesCeil(shortfall))}
           </Text>
           <View style={styles.blockedProgressTrack}>
             <View style={[styles.blockedProgressFill, { width: `${progress * 100}%` }]} />
