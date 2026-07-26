@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import { ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -98,12 +99,18 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
           </View>
         </View>
 
-        <View style={styles.iconBox} testID="cart-summary-icon">
-          {recentItem?.imageUrl ? (
-            <Image source={{ uri: recentItem.imageUrl }} style={styles.iconImage} contentFit="cover" />
-          ) : (
-            <Text style={styles.iconEmoji}>{recentItem?.emoji}</Text>
-          )}
+        <View style={styles.iconColumn}>
+          <View style={styles.iconBox} testID="cart-summary-icon">
+            {recentItem?.imageUrl ? (
+              <Image source={{ uri: recentItem.imageUrl }} style={styles.iconImage} contentFit="cover" />
+            ) : (
+              <Text style={styles.iconEmoji}>{recentItem?.emoji}</Text>
+            )}
+            <View style={styles.chevronBadge}>
+              <ChevronRight size={10} color="#3D5FE8" strokeWidth={3} />
+            </View>
+          </View>
+          <Text style={styles.viewCartCaption}>{t('view_cart')}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -159,6 +166,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
+  iconColumn: { alignItems: 'center', marginLeft: 10, gap: 3 },
   iconBox: {
     width: ICON_SIZE,
     height: ICON_SIZE,
@@ -166,7 +174,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -175,4 +182,23 @@ const styles = StyleSheet.create({
   },
   iconImage: { width: '100%', height: '100%', borderRadius: 7 },
   iconEmoji: { fontSize: 16 },
+  chevronBadge: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#3D5FE8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  viewCartCaption: { color: '#ffffff', fontWeight: '700', fontSize: 9.5, letterSpacing: 0.2 },
 });

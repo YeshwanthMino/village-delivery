@@ -19,6 +19,7 @@ const mockRawTemplates: Record<string, string> = {
   order_ready_to_place: 'Ready to place your order!',
   shop_more_to_place_order: 'Shop for {n} more to place order',
   saved_amount: 'SAVED {n}',
+  view_cart: 'View cart',
 };
 
 jest.mock('@/src/core/utils/useTranslation', () => ({
@@ -62,6 +63,7 @@ describe('CartSummaryCard', () => {
 
     expect(screen.getByText('1 ITEMS')).toBeTruthy();
     expect(screen.getByText('₹100')).toBeTruthy();
+    expect(screen.getByText('View cart')).toBeTruthy();
     expect(screen.getByText('Shop for ₹99 more to place order')).toBeTruthy();
     expect(screen.getByTestId('cart-summary-icon')).toBeTruthy();
   });
