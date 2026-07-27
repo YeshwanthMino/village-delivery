@@ -5,12 +5,15 @@ import { useRouter } from 'expo-router';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
+import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVariantCardView } from '@/src/shared/hooks/useVariantCardView';
 import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
+import { interpolate } from '@/src/base/constants/translations';
 
 interface Props {
   product: HomeProduct;
@@ -46,6 +49,21 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
 
   const stock = product.stock ?? 0;
   const canAdd = ownCount < stock;
+
+  const { bottom } = useSafeAreaInsets();
+  // Matches the (dashboard) tab bar's own height formula in
+  // app/(dashboard)/_layout.tsx, so the snackbar clears the floating tab bar
+  // rather than being hidden behind it.
+  const TAB_BAR_CONTENT_HEIGHT = 64;
+  const tabBarBottomOffset = TAB_BAR_CONTENT_HEIGHT + bottom;
+
+  const handlePlainAdd = () => {
+    if (!canAdd) {
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), stock), tabBarBottomOffset);
+      return;
+    }
+    handleAdd();
+  };
 
   // view.mode is derived from the product-wide total (every variant-keyed
   // line included), which is right for the sheet-opening stepper but wrong
@@ -185,8 +203,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
               <Text className="text-white font-bold text-sm">{ownCount}</Text>
               <TouchableOpacity
                 testID="stepper-inc"
-                onPress={handleAdd}
-                disabled={!canAdd}
+                onPress={handlePlainAdd}
                 hitSlop={6}
                 style={{ opacity: canAdd ? 1 : 0.5 }}
               >

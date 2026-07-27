@@ -16,6 +16,7 @@ jest.mock('@/src/base/services/remote/storage/StoredPrefs', () => ({
 
 import { DynamicProductCard } from '../DynamicProductCard';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
+import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 import { HomeProduct } from '../../../../data/homeLayout.types';
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
@@ -47,7 +48,26 @@ const plain: HomeProduct = {
   stock: 5,
 };
 
+// Some catalog products come from the backend with their single variant's
+// title copied verbatim from the product title (rather than a real pack
+// descriptor like "40 G"), which previously showed the product name twice.
+const duplicateNamedVariant: HomeProduct = {
+  id: 'p3',
+  title: 'GOPURAM Kumkum (Red) - 40 G',
+  image: 'https://cdn/p3.jpg',
+  mrp: 12,
+  price: 9,
+  discountPct: 25,
+  inStock: true,
+  stock: 5,
+  hasVariants: false,
+  variants: [
+    { id: 'v0', name: 'GOPURAM Kumkum (Red) - 40 G', price: 9, mrp: 12, stock: 5 },
+  ],
+};
+
 beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
+beforeEach(() => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 }));
 
 describe('DynamicProductCard, multi-variant', () => {
   it('labels the button with the option count and shows the default pack', () => {
@@ -126,6 +146,11 @@ describe('DynamicProductCard, no variants', () => {
     expect(screen.queryByText(/options/)).toBeNull();
   });
 
+  it('hides the pack line rather than repeating the title when the variant name duplicates it', () => {
+    render(<DynamicProductCard product={duplicateNamedVariant} onOpenVariants={jest.fn()} />);
+    expect(screen.getAllByText('GOPURAM Kumkum (Red) - 40 G')).toHaveLength(1);
+  });
+
   it('ignores a phantom variant-keyed cart line for a product this card treats as plain', () => {
     // Simulates the known cross-page inconsistency: ProductCard opens its sheet
     // for variants.length >= 1 while this card only does so for > 1, so a
@@ -151,5 +176,17 @@ describe('DynamicProductCard, no variants', () => {
     fireEvent.press(screen.getByTestId('stepper-dec'));
     expect(useVillageStore.getState().cart.p2).toBeUndefined();
     expect(useVillageStore.getState().cart['p2-v0']).toBe(2); // still untouched
+  });
+});
+
+describe('DynamicProductCard, stock cap', () => {
+  it('shows the stock-limit snackbar instead of adding once ownCount reaches stock', () => {
+    useVillageStore.setState({ cart: { p2: 5 }, cartSnapshots: {}, lastVariantKey: {} });
+
+    render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
+    fireEvent.press(screen.getByTestId('stepper-inc'));
+
+    expect(useVillageStore.getState().cart.p2).toBe(5); // unchanged
+    expect(useSnackbarStore.getState().message).toBe('We only have 5 left in stock');
   });
 });
