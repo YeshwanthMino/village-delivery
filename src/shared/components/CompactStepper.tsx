@@ -1,6 +1,7 @@
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
@@ -23,10 +24,17 @@ export const CompactStepper = ({
   const canAdd = maxQuantity === undefined || count < maxQuantity;
   const suffix = testIDSuffix ? `-${testIDSuffix}` : '';
   const { t } = useTranslation();
+  const { bottom } = useSafeAreaInsets();
 
   const handleAdd = () => {
     if (!canAdd) {
-      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset);
+      // Callers that don't know what's beneath them (e.g. a stepper inside a
+      // bottom sheet) get no explicit bottomOffset. Since StockSnackbar
+      // renders full-screen (it's a Modal, so it isn't clipped to the
+      // sheet's own bounds), a literal 0 would sit it behind the OS's
+      // home-indicator/gesture-nav area — fall back to the safe-area inset
+      // instead so it always clears that at minimum.
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset ?? bottom);
       return;
     }
     onAdd();

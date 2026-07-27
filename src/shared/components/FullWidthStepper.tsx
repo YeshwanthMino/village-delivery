@@ -1,6 +1,7 @@
 import { Minus, Plus, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
@@ -17,10 +18,14 @@ interface FullWidthStepperProps {
 export const FullWidthStepper = ({ count, onAdd, onDec, maxQuantity, bottomOffset }: FullWidthStepperProps) => {
   const canAdd = maxQuantity === undefined || count < maxQuantity;
   const { t } = useTranslation();
+  const { bottom } = useSafeAreaInsets();
 
   const handleAdd = () => {
     if (!canAdd) {
-      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset);
+      // Same fallback as CompactStepper: if a caller doesn't pass an
+      // explicit bottomOffset, clear the safe-area/home-indicator area at
+      // minimum instead of sitting flush at the literal screen edge.
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset ?? bottom);
       return;
     }
     onAdd();
