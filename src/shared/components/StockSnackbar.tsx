@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react-native';
 import React from 'react';
 import { Animated, Text, TouchableOpacity, View } from 'react-native';
 import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
@@ -54,12 +55,28 @@ export const StockSnackbar = () => {
   return (
     <Animated.View
       testID="stock-snackbar"
-      className="absolute left-0 right-0 flex-row items-center justify-between bg-pink-600 rounded-t-2xl px-4 py-4"
-      style={{ bottom: bottomOffset, opacity, transform: [{ translateY }] }}
+      className="absolute left-0 right-0 flex-row items-center gap-3 bg-slate-900 rounded-t-2xl pl-4 pr-3 py-3.5"
+      style={{
+        bottom: bottomOffset,
+        opacity,
+        transform: [{ translateY }],
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 16,
+      }}
     >
-      <Text className="text-white font-extrabold text-sm flex-1 pr-3">{message}</Text>
-      <TouchableOpacity onPress={hide} hitSlop={8}>
-        <Text className="text-white font-extrabold text-sm">Ok</Text>
+      <View className="w-8 h-8 rounded-full bg-amber-400/20 items-center justify-center">
+        <AlertTriangle size={16} color="#fbbf24" />
+      </View>
+      <Text className="text-white font-semibold text-[13px] leading-5 flex-1">{message}</Text>
+      <TouchableOpacity
+        onPress={hide}
+        hitSlop={8}
+        className="bg-white/10 rounded-full px-3.5 py-1.5"
+      >
+        <Text className="text-white font-bold text-xs tracking-wide">Ok</Text>
       </TouchableOpacity>
     </Animated.View>
   );
