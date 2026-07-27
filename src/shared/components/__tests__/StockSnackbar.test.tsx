@@ -46,6 +46,30 @@ describe('StockSnackbar', () => {
     expect(screen.queryByTestId('stock-snackbar')).toBeNull();
   });
 
+  it('animates in with a slide-up + fade-in when first shown', () => {
+    render(<StockSnackbar />);
+    act(() => useSnackbarStore.getState().show('We only have 1 left in stock'));
+
+    const snackbar = screen.getByTestId('stock-snackbar');
+    const styleBefore = Array.isArray(snackbar.props.style)
+      ? Object.assign({}, ...snackbar.props.style)
+      : snackbar.props.style;
+
+    // Immediately after showing, the entrance animation hasn't completed yet:
+    // opacity should still be at (or animating from) 0 and translateY away from 0.
+    expect(styleBefore.opacity).toBe(0);
+    expect(styleBefore.transform[0].translateY).toBe(20);
+
+    act(() => jest.advanceTimersByTime(200));
+
+    const styleAfter = Array.isArray(snackbar.props.style)
+      ? Object.assign({}, ...snackbar.props.style)
+      : snackbar.props.style;
+
+    expect(styleAfter.opacity).toBe(1);
+    expect(styleAfter.transform[0].translateY).toBe(0);
+  });
+
   it('a repeat show() before the timeout resets the countdown', () => {
     render(<StockSnackbar />);
     act(() => useSnackbarStore.getState().show('Capped out'));
