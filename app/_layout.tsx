@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { ErrorBoundary } from '@/src/shared/components/ErrorBoundary';
+import { StockSnackbar } from '@/src/shared/components/StockSnackbar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppScreen } from '@/src/features/initialization/views/screens/AppScreen';
@@ -74,6 +75,7 @@ export default function RootLayout() {
               <Stack.Screen name="address/add" />
               <Stack.Screen name="about" />
             </Stack>
+            <StockSnackbar />
           </AppScreen>
           </ErrorBoundary>
         </GluestackUIProvider>
