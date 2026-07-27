@@ -18,8 +18,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { StockSnackbar } from '@/src/shared/components/StockSnackbar';
-
 interface VillageBottomSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -167,8 +165,6 @@ export const VillageBottomSheet = ({ visible, onClose, children, dismissable = t
           >
             {children}
           </ScrollView>
-
-          <StockSnackbar />
         </Animated.View>
 
       </Wrapper>
