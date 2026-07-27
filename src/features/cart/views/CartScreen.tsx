@@ -49,6 +49,10 @@ export const CartScreen = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const addr = useCartAddressViewModel();
   const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
+  // Measured height of the CheckoutBar (fixed at the true bottom of the screen)
+  // so the stock-limit snackbar, which floats at `bottom: 0` of each stepper's
+  // nearest positioned ancestor, can be offset above it instead of covering it.
+  const [checkoutBarHeight, setCheckoutBarHeight] = React.useState(0);
 
   // Stock verification (use separate selectors to avoid infinite loops)
   const stockStatus = useCartStockStore(state => state.stockStatus);
@@ -288,6 +292,7 @@ export const CartScreen = () => {
                   item={item}
                   stockStatus={stockStatus[stockKey(item)]}
                   onOutOfStockPress={() => handleOutOfStockPress(item)}
+                  bottomOffset={checkoutBarHeight}
                 />
               ))}
             </View>
@@ -308,17 +313,19 @@ export const CartScreen = () => {
       </ScrollView>
 
       {/* Checkout bar */}
-      <CheckoutBar
-        state={checkoutState}
-        grandTotal={vm.bill.grandTotal}
-        amountToMinimum={vm.bill.amountToMinimum}
-        minOrderValue={vm.bill.minOrderValue}
-        addressTag={addr.selectedAddress?.tag}
-        addressLine={addressLine}
-        onLogin={() => setSheet('login')}
-        onSelectAddress={handleAddressPress}
-        onPlaceOrder={handleCheckout}
-      />
+      <View onLayout={e => setCheckoutBarHeight(e.nativeEvent.layout.height)}>
+        <CheckoutBar
+          state={checkoutState}
+          grandTotal={vm.bill.grandTotal}
+          amountToMinimum={vm.bill.amountToMinimum}
+          minOrderValue={vm.bill.minOrderValue}
+          addressTag={addr.selectedAddress?.tag}
+          addressLine={addressLine}
+          onLogin={() => setSheet('login')}
+          onSelectAddress={handleAddressPress}
+          onPlaceOrder={handleCheckout}
+        />
+      </View>
 
       {/* Variant sheet */}
       <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />

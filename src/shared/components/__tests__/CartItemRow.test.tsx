@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CartItemRow } from '../CartItemRow';
 import { CartLineItem } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
+import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 
 jest.mock('@/src/core/store', () => ({
   useVillageStore: jest.fn(selector => {
@@ -19,6 +20,8 @@ jest.mock('@/src/core/utils/useTranslation', () => ({
     t: (key: string) => key,
   }),
 }));
+
+beforeEach(() => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 }));
 
 describe('CartItemRow', () => {
   const mockItem: CartLineItem = {
@@ -128,5 +131,14 @@ describe('CartItemRow', () => {
     render(<CartItemRow item={itemWithoutImage} />);
 
     expect(screen.getByText('Test Product')).toBeTruthy();
+  });
+
+  test('forwards bottomOffset to the stepper for the stock-limit snackbar', () => {
+    const stockStatus = { inStock: true, availableQuantity: 2 };
+    render(<CartItemRow item={mockItem} stockStatus={stockStatus} bottomOffset={120} />);
+
+    fireEvent.press(screen.getByTestId('stepper-add'));
+
+    expect(useSnackbarStore.getState().bottomOffset).toBe(120);
   });
 });

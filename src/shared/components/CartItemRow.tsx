@@ -17,9 +17,11 @@ interface CartItemRowProps {
   item: CartLineItem;
   stockStatus?: StockStatus;
   onOutOfStockPress?: () => void;
+  /** Px to float the stock-limit snackbar above the bottom of the screen. */
+  bottomOffset?: number;
 }
 
-const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress }: CartItemRowProps) => {
+const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffset }: CartItemRowProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
   const setQuantity = useVillageStore(state => state.setQuantity);
@@ -116,6 +118,7 @@ const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress }: CartItem
               maxQuantity={stockStatus?.availableQuantity}
               onAdd={() => addToCart(item.key, undefined, stockStatus?.availableQuantity)}
               onDec={() => decFromCart(item.key)}
+              bottomOffset={bottomOffset}
             />
             <Text className="text-slate-500 text-[10px]">
               {rupees(item.price * item.count)}
