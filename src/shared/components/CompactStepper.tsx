@@ -1,6 +1,9 @@
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { interpolate } from '@/src/base/constants/translations';
 
 interface CompactStepperProps {
   count: number;
@@ -10,11 +13,24 @@ interface CompactStepperProps {
   /** Suffix for the increment/decrement testIDs, so multiple steppers on one
    *  screen stay addressable in tests. */
   testIDSuffix?: string;
+  /** Px to float the stock-limit snackbar above the bottom of the screen. */
+  bottomOffset?: number;
 }
 
-export const CompactStepper = ({ count, onAdd, onDec, maxQuantity, testIDSuffix }: CompactStepperProps) => {
+export const CompactStepper = ({
+  count, onAdd, onDec, maxQuantity, testIDSuffix, bottomOffset,
+}: CompactStepperProps) => {
   const canAdd = maxQuantity === undefined || count < maxQuantity;
   const suffix = testIDSuffix ? `-${testIDSuffix}` : '';
+  const { t } = useTranslation();
+
+  const handleAdd = () => {
+    if (!canAdd) {
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset);
+      return;
+    }
+    onAdd();
+  };
 
   return (
     <View className="flex-row items-center border-2 border-green-600 rounded-lg h-11">
@@ -32,8 +48,7 @@ export const CompactStepper = ({ count, onAdd, onDec, maxQuantity, testIDSuffix 
         {count}
       </Text>
       <TouchableOpacity
-        onPress={onAdd}
-        disabled={!canAdd}
+        onPress={handleAdd}
         testID={`stepper-add${suffix}`}
         className={`w-12 h-full items-center justify-center ${canAdd ? 'active:bg-green-50' : 'opacity-50'}`}
       >
