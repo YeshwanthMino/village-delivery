@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 import { useTranslation } from '@/src/core/utils/useTranslation';
@@ -19,9 +18,14 @@ interface Props {
   product: HomeProduct;
   width?: DimensionValue;
   onOpenVariants?: (product: Product) => void;
+  /** Px to float the stock-limit snackbar above the bottom of the screen.
+   *  Callers on a screen with a floating tab bar (e.g. the home tab, via
+   *  ProductCarouselRow) should pass its height; screens with no tab bar
+   *  (search, category details) should omit this to get the correct 0. */
+  bottomOffset?: number;
 }
 
-const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: Props) => {
+const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bottomOffset }: Props) => {
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
   // The plain (non-sheet) stepper's buttons mutate only this bare-id key, so it
@@ -50,16 +54,9 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants }: P
   const stock = product.stock ?? 0;
   const canAdd = ownCount < stock;
 
-  const { bottom } = useSafeAreaInsets();
-  // Matches the (dashboard) tab bar's own height formula in
-  // app/(dashboard)/_layout.tsx, so the snackbar clears the floating tab bar
-  // rather than being hidden behind it.
-  const TAB_BAR_CONTENT_HEIGHT = 64;
-  const tabBarBottomOffset = TAB_BAR_CONTENT_HEIGHT + bottom;
-
   const handlePlainAdd = () => {
     if (!canAdd) {
-      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), stock), tabBarBottomOffset);
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), stock), bottomOffset ?? 0);
       return;
     }
     handleAdd();
