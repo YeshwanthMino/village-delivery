@@ -2,9 +2,11 @@
 
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
+import { interpolate } from '@/src/base/constants/translations';
 
 interface Props {
   count: number;
@@ -19,6 +21,17 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const canAdd = maxQuantity === undefined || count < maxQuantity;
+  const [barHeight, setBarHeight] = React.useState(0);
+
+  const handleLayout = (e: LayoutChangeEvent) => setBarHeight(e.nativeEvent.layout.height);
+
+  const handleAdd = () => {
+    if (!canAdd) {
+      useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), barHeight);
+      return;
+    }
+    onAdd();
+  };
 
   if (!inStock) {
     return (
@@ -35,6 +48,7 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
 
   return (
     <View
+      onLayout={handleLayout}
       className="bg-white border-t border-slate-100 px-4 pt-3"
       style={{ paddingBottom: insets.bottom + 12 }}
     >
@@ -52,7 +66,7 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
               <Minus size={20} color="#ffffff" />
             </TouchableOpacity>
             <Text className="text-white font-extrabold text-base">{count}</Text>
-            <TouchableOpacity onPress={onAdd} disabled={!canAdd} hitSlop={8} style={{ opacity: canAdd ? 1 : 0.5 }}>
+            <TouchableOpacity testID="cart-bar-add" onPress={handleAdd} hitSlop={8} style={{ opacity: canAdd ? 1 : 0.5 }}>
               <Plus size={20} color={canAdd ? '#ffffff' : '#d1d5db'} />
             </TouchableOpacity>
           </View>
