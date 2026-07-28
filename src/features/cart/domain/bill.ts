@@ -87,7 +87,7 @@ export function getCartItems(
       continue;
     }
 
-    // Legacy fallback: resolve against the static catalog (e.g. reorder).
+    // Legacy fallback: resolve against the static catalog.
     const { productId, variantIndex } = parseCartKey(key);
     const product = ALL_PRODUCTS.find(p => p.id === productId);
     if (!product) continue;

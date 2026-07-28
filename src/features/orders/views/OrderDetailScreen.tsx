@@ -112,7 +112,7 @@ export const OrderDetailScreen = () => {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { order, isLoading, handleReorder, refetch, isRefetching } = useOrderDetailViewModel();
+  const { order, isLoading, refetch, isRefetching } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
   if (isLoading) {
@@ -166,7 +166,6 @@ export const OrderDetailScreen = () => {
     viewStatus === 'preparing'        ? formatDate(order.placedAt)
     : viewStatus === 'out_for_delivery' ? t('on_the_way')
     : formatDate(order.placedAt);
-  const BOTTOM_BAR_H = 80;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -193,7 +192,7 @@ export const OrderDetailScreen = () => {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: isCancelled ? 24 : BOTTOM_BAR_H + 24 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#16a34a" colors={['#16a34a']} />
@@ -274,24 +273,6 @@ export const OrderDetailScreen = () => {
           </View>
         </View>
       </ScrollView>
-
-      {/* Sticky reorder bar (hidden for cancelled) */}
-      {!isCancelled && (
-        <View
-          className="absolute left-0 right-0 bg-white border-t border-slate-100 px-4 pt-3"
-          style={{ bottom: insets.bottom, paddingBottom: insets.bottom > 0 ? 4 : 12 }}
-        >
-          <Pressable
-            onPress={() => { handleReorder(); router.push('/cart'); }}
-            className="bg-green-500 rounded-2xl py-4 items-center"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-          >
-            <Text className="text-white font-bold text-base" style={teFont}>
-              {t('reorder_btn')}
-            </Text>
-          </Pressable>
-        </View>
-      )}
     </SafeAreaView>
   );
 };

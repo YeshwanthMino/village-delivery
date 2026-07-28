@@ -144,7 +144,7 @@ export const TRANSLATIONS: TranslationMap = {
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
   orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
   orders_login_title:    { te: 'మీ ఆర్డర్లు చూడటానికి సైన్ ఇన్ చేయండి', en: 'Sign in to see your orders' },
-  orders_login_subtitle: { te: 'ప్రస్తుత ఆర్డర్లు ట్రాక్ చేయండి, గత ఆర్డర్లను మళ్ళీ ఆర్డర్ చేయండి.', en: 'Track current orders and reorder past ones.' },
+  orders_login_subtitle: { te: 'మీ ఆర్డర్లను ట్రాక్ చేయండి మరియు వివరాలను చూడండి.', en: 'Track your orders and view details.' },
   orders_load_error:     { te: 'ఆర్డర్లు లోడ్ చేయలేకపోయాం.',   en: "Couldn't load your orders." },
 
   // Order list & detail
@@ -158,8 +158,6 @@ export const TRANSLATIONS: TranslationMap = {
   status_out_for_delivery:    { te: 'డెలివరీకి బయలుదేరింది',       en: 'Out for Delivery' },
   status_delivered:           { te: 'డెలివరీ అయింది',              en: 'Delivered' },
   status_cancelled:           { te: 'రద్దు చేయబడింది',             en: 'Cancelled' },
-  reorder_btn:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Reorder' },
-  order_again:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Order Again' },
   placed_at:                  { te: 'ఆర్డర్ చేసింది {n}',          en: 'Placed at {n}' },
   order_details:              { te: 'ఆర్డర్ వివరాలు',              en: 'Order Details' },
   get_help:                   { te: 'సహాయం',                       en: 'Get Help' },

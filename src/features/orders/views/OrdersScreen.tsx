@@ -3,16 +3,14 @@ import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, Text, To
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { LogIn, CheckCircle2, Package, Truck, XCircle, RotateCcw } from 'lucide-react-native';
+import { LogIn, CheckCircle2, Package, Truck, XCircle } from 'lucide-react-native';
 import { Order, OrderItem, OrderStatus } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { useOrdersViewModel } from '../viewmodel/useOrdersViewModel';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
-import { useVillageStore } from '@/src/core/store';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
-import { orderItemSnapshot } from '@/src/features/cart/domain/reorder';
 
 // ── Status presentation ──────────────────────────────────────────────────────
 
@@ -71,11 +69,9 @@ function ItemThumb({ item }: { item: OrderItem }) {
 function OrderCard({
   order,
   onPress,
-  onReorder,
 }: {
   order: Order;
   onPress: () => void;
-  onReorder: () => void;
 }) {
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
@@ -128,19 +124,6 @@ function OrderCard({
           </View>
         )}
       </View>
-
-      {/* Order Again — single full-width action (no rate / no menu) */}
-      <Pressable
-        onPress={onReorder}
-        className="border-t border-slate-100 py-3.5 items-center active:bg-slate-50"
-      >
-        <View className="flex-row items-center gap-1.5">
-          <RotateCcw size={15} color="#16a34a" strokeWidth={2.6} />
-          <Text className="text-green-600 font-bold text-sm" style={teFont}>
-            {t('order_again')}
-          </Text>
-        </View>
-      </Pressable>
     </Pressable>
   );
 }
@@ -274,9 +257,6 @@ export const OrdersScreen = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-  const addToCart = useVillageStore(s => s.addToCart);
-  const setQuantity = useVillageStore((s) => s.setQuantity);
-  const clearCart = useVillageStore(s => s.clearCart);
   const { allOrders, activeOrders, pastOrders, isLoading, isError, refetch, isRefetching } = useOrdersViewModel();
   const [loginVisible, setLoginVisible] = useState(false);
 
@@ -288,19 +268,6 @@ export const OrdersScreen = () => {
       if (isAuthenticated) refetch();
     }, [isAuthenticated, refetch]),
   );
-
-  const reorder = (order: Order) => {
-    clearCart();
-    for (const item of order.items) {
-      const snapshot = orderItemSnapshot(item);
-      // Snapshot + one write per line: without the snapshot the line resolves
-      // against the static catalog and is dropped; the per-unit loop cost a
-      // store notification per unit.
-      addToCart(snapshot.key, snapshot);
-      setQuantity(snapshot.key, item.quantity);
-    }
-    router.push('/cart');
-  };
 
   const hasOrders = allOrders.length > 0;
 
@@ -363,7 +330,6 @@ export const OrdersScreen = () => {
               <OrderCard
                 order={item.order}
                 onPress={() => navigate(item.order.id)}
-                onReorder={() => reorder(item.order)}
               />
             );
           }}

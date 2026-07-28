@@ -48,6 +48,24 @@ const plain: HomeProduct = {
   stock: 5,
 };
 
+// Some catalog products come from the backend with their single variant's
+// title copied verbatim from the product title (rather than a real pack
+// descriptor like "40 G"), which previously showed the product name twice.
+const duplicateNamedVariant: HomeProduct = {
+  id: 'p3',
+  title: 'GOPURAM Kumkum (Red) - 40 G',
+  image: 'https://cdn/p3.jpg',
+  mrp: 12,
+  price: 9,
+  discountPct: 25,
+  inStock: true,
+  stock: 5,
+  hasVariants: false,
+  variants: [
+    { id: 'v0', name: 'GOPURAM Kumkum (Red) - 40 G', price: 9, mrp: 12, stock: 5 },
+  ],
+};
+
 beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
 beforeEach(() => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 }));
 
@@ -126,6 +144,11 @@ describe('DynamicProductCard, no variants', () => {
   it('shows no options label and no pack line', () => {
     render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
     expect(screen.queryByText(/options/)).toBeNull();
+  });
+
+  it('hides the pack line rather than repeating the title when the variant name duplicates it', () => {
+    render(<DynamicProductCard product={duplicateNamedVariant} onOpenVariants={jest.fn()} />);
+    expect(screen.getAllByText('GOPURAM Kumkum (Red) - 40 G')).toHaveLength(1);
   });
 
   it('ignores a phantom variant-keyed cart line for a product this card treats as plain', () => {
