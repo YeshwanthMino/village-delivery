@@ -134,6 +134,16 @@ describe('mapProduct variants', () => {
     expect(variants[1].image).toBe('https://cdn/1l.jpg');
   });
 
+  it('treats a variant with no active flag as active, like every other active check', () => {
+    const variants = mapProduct(raw).variants!;
+    expect(variants[0].active).toBe(true); // fixture sets no active flag
+    const explicit = mapProduct({
+      ...raw,
+      variantIds: [{ ...raw.variantIds[0], active: false }],
+    });
+    expect(explicit.variants![0].active).toBe(false);
+  });
+
   it('still flags hasVariants only when there is more than one', () => {
     expect(mapProduct(raw).hasVariants).toBe(true);
     const single = { ...raw, variantIds: [raw.variantIds[0]] };

@@ -118,7 +118,8 @@ export function mapVariant(v: RawVariant): Variant {
     taxRate: num(v?.taxRate),
     hasFreeItem: Boolean(v?.hasFreeItem),
     hsn: String(v?.hsn ?? ''),
-    active: Boolean(v?.active),
+    // A missing flag means active — matches isProductActive/isCategoryActive.
+    active: v?.active !== false,
   };
 }
 
