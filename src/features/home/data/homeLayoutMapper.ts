@@ -111,8 +111,9 @@ export function isProductActive(p: RawActiveFlagged): boolean {
 }
 
 /**
- * Map backend product with variants (variantIds) to Product interface.
- * Handles both API products with variantIds and legacy products.
+ * Map a backend product to the Product interface. Variants arrive under
+ * `variants` on newer endpoints and `variantIds` on the page-layout feed;
+ * `rawVariants` resolves whichever is present.
  */
 export function mapProductWithVariants(p: RawApiProduct): Product {
   const variants = mapVariants(p);

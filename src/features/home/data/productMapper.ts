@@ -1,6 +1,6 @@
 // src/features/home/data/productMapper.ts
 //
-// Maps backend product objects (with variantIds) to the Product interface.
+// Maps backend product objects (with variants) to the Product interface.
 // Extracts comprehensive data from variants including images, pricing, taxes, and stock.
 
 import { Product, Variant } from '@/src/base/types/village.types';
@@ -8,7 +8,7 @@ import { toUnits } from '@/src/shared/utils/currency';
 
 /**
  * Shape of a variant as the backend sends it (populated, i.e. already an
- * object rather than a bare ObjectId ref — see `mapVariants`). Every field is
+ * object rather than a bare ObjectId ref — see `rawVariants`). Every field is
  * `unknown` rather than the plausible JS type: nothing here is validated
  * server-side, every read already goes through `num`/`String`/`Boolean`, and a
  * looser type would just be a type assertion with extra steps.
@@ -161,7 +161,7 @@ export function mapVariants(p: RawApiProduct): Variant[] {
 }
 
 /**
- * Map a backend product object (with variantIds) to the Product interface.
+ * Map a backend product object (with variants or the legacy variantIds) to the Product interface.
  * - Extracts comprehensive variant data including images, pricing tiers, and tax info
  * - Aggregates stock from all variants
  * - Uses first variant's image and price for product-level defaults

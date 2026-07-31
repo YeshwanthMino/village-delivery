@@ -1,7 +1,7 @@
 // src/features/home/data/productsApi.ts
 //
 // Fetch products with variants (full Product interface).
-// Maps backend variantIds to Product.variants at the DTO layer.
+// Maps the backend's variants (or legacy variantIds) to Product.variants.
 
 import { Product } from '@/src/base/types/village.types';
 import { apiClient } from '@/src/base/services/remote/apiClient';
@@ -10,7 +10,7 @@ import { mapProductWithVariants, isProductActive } from './homeLayoutMapper';
 
 /**
  * Fetch all products for a store. Each product includes variants
- * extracted from variantIds. Returns empty array on failure.
+ * extracted from variants (or legacy variantIds). Returns empty array on failure.
  */
 export async function getAllProducts(storeId: string): Promise<Product[]> {
   const data = await apiClient.getWithoutAuth<any>(
