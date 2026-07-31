@@ -63,7 +63,14 @@ Two latent issues found while reading, both in scope:
   Nothing reads `variant.active` today, so this is latent rather than broken.
 - `mapProductWithVariants` reads `p.variantIds[0]` directly (bypassing
   `mapVariants`) for an image fallback, so it would keep reading the old key even
-  after `mapVariants` is updated.
+  after `mapVariants` is updated. That same expression also tests one thing and
+  returns another — the condition is satisfied by `rawFirstVariant.landingImage`
+  but the branch returns `rawFirstVariant.images[0]`, so a variant with a landing
+  image and no gallery array maps to an empty image. Every variant in the new
+  payload has a `landingImage`, so this is reachable.
+- `ProductDetail.categoryTitle` reads `p.categoryId.title`, which is `undefined`
+  once `categoryId` is a bare string. The readable name now arrives at the top
+  level as `category`.
 
 ## Approach
 
@@ -124,8 +131,14 @@ gains `variants?: unknown`. Unpopulated-ref filtering (dropping bare ObjectId
 strings) is unchanged and applies to both keys.
 
 Call sites updated to pass `p`: `mapApiProduct`, `mapProductWithVariants`,
-`mapProduct`. `mapProductWithVariants`'s direct `p.variantIds[0]` image fallback
-switches to `rawVariants(p)[0]` so both paths read the same array.
+`mapProduct`.
+
+`mapProductWithVariants`'s direct `p.variantIds[0]` image fallback is deleted
+rather than repointed. `firstVariant.image` is already `landingImage || images[0]`
+(computed by `mapVariant`), so the chain becomes `p.landingImage ||
+p.images[0] || firstVariant.image || ''` — which fixes the mismatched
+condition/branch noted above and removes the last reason for this mapper to touch
+raw variant objects at all.
 
 ### 3. Product-level fields
 
@@ -142,6 +155,11 @@ switches to `rawVariants(p)[0]` so both paths read the same array.
 `mapApiProduct` gains the product-level image fallback the other two mappers
 already have: first variant's image, then `p.landingImage`, then `p.images[0]`.
 
+`ProductDetail.categoryTitle` (`productDetailApi.ts`) falls back from
+`p.categoryId.title` to the top-level `p.category`, so the detail screen keeps
+showing a category name under the new payload. The populated shape still wins
+when both are present.
+
 ### 4. Tests
 
 `src/features/home/data/__tests__/homeLayoutMapper.test.ts` — add the Kandhi Pappu
@@ -157,9 +175,12 @@ payload as a fixture and assert:
 - the existing "mapProduct agrees field-for-field with mapApiProduct" assertion
   holds for the new shape
 
-`src/features/product/data/__tests__/productDetailApi.test.ts` — add a case
+Also assert `mapProductWithVariants` resolves a variant-only `landingImage` (the
+mismatched-branch bug above) and that a product-level image still wins over it.
+
+`src/features/product/data/__tests__/productDetailApi.test.ts` — add cases
 asserting the `variants` key reaches `ProductDetail.variants` with correct prices
-and stock.
+and stock, and that `categoryTitle` falls back to the top-level `category`.
 
 ## Out of scope
 
