@@ -122,9 +122,11 @@ export function mapProductWithVariants(p: RawApiProduct): Product {
   const productPrice = firstVariant?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
   const productMrp = firstVariant?.mrp ?? toUnits(num(p?.mrp));
 
-  // Product image first, then the first variant's. `firstVariant.image` is
-  // already `landingImage || images[0]` (mapVariant), so reading it here keeps
-  // this in step with every other mapper instead of re-deriving the fallback.
+  // Product image first, then the first variant's. Note this is the opposite
+  // precedence to mapProduct/mapApiProduct/mapProductDetail, which try the
+  // variant first — a pre-existing split, not a deliberate design.
+  // `firstVariant.image` is already `landingImage || images[0]` (mapVariant),
+  // so reading it here derives the variant image the same way they all do.
   const image = String(
     p?.landingImage ||
     (Array.isArray(p?.images) ? p.images[0] : undefined) ||

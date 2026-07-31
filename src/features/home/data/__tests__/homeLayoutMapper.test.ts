@@ -257,7 +257,7 @@ describe('variants arriving under the new `variants` key', () => {
     const product = mapProductWithVariants(newShape);
     expect(product.variants).toHaveLength(2);
     expect(rupees(product.price)).toBe('₹200');
-    // product.image is asserted in a later task, which fixes its fallback chain.
+    expect(product.image).toBe('https://cdn/kp.webp');
   });
 
   it('prefers `variants` when a response carries both keys', () => {
@@ -358,6 +358,27 @@ describe('mapApiProduct image fallback', () => {
       ],
     };
     expect(mapApiProduct(raw).image).toBe('https://cdn/variant.webp');
+  });
+
+  it('falls through to the product image when a variant image stringifies to empty', () => {
+    // landingImage: [] is truthy, so mapVariant's guard passes it through to
+    // String([]) === '' — the chain must not treat that as a real image.
+    const raw = {
+      _id: 'p4',
+      title: 'Kandhi Pappu',
+      landingImage: 'https://cdn/product.webp',
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5, landingImage: [] }],
+    };
+    expect(mapApiProduct(raw).image).toBe('https://cdn/product.webp');
+  });
+
+  it('leaves image undefined when nothing has one', () => {
+    const raw = {
+      _id: 'p5',
+      title: 'Salt',
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 20, dealPrice: 20, stock: 5 }],
+    };
+    expect(mapApiProduct(raw).image).toBeUndefined();
   });
 });
 

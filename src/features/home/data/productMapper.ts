@@ -141,9 +141,8 @@ export function mapVariant(v: RawVariant): Variant {
  * or bare ObjectId refs). `variants` wins when a response carries both, so a
  * half-migrated response can never serve stale variant data.
  *
- * Exported because mapProductWithVariants needs the *raw* first entry for an
- * image fallback — reading `p.variantIds[0]` there directly is what would
- * otherwise keep it on the old key.
+ * Exported for tests and future callers that need the raw entries; `mapVariants`
+ * below is the only current consumer.
  */
 export function rawVariants(p: RawApiProduct): unknown[] {
   const raw = p?.variants ?? p?.variantIds;
@@ -177,10 +176,11 @@ export function mapApiProduct(p: RawApiProduct): Product {
   const firstVariant = variants[0];
   const productPrice = firstVariant?.price ?? 0;
   const productMrp = firstVariant?.mrp ?? 0;
-  // Same fallback order as mapProduct/mapProductWithVariants: the variant's
-  // image wins, then the product's own landing image, then its gallery.
+  // Variant image first, then the product's own landing image, then its
+  // gallery — matching mapProduct and mapProductDetail. (mapProductWithVariants
+  // deliberately puts the product image first; see the note there.)
   const productImage =
-    firstVariant?.image ??
+    str(firstVariant?.image) ??
     str(p?.landingImage) ??
     (Array.isArray(p?.images) ? str(p.images[0]) : undefined);
   const productImages = firstVariant?.images;
