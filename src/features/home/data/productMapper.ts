@@ -177,7 +177,12 @@ export function mapApiProduct(p: RawApiProduct): Product {
   const firstVariant = variants[0];
   const productPrice = firstVariant?.price ?? 0;
   const productMrp = firstVariant?.mrp ?? 0;
-  const productImage = firstVariant?.image;
+  // Same fallback order as mapProduct/mapProductWithVariants: the variant's
+  // image wins, then the product's own landing image, then its gallery.
+  const productImage =
+    firstVariant?.image ??
+    str(p?.landingImage) ??
+    (Array.isArray(p?.images) ? str(p.images[0]) : undefined);
   const productImages = firstVariant?.images;
 
   return {

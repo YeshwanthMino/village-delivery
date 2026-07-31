@@ -326,3 +326,37 @@ describe('category name and path', () => {
     expect(mapProduct({ _id: 'p3', title: 'Salt' }).categoryName).toBeUndefined();
   });
 });
+
+describe('mapApiProduct image fallback', () => {
+  it('falls back to the product landingImage when no variant has an image', () => {
+    const raw = {
+      _id: 'p1',
+      title: 'Kandhi Pappu',
+      landingImage: 'https://cdn/product.webp',
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5 }],
+    };
+    expect(mapApiProduct(raw).image).toBe('https://cdn/product.webp');
+  });
+
+  it('falls back to the first product gallery image after that', () => {
+    const raw = {
+      _id: 'p2',
+      title: 'Kandhi Pappu',
+      images: ['https://cdn/gallery.webp'],
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5 }],
+    };
+    expect(mapApiProduct(raw).image).toBe('https://cdn/gallery.webp');
+  });
+
+  it('still prefers the variant image when there is one', () => {
+    const raw = {
+      _id: 'p3',
+      title: 'Kandhi Pappu',
+      landingImage: 'https://cdn/product.webp',
+      variants: [
+        { _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5, landingImage: 'https://cdn/variant.webp' },
+      ],
+    };
+    expect(mapApiProduct(raw).image).toBe('https://cdn/variant.webp');
+  });
+});
