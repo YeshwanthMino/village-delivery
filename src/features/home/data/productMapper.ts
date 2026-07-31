@@ -183,7 +183,12 @@ export function mapApiProduct(p: RawApiProduct): Product {
     str(firstVariant?.image) ??
     str(p?.landingImage) ??
     (Array.isArray(p?.images) ? str(p.images[0]) : undefined);
-  const productImages = firstVariant?.images;
+  // Mirrors the productImage fallback above — a product-level gallery must not
+  // be lost just because the first variant has none. Product.images is captured
+  // into cart snapshots (bill.ts), so an undefined here is not cosmetic.
+  const productImages =
+    firstVariant?.images ??
+    (Array.isArray(p?.images) && p.images.length > 0 ? p.images.map(String) : undefined);
 
   return {
     id: String(p?._id ?? ''),

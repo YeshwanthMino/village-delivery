@@ -96,6 +96,12 @@ describe('mapProductDetail', () => {
     expect(d.categoryTitle).toBe('Dairy & Eggs');
   });
 
+  it('coerces a non-string category rather than passing it through to render', () => {
+    const d = mapProductDetail({ ...RAW, categoryId: 'c1', category: 42 });
+    expect(d.categoryTitle).toBe('42');
+    expect(typeof d.categoryTitle).toBe('string');
+  });
+
   it('takes stock from the variants when the product has them', () => {
     const withVariants = {
       ...RAW,

@@ -16,6 +16,10 @@ function num(v: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function str(v: any): string | undefined {
+  return v ? String(v) : undefined;
+}
+
 export function mapProductDetail(p: any): ProductDetail {
   // Use the comprehensive mapApiProduct to extract all variant data
   const fullProduct = mapApiProduct(p);
@@ -64,7 +68,7 @@ export function mapProductDetail(p: any): ProductDetail {
     inStock: stock == null ? true : stock > 0,
     stock,
     active: p?.active !== false,
-    categoryTitle: p?.categoryId?.title || p?.category || undefined,
+    categoryTitle: str(p?.categoryId?.title) ?? str(p?.category),
     variants: fullProduct.variants,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
   };

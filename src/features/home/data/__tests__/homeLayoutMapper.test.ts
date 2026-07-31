@@ -380,6 +380,26 @@ describe('mapApiProduct image fallback', () => {
     };
     expect(mapApiProduct(raw).image).toBeUndefined();
   });
+
+  it('falls back to the product gallery for images, not just image', () => {
+    const raw = {
+      _id: 'p6',
+      title: 'Kandhi Pappu',
+      images: ['https://cdn/a.webp', 'https://cdn/b.webp'],
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5 }],
+    };
+    expect(mapApiProduct(raw).images).toEqual(['https://cdn/a.webp', 'https://cdn/b.webp']);
+  });
+
+  it('still prefers the variant gallery when it has one', () => {
+    const raw = {
+      _id: 'p7',
+      title: 'Kandhi Pappu',
+      images: ['https://cdn/product.webp'],
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5, images: ['https://cdn/variant.webp'] }],
+    };
+    expect(mapApiProduct(raw).images).toEqual(['https://cdn/variant.webp']);
+  });
 });
 
 describe('mapProductWithVariants image fallback', () => {
