@@ -111,6 +111,7 @@ export function mapVariant(v: RawVariant): Variant {
     listPrice,
     dealPrice,
     stock,
+    landingImage: v?.landingImage ? String(v.landingImage) : undefined,
     image: primaryImage ? String(primaryImage) : undefined,
     images: images.length > 0 ? images.map(String) : undefined,
     taxType: String(v?.taxType ?? ''),

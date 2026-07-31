@@ -125,6 +125,15 @@ describe('mapProduct variants', () => {
     expect(mapProduct(raw).variants?.[1].image).toBe('https://cdn/1l.jpg');
   });
 
+  it('keeps the raw landingImage alongside the resolved image', () => {
+    const variants = mapProduct(raw).variants!;
+    // v1 has a landingImage; v2 has only a gallery image.
+    expect(variants[0].landingImage).toBe('https://cdn/250.jpg');
+    expect(variants[0].image).toBe('https://cdn/250.jpg');
+    expect(variants[1].landingImage).toBeUndefined();
+    expect(variants[1].image).toBe('https://cdn/1l.jpg');
+  });
+
   it('still flags hasVariants only when there is more than one', () => {
     expect(mapProduct(raw).hasVariants).toBe(true);
     const single = { ...raw, variantIds: [raw.variantIds[0]] };

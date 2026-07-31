@@ -9,6 +9,9 @@ export interface Variant {
   listPrice?: number;
   dealPrice?: number;
   stock?: number;
+  /** The variant's own landing image, verbatim from the API. Prefer `image`
+   *  for display — that one already falls back to the first gallery image. */
+  landingImage?: string;
   image?: string;
   images?: string[];
   taxType?: string;
