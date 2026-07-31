@@ -82,6 +82,20 @@ describe('mapProductDetail', () => {
     expect(mapProductDetail({ ...RAW, active: false }).active).toBe(false);
   });
 
+  it('falls back to the top-level category name when categoryId is a bare string', () => {
+    const d = mapProductDetail({
+      ...RAW,
+      categoryId: '68a57d05701cbce1ebb1e924',
+      category: 'Pulses',
+    });
+    expect(d.categoryTitle).toBe('Pulses');
+  });
+
+  it('still prefers the populated categoryId.title', () => {
+    const d = mapProductDetail({ ...RAW, category: 'Ignored' });
+    expect(d.categoryTitle).toBe('Dairy & Eggs');
+  });
+
   it('takes stock from the variants when the product has them', () => {
     const withVariants = {
       ...RAW,

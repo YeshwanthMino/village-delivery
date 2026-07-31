@@ -20,7 +20,7 @@ export interface ProductDetail {
   inStock: boolean;       // false when stock is 0; absent stock => true
   stock?: number;         // available quantity
   active: boolean;        // p.active !== false (missing flag => active)
-  categoryTitle?: string; // categoryId.title
+  categoryTitle?: string; // categoryId.title, falling back to the top-level category
   variants?: Variant[];   // available variants for the product
   similarProducts: HomeProduct[];
 }

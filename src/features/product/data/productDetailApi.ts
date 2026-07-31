@@ -64,7 +64,7 @@ export function mapProductDetail(p: any): ProductDetail {
     inStock: stock == null ? true : stock > 0,
     stock,
     active: p?.active !== false,
-    categoryTitle: p?.categoryId?.title || undefined,
+    categoryTitle: p?.categoryId?.title || p?.category || undefined,
     variants: fullProduct.variants,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
   };
