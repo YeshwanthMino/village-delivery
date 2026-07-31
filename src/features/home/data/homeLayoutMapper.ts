@@ -15,7 +15,7 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
-import { mapVariants, populatedCategoryId, rawVariants, RawApiProduct, RawVariant } from './productMapper';
+import { mapVariants, populatedCategoryId, RawApiProduct } from './productMapper';
 
 /** Raw active-flag shape shared by products, categories, and menus — every
  *  caller only ever reads `active`, so this is deliberately minimal rather
@@ -122,17 +122,13 @@ export function mapProductWithVariants(p: RawApiProduct): Product {
   const productPrice = firstVariant?.price ?? toUnits(num(p?.dealPrice ?? p?.listPrice ?? p?.mrp));
   const productMrp = firstVariant?.mrp ?? toUnits(num(p?.mrp));
 
-  // Extract image from product or first variant. The raw (pre-mapVariants) first
-  // entry is read directly here, matching the pre-existing fallback order;
-  // `variantIds` is `unknown` on the raw type, so this narrows once at the single
-  // nested access rather than typing every level of an already-raw JSON blob.
-  const rawFirstVariant = rawVariants(p)[0] as RawVariant | undefined;
+  // Product image first, then the first variant's. `firstVariant.image` is
+  // already `landingImage || images[0]` (mapVariant), so reading it here keeps
+  // this in step with every other mapper instead of re-deriving the fallback.
   const image = String(
     p?.landingImage ||
     (Array.isArray(p?.images) ? p.images[0] : undefined) ||
-    (firstVariant && (rawFirstVariant?.landingImage || Array.isArray(rawFirstVariant?.images))
-      ? (rawFirstVariant?.images as unknown[] | undefined)?.[0]
-      : undefined) ||
+    firstVariant?.image ||
     ''
   );
 

@@ -360,3 +360,33 @@ describe('mapApiProduct image fallback', () => {
     expect(mapApiProduct(raw).image).toBe('https://cdn/variant.webp');
   });
 });
+
+describe('mapProductWithVariants image fallback', () => {
+  const noProductImage = {
+    _id: 'p1',
+    title: 'Kandhi Pappu',
+    variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5, landingImage: 'https://cdn/kp.webp' }],
+  };
+
+  it("uses the variant's landingImage when the variant has no gallery array", () => {
+    expect(mapProductWithVariants(noProductImage).image).toBe('https://cdn/kp.webp');
+  });
+
+  it("uses the variant's first gallery image when it has no landingImage", () => {
+    const galleryOnly = {
+      ...noProductImage,
+      variants: [{ _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 5, images: ['https://cdn/gal.webp'] }],
+    };
+    expect(mapProductWithVariants(galleryOnly).image).toBe('https://cdn/gal.webp');
+  });
+
+  it('still prefers the product-level landingImage over the variant', () => {
+    const withProductImage = { ...noProductImage, landingImage: 'https://cdn/product.webp' };
+    expect(mapProductWithVariants(withProductImage).image).toBe('https://cdn/product.webp');
+  });
+
+  it('maps to an empty string when nothing has an image', () => {
+    const nothing = { _id: 'p2', title: 'Salt', variants: [{ _id: 'v1', title: '1 kg', mrp: 20, dealPrice: 20, stock: 5 }] };
+    expect(mapProductWithVariants(nothing).image).toBe('');
+  });
+});
