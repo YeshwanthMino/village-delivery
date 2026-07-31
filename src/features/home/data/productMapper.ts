@@ -83,14 +83,14 @@ export function populatedCategoryId(categoryId: unknown): string {
   return '';
 }
 
-function num(v: unknown): number {
+export function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
 /** Coerce to a non-empty string, or undefined — an absent or empty API field
  *  must not become the string "undefined" or a truthy "". */
-function str(v: unknown): string | undefined {
+export function str(v: unknown): string | undefined {
   return v ? String(v) : undefined;
 }
 
@@ -140,11 +140,8 @@ export function mapVariant(v: RawVariant): Variant {
  * `variants`; the page-layout feed still sends `variantIds` (populated objects
  * or bare ObjectId refs). `variants` wins when a response carries both, so a
  * half-migrated response can never serve stale variant data.
- *
- * Exported for tests and future callers that need the raw entries; `mapVariants`
- * below is the only current consumer.
  */
-export function rawVariants(p: RawApiProduct): unknown[] {
+function rawVariants(p: RawApiProduct): unknown[] {
   const raw = p?.variants ?? p?.variantIds;
   return Array.isArray(raw) ? raw : [];
 }

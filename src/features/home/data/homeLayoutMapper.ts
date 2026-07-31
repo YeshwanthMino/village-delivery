@@ -15,7 +15,7 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
-import { mapVariants, populatedCategoryId, RawApiProduct } from './productMapper';
+import { mapVariants, num, populatedCategoryId, RawApiProduct, str } from './productMapper';
 
 /** Raw active-flag shape shared by products, categories, and menus — every
  *  caller only ever reads `active`, so this is deliberately minimal rather
@@ -78,17 +78,6 @@ interface RawHomeLayoutRoot {
   featuredMenus?: unknown;
   productCarousels?: unknown;
   components?: unknown;
-}
-
-function num(v: unknown): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/** Coerce to a non-empty string, or undefined — mirrors the `x || undefined`
- *  fallback every mapper here already used, just typed for an `unknown` input. */
-function str(v: unknown): string | undefined {
-  return v ? String(v) : undefined;
 }
 
 /** The network layer hands back either the payload itself or `{ data: payload }`;
