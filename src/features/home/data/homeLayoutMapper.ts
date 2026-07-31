@@ -202,9 +202,10 @@ export function mapProduct(p: RawApiProduct): HomeProduct {
     stock: totalStock,
     slug,
     link: slug ? `/${slug}` : undefined,
-    // Unlike mapApiProduct/mapProductWithVariants, this endpoint's categoryId
-    // arrives unpopulated (a bare id string) — see RawApiProduct's doc comment.
-    categoryId: str(p?.categoryId),
+    // Both shapes (bare id string, populated object) resolve through the same
+    // helper — see RawApiProduct's doc comment. HomeProduct's categoryId is
+    // optional, so an absent field stays undefined rather than becoming ''.
+    categoryId: populatedCategoryId(p?.categoryId) || undefined,
     hasVariants: (variants?.length ?? 0) > 1,
     variants,
   };

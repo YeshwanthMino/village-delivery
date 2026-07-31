@@ -278,3 +278,25 @@ describe('variants arriving under the new `variants` key', () => {
     expect(product.hasVariants).toBe(false);
   });
 });
+
+describe('categoryId shapes', () => {
+  const bare = { _id: 'p1', title: 'Kandhi Pappu', categoryId: '68a57d05701cbce1ebb1e924' };
+  const populated = { _id: 'p1', title: 'Kandhi Pappu', categoryId: { _id: 'c1', title: 'Pulses' } };
+
+  it('reads a bare id string', () => {
+    expect(mapApiProduct(bare).categoryId).toBe('68a57d05701cbce1ebb1e924');
+    expect(mapProductWithVariants(bare).categoryId).toBe('68a57d05701cbce1ebb1e924');
+    expect(mapProduct(bare).categoryId).toBe('68a57d05701cbce1ebb1e924');
+  });
+
+  it('reads a populated categoryId object', () => {
+    expect(mapApiProduct(populated).categoryId).toBe('c1');
+    expect(mapProductWithVariants(populated).categoryId).toBe('c1');
+    expect(mapProduct(populated).categoryId).toBe('c1');
+  });
+
+  it('yields no categoryId when the field is absent', () => {
+    expect(mapApiProduct({ _id: 'p1', title: 'x' }).categoryId).toBe('');
+    expect(mapProduct({ _id: 'p1', title: 'x' }).categoryId).toBeUndefined();
+  });
+});

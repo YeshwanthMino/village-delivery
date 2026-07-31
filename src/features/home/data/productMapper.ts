@@ -69,10 +69,11 @@ export interface RawApiProduct {
   variantIds?: unknown;
 }
 
-/** Narrow the loosely-typed `categoryId` to the populated `{ _id }` shape a
- *  couple of mappers expect; other endpoints send a bare id string instead,
- *  which has no `_id` to read and falls through to the empty default. */
+/** Read an id out of the loosely-typed `categoryId`, which arrives in two
+ *  shapes depending on the endpoint: a bare id string, or a populated
+ *  `{ _id, title }` object. Anything else yields the empty default. */
 export function populatedCategoryId(categoryId: unknown): string {
+  if (typeof categoryId === 'string') return categoryId;
   if (categoryId && typeof categoryId === 'object' && '_id' in categoryId) {
     return String((categoryId as { _id?: unknown })._id ?? '');
   }
