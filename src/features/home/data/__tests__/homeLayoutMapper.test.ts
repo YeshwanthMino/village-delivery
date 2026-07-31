@@ -411,3 +411,147 @@ describe('mapProductWithVariants image fallback', () => {
     expect(mapProductWithVariants(nothing).image).toBe('');
   });
 });
+
+// A real /app/product response, trimmed to three of its six variants (one
+// per stock condition: plentiful, plentiful, out of stock). Prices are the
+// payload's real rupee values, so every assertion goes through rupees().
+const KANDHI_PAPPU = {
+  _id: '6a69e3c4fcbaf7b551f79ab0',
+  title: 'కంది పప్పు | Kandhi Pappu (Toor Dal)',
+  description: '',
+  teluguTitle: 'కంది పప్పు',
+  landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+  categoryId: '68a57d05701cbce1ebb1e924',
+  rating: 0,
+  reviews: 0,
+  manufacturerId: '68a5af6ae286fe170cd176af',
+  category: 'Pulses',
+  categoryPath: '_Pulses',
+  variants: [
+    {
+      _id: '6a6a3284fcbaf7b551f79ac2',
+      active: true,
+      title: 'కంది పప్పు | Kandhi Pappu (Toor Dal) - 1 kg - Normal Quality',
+      slug: 'or-kandhi-pappu-toor-dal-1-kg-normal-quality',
+      teluguTitle: 'కంది పప్పు - 1 kg - Normal Quality',
+      description: '',
+      mrp: 220,
+      listPrice: 200,
+      dealPrice: 200,
+      taxType: 'NIL',
+      taxRate: 0,
+      hasFreeItem: true,
+      landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+      images: ['https://ik.imagekit.io/mf/Kandi_pappu.webp'],
+      stock: 100,
+    },
+    {
+      _id: '6a6a329afcbaf7b551f79acb',
+      active: true,
+      title: 'కంది పప్పు | Kandhi Pappu (Toor Dal) - 1 kg - Top Quality',
+      slug: 'or-kandhi-pappu-toor-dal-1-kg-top-quality',
+      teluguTitle: 'కంది పప్పు - 1 kg - Top Quality',
+      description: '',
+      mrp: 110,
+      listPrice: 100,
+      dealPrice: 100,
+      taxType: 'NIL',
+      taxRate: 0,
+      hasFreeItem: true,
+      landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+      images: ['https://ik.imagekit.io/mf/Kandi_pappu.webp'],
+      stock: 90,
+    },
+    {
+      _id: '6a6a3284fcbaf7b551f79ac1',
+      active: true,
+      title: 'కంది పప్పు | Kandhi Pappu (Toor Dal) - 250 gm - Top Quality',
+      slug: 'or-kandhi-pappu-toor-dal-250-gm-top-quality',
+      teluguTitle: 'కంది పప్పు - 250 gm - Top Quality',
+      description: '',
+      mrp: 30,
+      listPrice: 28,
+      dealPrice: 28,
+      taxType: 'NIL',
+      taxRate: 0,
+      hasFreeItem: true,
+      landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+      images: ['https://ik.imagekit.io/mf/Kandi_pappu.webp'],
+      stock: 0,
+    },
+  ],
+};
+
+describe('the real Kandhi Pappu payload', () => {
+  it('maps every product-level field through mapApiProduct', () => {
+    const product = mapApiProduct(KANDHI_PAPPU);
+    expect(product.id).toBe('6a69e3c4fcbaf7b551f79ab0');
+    expect(product.name).toBe('కంది పప్పు | Kandhi Pappu (Toor Dal)');
+    expect(product.nameTE).toBe('కంది పప్పు');
+    expect(product.categoryId).toBe('68a57d05701cbce1ebb1e924');
+    expect(product.categoryName).toBe('Pulses');
+    expect(product.categoryPath).toBe('_Pulses');
+    expect(product.manufacturerId).toBe('68a5af6ae286fe170cd176af');
+    expect(product.image).toBe('https://ik.imagekit.io/mf/Kandi_pappu.webp');
+    expect(product.stock).toBe(190); // 100 + 90 + 0
+    expect(rupees(product.price)).toBe('₹200');
+    expect(rupees(product.mrp)).toBe('₹220');
+  });
+
+  it('maps every variant field onto the Variant dataclass', () => {
+    const first = mapApiProduct(KANDHI_PAPPU).variants![0];
+    expect(first).toEqual({
+      id: '6a6a3284fcbaf7b551f79ac2',
+      name: 'కంది పప్పు | Kandhi Pappu (Toor Dal) - 1 kg - Normal Quality',
+      nameTE: 'కంది పప్పు - 1 kg - Normal Quality',
+      slug: 'or-kandhi-pappu-toor-dal-1-kg-normal-quality',
+      description: '',
+      price: 10, // ₹200 in units
+      mrp: 11, // ₹220 in units
+      listPrice: 10,
+      dealPrice: 10,
+      stock: 100,
+      landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+      image: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
+      images: ['https://ik.imagekit.io/mf/Kandi_pappu.webp'],
+      taxType: 'NIL',
+      taxRate: 0,
+      hasFreeItem: true,
+      hsn: '',
+      active: true,
+    });
+  });
+
+  it('maps identically on the card path', () => {
+    const card = mapProduct(KANDHI_PAPPU);
+    expect(card.variants).toEqual(mapApiProduct(KANDHI_PAPPU).variants);
+    expect(card.hasVariants).toBe(true);
+    expect(card.stock).toBe(190);
+    expect(card.inStock).toBe(true);
+    expect(rupees(card.price)).toBe('₹200');
+    expect(card.discountPct).toBe(9); // (220-200)/220 = 9.09% -> 9
+    expect(card.categoryName).toBe('Pulses');
+  });
+
+  it('keeps the out-of-stock variant in the list rather than dropping it', () => {
+    // The variant sheet must show it, disabled — silently omitting a variant
+    // would renumber the ${productId}-v${index} cart keys.
+    const variants = mapProduct(KANDHI_PAPPU).variants!;
+    expect(variants).toHaveLength(3);
+    expect(variants[2].stock).toBe(0);
+  });
+
+  it('collapses to product-level stock when every variant ref is unpopulated', () => {
+    // Same guarantee the old `variantIds` key had, now under `variants`.
+    const allUnpopulated = {
+      ...KANDHI_PAPPU,
+      stock: 7,
+      variants: ['64f0000000000000000000aa', '64f0000000000000000000bb'],
+    };
+    const card = mapProduct(allUnpopulated);
+    expect(card.variants).toBeUndefined();
+    expect(card.hasVariants).toBe(false);
+    expect(card.stock).toBe(7);
+    expect(card.inStock).toBe(true);
+  });
+});

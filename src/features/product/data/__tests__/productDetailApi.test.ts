@@ -132,4 +132,21 @@ describe('mapProductDetail', () => {
     expect(d.stock).toBe(7);
     expect(d.inStock).toBe(true);
   });
+
+  it('maps variants arriving under the new `variants` key', () => {
+    const d = mapProductDetail({
+      ...RAW,
+      stock: 99, // product-level value must be ignored once variants exist
+      variants: [
+        { _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 100 },
+        { _id: 'v2', title: '250 gm', mrp: 30, dealPrice: 28, stock: 0 },
+      ],
+    });
+    expect(d.variants).toHaveLength(2);
+    expect(d.variants![0].id).toBe('v1');
+    expect(rupees(d.price)).toBe('₹200');
+    expect(rupees(d.mrp)).toBe('₹220');
+    expect(d.stock).toBe(100);
+    expect(d.inStock).toBe(true);
+  });
 });
