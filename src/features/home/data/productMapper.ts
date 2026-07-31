@@ -63,7 +63,9 @@ export interface RawApiProduct {
   slug?: unknown;
   stock?: unknown;
   active?: unknown;
-  /** Populated variant objects, or unpopulated ObjectId refs — see `mapVariants`. */
+  /** Populated variant objects — the key newer endpoints send. See `rawVariants`. */
+  variants?: unknown;
+  /** Legacy key: populated variant objects, or unpopulated ObjectId refs. */
   variantIds?: unknown;
 }
 
@@ -124,14 +126,29 @@ export function mapVariant(v: RawVariant): Variant {
 }
 
 /**
- * Maps a raw variantIds array, dropping unpopulated refs (a raw ObjectId
+ * The raw variant array as the backend sends it. Newer endpoints populate
+ * `variants`; the page-layout feed still sends `variantIds` (populated objects
+ * or bare ObjectId refs). `variants` wins when a response carries both, so a
+ * half-migrated response can never serve stale variant data.
+ *
+ * Exported because mapProductWithVariants needs the *raw* first entry for an
+ * image fallback — reading `p.variantIds[0]` there directly is what would
+ * otherwise keep it on the old key.
+ */
+export function rawVariants(p: RawApiProduct): unknown[] {
+  const raw = p?.variants ?? p?.variantIds;
+  return Array.isArray(raw) ? raw : [];
+}
+
+/**
+ * Maps a product's variants, dropping unpopulated refs (a raw ObjectId
  * string instead of the populated variant object) so callers never see a
  * nameless, ₹0 row.
  */
-export function mapVariants(raw: unknown): Variant[] {
-  return Array.isArray(raw)
-    ? raw.filter((v): v is RawVariant => v != null && typeof v === 'object').map(mapVariant)
-    : [];
+export function mapVariants(p: RawApiProduct): Variant[] {
+  return rawVariants(p)
+    .filter((v): v is RawVariant => v != null && typeof v === 'object')
+    .map(mapVariant);
 }
 
 /**
@@ -141,7 +158,7 @@ export function mapVariants(raw: unknown): Variant[] {
  * - Uses first variant's image and price for product-level defaults
  */
 export function mapApiProduct(p: RawApiProduct): Product {
-  const variants = mapVariants(p?.variantIds);
+  const variants = mapVariants(p);
 
   // Aggregate stock from all variants
   const totalStock = variants.reduce((sum: number, v: Variant) => sum + (v.stock ?? 0), 0);

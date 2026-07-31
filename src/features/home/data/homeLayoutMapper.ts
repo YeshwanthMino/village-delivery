@@ -15,7 +15,7 @@ import {
 
 import { Product, Variant } from '@/src/base/types/village.types';
 import { toUnits } from '@/src/shared/utils/currency';
-import { mapVariants, populatedCategoryId, RawApiProduct, RawVariant } from './productMapper';
+import { mapVariants, populatedCategoryId, rawVariants, RawApiProduct, RawVariant } from './productMapper';
 
 /** Raw active-flag shape shared by products, categories, and menus — every
  *  caller only ever reads `active`, so this is deliberately minimal rather
@@ -115,7 +115,7 @@ export function isProductActive(p: RawActiveFlagged): boolean {
  * Handles both API products with variantIds and legacy products.
  */
 export function mapProductWithVariants(p: RawApiProduct): Product {
-  const variants = mapVariants(p?.variantIds);
+  const variants = mapVariants(p);
 
   // Use first variant's price for product-level price, or fallback to dealPrice/listPrice/mrp
   const firstVariant = variants[0];
@@ -126,9 +126,7 @@ export function mapProductWithVariants(p: RawApiProduct): Product {
   // entry is read directly here, matching the pre-existing fallback order;
   // `variantIds` is `unknown` on the raw type, so this narrows once at the single
   // nested access rather than typing every level of an already-raw JSON blob.
-  const rawFirstVariant = (Array.isArray(p?.variantIds) ? p.variantIds[0] : undefined) as
-    | RawVariant
-    | undefined;
+  const rawFirstVariant = rawVariants(p)[0] as RawVariant | undefined;
   const image = String(
     p?.landingImage ||
     (Array.isArray(p?.images) ? p.images[0] : undefined) ||
@@ -169,7 +167,7 @@ export function mapProduct(p: RawApiProduct): HomeProduct {
   // Unpopulated refs (a raw ObjectId string instead of the variant object)
   // are dropped by mapVariants, so an all-unpopulated array collapses to
   // undefined rather than a truthy [] that would swallow the stock fallback.
-  const mapped = mapVariants(p?.variantIds);
+  const mapped = mapVariants(p);
   const variants = mapped.length > 0 ? mapped : undefined;
   const first = variants?.[0];
 

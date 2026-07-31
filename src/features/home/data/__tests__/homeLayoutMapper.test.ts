@@ -225,3 +225,56 @@ describe('mapProductWithVariants price units', () => {
     expect(rupees(product.mrp)).toBe('₹100');
   });
 });
+
+describe('variants arriving under the new `variants` key', () => {
+  const newShape = {
+    _id: 'p9',
+    title: 'Kandhi Pappu',
+    variants: [
+      { _id: 'v1', title: '1 kg', mrp: 220, dealPrice: 200, stock: 100, landingImage: 'https://cdn/kp.webp' },
+      { _id: 'v2', title: '250 gm', mrp: 30, dealPrice: 28, stock: 0 },
+    ],
+  };
+
+  it('maps them through mapProduct', () => {
+    const product = mapProduct(newShape);
+    expect(product.variants).toHaveLength(2);
+    expect(product.variants![0].id).toBe('v1');
+    expect(rupees(product.price)).toBe('₹200');
+    expect(rupees(product.mrp)).toBe('₹220');
+    expect(product.stock).toBe(100);
+    expect(product.inStock).toBe(true);
+    expect(product.hasVariants).toBe(true);
+    expect(product.image).toBe('https://cdn/kp.webp');
+  });
+
+  it('maps them through mapApiProduct, agreeing field-for-field with mapProduct', () => {
+    expect(mapApiProduct(newShape).variants).toEqual(mapProduct(newShape).variants);
+    expect(mapApiProduct(newShape).stock).toBe(100);
+  });
+
+  it('maps them through mapProductWithVariants', () => {
+    const product = mapProductWithVariants(newShape);
+    expect(product.variants).toHaveLength(2);
+    expect(rupees(product.price)).toBe('₹200');
+    // product.image is asserted in a later task, which fixes its fallback chain.
+  });
+
+  it('prefers `variants` when a response carries both keys', () => {
+    const both = {
+      ...newShape,
+      variantIds: [{ _id: 'old', title: 'stale', mrp: 999, dealPrice: 999, stock: 1 }],
+    };
+    expect(mapProduct(both).variants!.map((v) => v.id)).toEqual(['v1', 'v2']);
+    expect(mapProductWithVariants(both).variants!.map((v) => v.id)).toEqual(['v1', 'v2']);
+    expect(mapApiProduct(both).variants!.map((v) => v.id)).toEqual(['v1', 'v2']);
+  });
+
+  it('still drops unpopulated refs under the new key', () => {
+    const withRef = { ...newShape, variants: ['64f0000000000000000000aa', newShape.variants[0]] };
+    const product = mapProduct(withRef);
+    expect(product.variants).toHaveLength(1);
+    expect(product.variants![0].id).toBe('v1');
+    expect(product.hasVariants).toBe(false);
+  });
+});
