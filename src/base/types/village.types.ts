@@ -41,6 +41,10 @@ export interface Product {
   manufacturerId?: string;
   brandId?: string;
   stock?: number;
+  /** Human-readable category name, e.g. "Pulses". */
+  categoryName?: string;
+  /** Backend category path, e.g. "_Pulses". */
+  categoryPath?: string;
   variants?: Variant[];
 }
 

@@ -33,6 +33,8 @@ export interface HomeProduct {
   slug?: string;
   link?: string;
   categoryId?: string;
+  categoryName?: string; // human-readable name, e.g. "Pulses"
+  categoryPath?: string; // backend category path, e.g. "_Pulses"
   hasVariants?: boolean; // product has multiple variant options
   /** Variants as they arrived in the list response — the variant sheet renders
    *  these directly, so opening it costs no extra request. */

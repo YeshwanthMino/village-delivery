@@ -150,6 +150,8 @@ export function mapProductWithVariants(p: RawApiProduct): Product {
     gradientFrom: undefined,
     gradientTo: undefined,
     image,
+    categoryName: str(p?.category),
+    categoryPath: str(p?.categoryPath),
     variants: variants.length > 0 ? variants : undefined,
   };
 }
@@ -206,6 +208,8 @@ export function mapProduct(p: RawApiProduct): HomeProduct {
     // helper — see RawApiProduct's doc comment. HomeProduct's categoryId is
     // optional, so an absent field stays undefined rather than becoming ''.
     categoryId: populatedCategoryId(p?.categoryId) || undefined,
+    categoryName: str(p?.category),
+    categoryPath: str(p?.categoryPath),
     hasVariants: (variants?.length ?? 0) > 1,
     variants,
   };

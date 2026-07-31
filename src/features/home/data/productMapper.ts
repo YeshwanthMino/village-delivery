@@ -48,6 +48,9 @@ export interface RawVariant {
 export interface RawApiProduct {
   _id?: unknown;
   categoryId?: unknown;
+  /** Human-readable category name; sibling of the id in `categoryId`. */
+  category?: unknown;
+  categoryPath?: unknown;
   title?: unknown;
   teluguTitle?: unknown;
   rating?: unknown;
@@ -83,6 +86,12 @@ export function populatedCategoryId(categoryId: unknown): string {
 function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+/** Coerce to a non-empty string, or undefined — an absent or empty API field
+ *  must not become the string "undefined" or a truthy "". */
+function str(v: unknown): string | undefined {
+  return v ? String(v) : undefined;
 }
 
 /**
@@ -185,6 +194,8 @@ export function mapApiProduct(p: RawApiProduct): Product {
     manufacturerId: String(p?.manufacturerId ?? ''),
     brandId: String(p?.brandId ?? ''),
     stock: totalStock,
+    categoryName: str(p?.category),
+    categoryPath: str(p?.categoryPath),
     image: productImage,
     images: productImages,
     emoji: '', // Not provided by backend

@@ -300,3 +300,29 @@ describe('categoryId shapes', () => {
     expect(mapProduct({ _id: 'p1', title: 'x' }).categoryId).toBeUndefined();
   });
 });
+
+describe('category name and path', () => {
+  const raw = {
+    _id: 'p1',
+    title: 'Kandhi Pappu',
+    categoryId: '68a57d05701cbce1ebb1e924',
+    category: 'Pulses',
+    categoryPath: '_Pulses',
+  };
+
+  it('maps both fields on every product mapper', () => {
+    expect(mapApiProduct(raw).categoryName).toBe('Pulses');
+    expect(mapApiProduct(raw).categoryPath).toBe('_Pulses');
+    expect(mapProductWithVariants(raw).categoryName).toBe('Pulses');
+    expect(mapProductWithVariants(raw).categoryPath).toBe('_Pulses');
+    expect(mapProduct(raw).categoryName).toBe('Pulses');
+    expect(mapProduct(raw).categoryPath).toBe('_Pulses');
+  });
+
+  it('leaves them undefined when absent or empty', () => {
+    const without = { _id: 'p2', title: 'Rice', category: '', categoryPath: '' };
+    expect(mapApiProduct(without).categoryName).toBeUndefined();
+    expect(mapApiProduct(without).categoryPath).toBeUndefined();
+    expect(mapProduct({ _id: 'p3', title: 'Salt' }).categoryName).toBeUndefined();
+  });
+});
