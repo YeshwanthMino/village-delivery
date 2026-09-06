@@ -38,7 +38,8 @@ export function parseTokens(resp: any): AuthTokens | null {
 
 /**
  * Send the login OTP. The server replies with a `deviceId` that must be echoed
- * back on verify-otp / signup. Returns null if the response carries none.
+ * back on verify-otp / signup as the `x-device-id` header (never in the body).
+ * Returns null if the response carries none.
  */
 export async function requestOtp(storeId: string, mobileNumber: string): Promise<string | null> {
   const resp = await apiClient.postWithoutAuth<any>(
@@ -85,14 +86,16 @@ export interface SignupInput {
   otp: string;
   firstName: string;
   lastName: string;
-  deviceId: string | null;
 }
 
-export async function signup(storeId: string, input: SignupInput): Promise<AuthTokens> {
-  const { deviceId, ...body } = input;
+export async function signup(
+  storeId: string,
+  input: SignupInput,
+  deviceId: string | null,
+): Promise<AuthTokens> {
   const resp = await apiClient.postWithoutAuth<any>(
     `${BASE}${AppAuthRoutes.loginSignup}`,
-    body,
+    input,
     storeOpts(storeId, deviceId),
   );
   logger.debug('[appAuth] login-signup raw:', JSON.stringify(resp));

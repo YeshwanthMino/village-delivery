@@ -192,13 +192,11 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   signupUser: async (phoneNumber, otp, firstName, lastName) => {
     set({ isLoading: true, error: null });
     try {
-      const tokens = await appAuth.signup(requireStoreId(), {
-        mobileNumber: phoneNumber,
-        otp,
-        firstName,
-        lastName,
-        deviceId: get().deviceId,
-      });
+      const tokens = await appAuth.signup(
+        requireStoreId(),
+        { mobileNumber: phoneNumber, otp, firstName, lastName },
+        get().deviceId,
+      );
       await finalizeAuth(tokens);
     } catch (error) {
       set({ isLoading: false, error: errMessage(error) });
