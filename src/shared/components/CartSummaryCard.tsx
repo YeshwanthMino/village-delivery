@@ -7,7 +7,9 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTim
 import { useVillageStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
+import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 import { rupees, rupeesCeil } from '@/src/shared/utils/currency';
+import { renderTemplateWithBold } from '@/src/shared/utils/richText';
 import type { CartLineItem } from '@/src/base/types/village.types';
 
 interface CartSummaryCardProps {
@@ -19,14 +21,6 @@ const TAB_BAR_CONTENT_HEIGHT = 64;
 const MAX_THUMBNAILS = 3;
 const CHIP_SIZE = 32;
 const CHIP_OFFSET = 11;
-
-/** Splits a `{n}` template into the text either side of the placeholder, so
- *  the amount itself can be rendered as a separately-styled nested `<Text>`
- *  instead of one uniform run. */
-function splitOnAmount(template: string): [string, string] {
-  const [prefix = '', suffix = ''] = template.split('{n}');
-  return [prefix, suffix];
-}
 
 /** Most-recently-added distinct products first, capped at `max`, fanned like
  *  a hand of cards. Cart keys preserve insertion order, so scanning from the
@@ -63,6 +57,7 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
 
   const cartItems = React.useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);
   const bill = React.useMemo(() => computeBill(cartItems), [cartItems]);
+  const cashback = useCartCashback(bill.grandTotal);
 
   if (bill.totalCount === 0) return null;
 
@@ -70,12 +65,13 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   // Most-recently-added distinct products, fanned in a deck-of-cards stack —
   // shown regardless of threshold state.
   const recentItems = distinctRecentItems(cartItems, MAX_THUMBNAILS);
-  // bill.amountToMinimum is already clamped to 0 at/above the minimum (see
-  // computeBill), so this is max(0, minimumOrderValue - cartTotal) verbatim.
-  const progress = Math.min(1, Math.max(0, bill.grandTotal / bill.minOrderValue));
-
-  const [nudgePrefix, nudgeSuffix] = splitOnAmount(t('shop_more_to_place_order'));
-  const [savedPrefix, savedSuffix] = splitOnAmount(t('saved_amount'));
+  const showCashback = !bill.belowMinimum && cashback.phase !== 'disabled';
+  // Below the minimum, the bar tracks progress to the order minimum itself.
+  // Once cashback takes over, it tracks the current tier segment instead —
+  // see cartProgress.ts for the segment-relative math.
+  const progress = showCashback
+    ? cashback.progress
+    : Math.min(1, Math.max(0, bill.grandTotal / bill.minOrderValue));
 
   return (
     <TouchableOpacity
@@ -93,15 +89,26 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
           </View>
           {bill.belowMinimum ? (
             <Text style={styles.nudge}>
-              {nudgePrefix}
-              <Text style={styles.nudgeAmount}>{rupeesCeil(bill.amountToMinimum)}</Text>
-              {nudgeSuffix}
+              {renderTemplateWithBold(
+                t('shop_more_to_place_order'),
+                { n: rupeesCeil(bill.amountToMinimum) },
+                styles.nudgeAmount,
+              )}
             </Text>
+          ) : showCashback ? (
+            <>
+              <Text style={styles.nudge}>
+                {renderTemplateWithBold(t(cashback.primary.key), cashback.primary.vars, styles.nudgeAmount)}
+              </Text>
+              {cashback.vipUpsell && (
+                <Text style={styles.vipUpsell}>
+                  {renderTemplateWithBold(t(cashback.vipUpsell.key), cashback.vipUpsell.vars, styles.vipUpsellAmount)}
+                </Text>
+              )}
+            </>
           ) : bill.totalSavings > 0 ? (
             <Text style={styles.saved}>
-              {savedPrefix}
-              <Text style={styles.savedAmount}>{rupees(bill.totalSavings)}</Text>
-              {savedSuffix}
+              {renderTemplateWithBold(t('saved_amount'), { n: rupees(bill.totalSavings) }, styles.savedAmount)}
             </Text>
           ) : (
             <Text style={styles.nudge}>{t('order_ready_to_place')}</Text>
@@ -173,6 +180,8 @@ const styles = StyleSheet.create({
   total: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
   nudge: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
   nudgeAmount: { color: '#ffffff', fontWeight: '800' },
+  vipUpsell: { color: 'rgba(255,255,255,0.75)', fontWeight: '500', fontSize: 10.5, marginTop: 2 },
+  vipUpsellAmount: { color: '#ffffff', fontWeight: '800' },
   saved: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
   savedAmount: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   progressTrack: {

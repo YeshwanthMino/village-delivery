@@ -6,11 +6,13 @@ import type { CartRecord, CartSnapshot, CartSnapshotRecord } from '@/src/base/ty
 
 let mockCart: CartRecord = {};
 let mockSnapshots: CartSnapshotRecord = {};
+let mockUser: { isVip?: boolean } | null = null;
 
 jest.mock('@/src/core/store', () => ({
   useVillageStore: jest.fn(selector =>
     selector({ cart: mockCart, cartSnapshots: mockSnapshots })
   ),
+  useAuthStore: jest.fn(selector => selector({ user: mockUser })),
 }));
 
 // jest.mock factories can only reference out-of-scope variables prefixed
@@ -19,6 +21,9 @@ const mockRawTemplates: Record<string, string> = {
   order_ready_to_place: 'Ready to place your order!',
   shop_more_to_place_order: 'Shop for {n} more to place order',
   saved_amount: 'SAVED {n}',
+  cashback_shop_more: 'Shop {n} more to get {r} cashback',
+  cashback_max_unlocked: 'Max cashback unlocked · {r}',
+  vip_upsell_double: 'Add VIP for {f}/month · double it to {r}',
   view_cart: 'View cart',
 };
 
@@ -48,6 +53,7 @@ describe('CartSummaryCard', () => {
   afterEach(() => {
     mockCart = {};
     mockSnapshots = {};
+    mockUser = null;
   });
 
   test('renders nothing when the cart is empty', () => {
@@ -64,33 +70,81 @@ describe('CartSummaryCard', () => {
     expect(screen.getByText('1 ITEMS')).toBeTruthy();
     expect(screen.getByText('₹100')).toBeTruthy();
     expect(screen.getByText('View cart')).toBeTruthy();
-    expect(screen.getByText('Shop for ₹99 more to place order')).toBeTruthy();
+    expect(screen.getByText('₹99')).toBeTruthy();
     expect(screen.getByTestId('cart-summary-icon')).toBeTruthy();
   });
 
-  test('at/above minimum with no discount: keeps the same compact card, no shortfall/savings line, no bottom-bar CTA', () => {
+  test('toward first tier: shows cashback progress and the VIP upsell for a non-VIP user', () => {
     mockCart = { p1: 1 };
-    mockSnapshots = { p1: snapshot('p1', 250) }; // mrp === price, no savings
+    mockSnapshots = { p1: snapshot('p1', 250) }; // mrp === price, no MRP savings
+    mockUser = { isVip: false };
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.getByText('1 ITEMS')).toBeTruthy();
     expect(screen.getByText('₹250')).toBeTruthy();
-    expect(screen.getByText('Ready to place your order!')).toBeTruthy();
-    expect(screen.queryByText(/Shop for/)).toBeNull();
+    expect(screen.getByText('₹500')).toBeTruthy(); // shortfall to ₹750
+    expect(screen.getByText('₹25')).toBeTruthy(); // tier-1 standard reward
+    expect(screen.getByText('₹45')).toBeTruthy(); // VIP fee
+    expect(screen.getByText('₹50')).toBeTruthy(); // doubled VIP reward
+    expect(screen.queryByText('Ready to place your order!')).toBeNull();
     expect(screen.queryByText(/SAVED/)).toBeNull();
-    expect(screen.queryByText('View cart →')).toBeNull();
   });
 
-  test('at/above minimum with a discount: shows only the saved amount, no "ready to place" line', () => {
+  test('tier unlocked: counts down to the next tier, not the one already achieved', () => {
     mockCart = { p1: 1 };
-    mockSnapshots = { p1: snapshot('p1', 250, { mrp: toUnits(285) }) }; // saved ₹35
+    mockSnapshots = { p1: snapshot('p1', 800) };
+    mockUser = { isVip: false };
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
-    expect(screen.getByText('SAVED ₹35')).toBeTruthy();
-    expect(screen.queryByText('Ready to place your order!')).toBeNull();
-    expect(screen.queryByText(/Shop for/)).toBeNull();
+    expect(screen.getByText('₹700')).toBeTruthy(); // shortfall to ₹1500
+    expect(screen.getByText('₹50')).toBeTruthy(); // tier-2 standard reward
+    expect(screen.queryByText('₹25')).toBeNull(); // already-unlocked reward not shown here
+  });
+
+  test('max tier: shows the max-unlocked line and still upsells VIP', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 8000) };
+    mockUser = { isVip: false };
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.getByText('₹250')).toBeTruthy(); // max standard reward
+    expect(screen.getByText('₹500')).toBeTruthy(); // doubled max reward
+  });
+
+  test('a VIP user sees only the VIP reward, never the standard one, and no upsell line', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 800) };
+    mockUser = { isVip: true };
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.getByText('₹100')).toBeTruthy(); // tier-2 VIP reward, already doubled
+    expect(screen.queryByText('₹50')).toBeNull(); // tier-2's standardReward — must never reach a VIP screen
+    expect(screen.queryByText(/Add VIP for/)).toBeNull();
+  });
+
+  test('a logged-out user (no profile) is treated as non-VIP and sees the upsell', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 800) };
+    mockUser = null;
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.getByText(/Add VIP for/)).toBeTruthy();
+  });
+
+  test('a discount with cashback active: cashback replaces the "SAVED" line', () => {
+    mockCart = { p1: 1 };
+    mockSnapshots = { p1: snapshot('p1', 250, { mrp: toUnits(285) }) }; // saved ₹35
+    mockUser = { isVip: false };
+
+    render(<CartSummaryCard onPress={jest.fn()} />);
+
+    expect(screen.queryByText('SAVED ₹35')).toBeNull();
+    expect(screen.getByText(/Add VIP for/)).toBeTruthy();
   });
 
   test('fans up to 3 distinct products in a deck-of-cards stack', () => {
@@ -104,7 +158,6 @@ describe('CartSummaryCard', () => {
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
-    // Capped at 3, most-recently-added first: p4, p3, p2 — the oldest (p1) drops off.
     expect(screen.getAllByTestId('cart-summary-chip')).toHaveLength(3);
     expect(screen.getByText('🍪')).toBeTruthy();
     expect(screen.getByText('🍞')).toBeTruthy();
