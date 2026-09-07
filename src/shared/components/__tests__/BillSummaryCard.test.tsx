@@ -4,12 +4,6 @@ import { BillSummaryCard } from '../BillSummaryCard';
 import { toUnits } from '@/src/shared/utils/currency';
 import type { Bill } from '@/src/base/types/village.types';
 
-let mockUser: { isVip?: boolean } | null = null;
-
-jest.mock('@/src/core/store', () => ({
-  useAuthStore: jest.fn(selector => selector({ user: mockUser })),
-}));
-
 const mockRawTemplates: Record<string, string> = {
   bill_summary: 'BILL SUMMARY',
   item_total_mrp: 'Item total (MRP)',
@@ -43,35 +37,37 @@ function bill(overrides: Partial<Bill> = {}): Bill {
 }
 
 describe('BillSummaryCard', () => {
-  afterEach(() => {
-    mockUser = null;
-  });
-
   test('shows the earned-cashback row once a tier is unlocked', () => {
-    mockUser = { isVip: false };
-    render(<BillSummaryCard bill={bill()} couponApplied={false} />);
+    render(<BillSummaryCard bill={bill()} couponApplied={false} cashbackReward="₹25" />);
 
     expect(screen.getByText("You'll earn ₹25 cashback on this order")).toBeTruthy();
   });
 
   test('hides the cashback row below the first tier', () => {
-    mockUser = { isVip: false };
     const belowTier = bill({ grandTotal: toUnits(250), itemTotal: toUnits(250), mrpTotal: toUnits(250) });
 
-    render(<BillSummaryCard bill={belowTier} couponApplied={false} />);
+    render(<BillSummaryCard bill={belowTier} couponApplied={false} cashbackReward={null} />);
 
     expect(screen.queryByText(/cashback on this order/)).toBeNull();
   });
 
   test('a VIP sees the doubled reward, not the standard one', () => {
-    mockUser = { isVip: true };
-    render(<BillSummaryCard bill={bill()} couponApplied={false} />);
+    render(<BillSummaryCard bill={bill()} couponApplied={false} cashbackReward="₹50" />);
 
     expect(screen.getByText("You'll earn ₹50 cashback on this order")).toBeTruthy();
   });
 
+  // Regression guard for the finding where BillSummaryCard computed its own
+  // cashback via useCartCashback and leaked a false "you'll earn cashback"
+  // promise onto OrderDetailScreen's past orders. The component must never
+  // render the row unless a caller explicitly passes cashbackReward.
+  test('renders no cashback row when cashbackReward is not passed', () => {
+    render(<BillSummaryCard bill={bill()} couponApplied={false} />);
+
+    expect(screen.queryByText(/cashback on this order/)).toBeNull();
+  });
+
   test('the bill total and MRP rows still render unchanged', () => {
-    mockUser = { isVip: false };
     const withDiscount = bill({ mrpTotal: toUnits(900), itemDiscount: toUnits(100) });
 
     render(<BillSummaryCard bill={withDiscount} couponApplied={false} />);

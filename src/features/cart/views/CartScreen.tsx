@@ -22,6 +22,7 @@ import { buildStockCheckItems } from '@/src/features/cart/domain/stockCheckItems
 import { stockKey } from '@/src/core/store/useCartStockStore';
 import type { CartLineItem } from '@/src/base/types/village.types';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
+import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
@@ -36,6 +37,10 @@ const EMPTY_STOCK_INFO: StockInfo[] = [];
 export const CartScreen = () => {
   const router = useRouter();
   const vm = useCartViewModel();
+  // Independent from CashbackProgressBanner's own useCartCashback call — the
+  // same accepted-duplication pattern used elsewhere in this screen. Needed
+  // here to pass the unlocked reward into BillSummaryCard as a prop.
+  const cashback = useCartCashback(vm.bill.grandTotal);
   // Cash on delivery is preselected so Place Order is always available; the
   // user can switch to UPI in the inline payment section below the bill.
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('cod');
@@ -303,7 +308,7 @@ export const CartScreen = () => {
           </View>
 
           {/* Bill summary */}
-          <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} />
+          <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} cashbackReward={cashback.unlockedReward} />
 
           {/* Payment method — always shown (COD preselected) */}
           <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />

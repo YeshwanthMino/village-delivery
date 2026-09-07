@@ -5,7 +5,6 @@ import { Bill } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate, interpolateVars } from '@/src/base/constants/translations';
-import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 
 interface BillRowProps {
   label: string;
@@ -26,11 +25,15 @@ const BillRow = ({ label, value, isGreen, isBold }: BillRowProps) => (
 interface BillSummaryCardProps {
   bill: Bill;
   couponApplied: boolean;
+  /** Formatted rupee string (e.g. "₹25") for an already-unlocked cashback
+   *  reward. Opt-in: omit (or pass null) to keep the row hidden — e.g. on
+   *  OrderDetailScreen, where a past order carries no real cashback data
+   *  and must never show a promise computed from today's settings. */
+  cashbackReward?: string | null;
 }
 
-export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => {
+export const BillSummaryCard = ({ bill, couponApplied, cashbackReward }: BillSummaryCardProps) => {
   const { t } = useTranslation();
-  const cashback = useCartCashback(bill.grandTotal);
 
   return (
     <View className="bg-white border border-slate-200 rounded-2xl p-4">
@@ -61,10 +64,10 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
 
       {/* Cashback is earned, not a discount — it never touches grandTotal
        *  above. Shown only once a tier is actually unlocked. */}
-      {cashback.unlockedReward && (
+      {cashbackReward && (
         <View className="bg-emerald-50 rounded-xl px-3 py-2 mt-2">
           <Text className="text-emerald-700 text-xs font-medium text-center">
-            {interpolateVars(t('bill_cashback_earn'), { r: cashback.unlockedReward })}
+            {interpolateVars(t('bill_cashback_earn'), { r: cashbackReward })}
           </Text>
         </View>
       )}
