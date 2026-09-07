@@ -12,6 +12,7 @@ export { SortBottomSheet } from './SortBottomSheet';
 export { CartItemRow } from './CartItemRow';
 export { DeliveryETACard } from './DeliveryETACard';
 export { SavingsStrip } from './SavingsStrip';
+export { CashbackProgressBanner } from './CashbackProgressBanner';
 export { CouponRow } from './CouponRow';
 export { BillSummaryCard } from './BillSummaryCard';
 export { CheckoutBar } from './CheckoutBar';
