@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   BillSummaryCard,
   CartItemRow,
+  CashbackProgressBanner,
   CheckoutBar,
   DeliveryETACard,
   EmptyCart,
@@ -279,6 +280,9 @@ export const CartScreen = () => {
 
           {/* Savings strip */}
           <SavingsStrip savings={vm.bill.totalSavings} />
+
+          {/* Cashback progress */}
+          <CashbackProgressBanner grandTotal={vm.bill.grandTotal} />
 
           {/* Items */}
           <View>
