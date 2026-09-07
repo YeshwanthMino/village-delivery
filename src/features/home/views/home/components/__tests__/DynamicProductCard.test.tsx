@@ -70,11 +70,17 @@ beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVar
 beforeEach(() => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 }));
 
 describe('DynamicProductCard, multi-variant', () => {
-  it('labels the button with the option count and shows the default pack', () => {
+  it('shows the default pack with a chevron, and keeps the button plain "ADD"', () => {
     render(<DynamicProductCard product={multi} onOpenVariants={jest.fn()} />);
 
-    expect(screen.getByText('2 options')).toBeTruthy();
+    // The variant indicator lives next to the pack label, not inside the
+    // button — the button stays a single line ("ADD") regardless of how
+    // many variants a product has (matches Blinkit/Zepto: the pack chip is
+    // its own row, the add button never grows to fit option text).
     expect(screen.getByText('1 pc (250 ml)')).toBeTruthy();
+    expect(screen.getByTestId('variant-options-indicator')).toBeTruthy();
+    expect(screen.getByText('ADD')).toBeTruthy();
+    expect(screen.queryByText(/option/i)).toBeNull();
     expect(screen.getByText('₹310')).toBeTruthy();
   });
 
@@ -141,9 +147,10 @@ describe('DynamicProductCard, no variants', () => {
     expect(useVillageStore.getState().cart.p2).toBe(2);
   });
 
-  it('shows no options label and no pack line', () => {
+  it('shows no options label, no pack line, and no variant chevron', () => {
     render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
     expect(screen.queryByText(/options/)).toBeNull();
+    expect(screen.queryByTestId('variant-options-indicator')).toBeNull();
   });
 
   it('hides the pack line rather than repeating the title when the variant name duplicates it', () => {

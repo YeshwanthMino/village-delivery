@@ -2,7 +2,7 @@
 
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Minus, Plus } from 'lucide-react-native';
+import { ChevronDown, Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
@@ -34,7 +34,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
   // (possible today because ProductCard's sheet threshold differs from this
   // card's, so a product classified "plain" here can still carry a variant line).
   const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
-  const { t, tOptionCount, tDiscount, tVariantCartLabel, locale } = useTranslation();
+  const { t, tDiscount, tVariantCartLabel, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
@@ -150,7 +150,14 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
         </TouchableOpacity>
 
         {view.packLabel && view.packLabel !== product.title && view.packLabel !== product.teluguTitle ? (
-          <Text className="text-slate-500 text-[11px] mt-1">{view.packLabel}</Text>
+          <View className="flex-row items-center mt-1">
+            <Text className="text-slate-500 text-[11px]">{view.packLabel}</Text>
+            {view.optionsCount > 0 ? (
+              <View testID="variant-options-indicator" style={{ marginLeft: 2 }}>
+                <ChevronDown size={12} color="#64748b" />
+              </View>
+            ) : null}
+          </View>
         ) : null}
 
         <View className="flex-row items-center mt-1.5">
@@ -165,14 +172,11 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
-              className={`rounded-xl py-1.5 items-center justify-center min-h-[44px] border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
+              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
               <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
                 {t('add')}
               </Text>
-              {view.optionsCount > 0 ? (
-                <Text className="text-green-700 text-[10px] opacity-70">{tOptionCount(view.optionsCount)}</Text>
-              ) : null}
             </TouchableOpacity>
           ) : view.opensSheet ? (
             <TouchableOpacity
