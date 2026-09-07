@@ -4,7 +4,8 @@ import { Text, View } from 'react-native';
 import { Bill } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { interpolate } from '@/src/base/constants/translations';
+import { interpolate, interpolateVars } from '@/src/base/constants/translations';
+import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 
 interface BillRowProps {
   label: string;
@@ -29,6 +30,7 @@ interface BillSummaryCardProps {
 
 export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => {
   const { t } = useTranslation();
+  const cashback = useCartCashback(bill.grandTotal);
 
   return (
     <View className="bg-white border border-slate-200 rounded-2xl p-4">
@@ -53,6 +55,16 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
         <View className="bg-green-50 rounded-xl px-3 py-2 mt-2">
           <Text className="text-green-700 text-xs font-medium text-center">
             {interpolate(t('you_saved_order'), rupees(bill.totalSavings))}
+          </Text>
+        </View>
+      )}
+
+      {/* Cashback is earned, not a discount — it never touches grandTotal
+       *  above. Shown only once a tier is actually unlocked. */}
+      {cashback.unlockedReward && (
+        <View className="bg-emerald-50 rounded-xl px-3 py-2 mt-2">
+          <Text className="text-emerald-700 text-xs font-medium text-center">
+            {interpolateVars(t('bill_cashback_earn'), { r: cashback.unlockedReward })}
           </Text>
         </View>
       )}
