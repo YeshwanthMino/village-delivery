@@ -98,6 +98,12 @@ export const TRANSLATIONS: TranslationMap = {
   order_ready_to_place: { te: 'మీ ఆర్డర్ సిద్ధంగా ఉంది!',                          en: 'Ready to place your order!' },
   saved_amount:         { te: 'ఆదా చేసారు {n}',                                   en: 'SAVED {n}' },
 
+  // Cashback progress & VIP upsell
+  cashback_shop_more:  { te: 'ఇంకా {n} కొంటే {r} క్యాష్‌బ్యాక్',              en: 'Shop {n} more to get {r} cashback' },
+  cashback_max_unlocked: { te: 'గరిష్ట క్యాష్‌బ్యాక్ అన్‌లాక్ · {r}',          en: 'Max cashback unlocked · {r}' },
+  vip_upsell_double:   { te: 'నెలకు {f}తో VIP అవ్వండి · క్యాష్‌బ్యాక్ {r} అవుతుంది', en: 'Add VIP for {f}/month · double it to {r}' },
+  bill_cashback_earn:  { te: 'ఈ ఆర్డర్‌పై {r} క్యాష్‌బ్యాక్ పొందుతారు',        en: "You'll earn {r} cashback on this order" },
+
   // Coupon row
   coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
   apply_coupon:        { te: 'కూపన్ వర్తించండి',                                   en: 'Apply coupon' },
@@ -317,4 +323,12 @@ export function translate(key: string, locale: Locale): string {
 /** Replace `{n}` in a template string. */
 export function interpolate(template: string, n: number | string): string {
   return template.replaceAll('{n}', String(n));
+}
+
+/** Replace every `{token}` in a template with its value from `vars`. */
+export function interpolateVars(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (acc, [key, value]) => acc.replaceAll(`{${key}}`, value),
+    template,
+  );
 }
