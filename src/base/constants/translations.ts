@@ -171,6 +171,7 @@ export const TRANSLATIONS: TranslationMap = {
 
   // Location & address
   select_location:        { te: 'లొకేషన్ ఎంచుకోండి',                 en: 'Select Location' },
+  search_location:        { te: 'లొకేషన్ వెతకండి',                   en: 'Search location' },
   search_address_ph:      { te: 'చిరునామా వెతకండి',                  en: 'Search Address' },
   village_search_ph:      { te: 'ఊరు వెతకండి',                    en: 'Search your village' },
   search_results:         { te: 'వెతుకుడు ఫలితాలు',              en: 'Search results' },

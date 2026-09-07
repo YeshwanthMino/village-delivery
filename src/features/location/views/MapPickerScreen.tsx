@@ -7,8 +7,8 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, LocateFixed } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft, LocateFixed, Search } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { DEFAULT_REGION, useMapPickerViewModel } from '../viewmodel/useMapPickerViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
@@ -22,10 +22,24 @@ export const MapPickerScreen = () => {
   const mapRef = useRef<MapView | null>(null);
   const suppressSettle = useRef(false);
 
+  // Set by the search screen when it pops back here with a chosen village.
+  // `at` is a per-pick nonce so re-picking the same village still recenters.
+  const { lat, lng, at } = useLocalSearchParams<{ lat?: string; lng?: string; at?: string }>();
+
   useEffect(() => {
     void vm.initialDetect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A village picked in the search screen arrives as route params. Recenter on
+  // it and re-resolve; the pin's Confirm sheet still does the committing.
+  useEffect(() => {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    vm.moveTo({ latitude, longitude });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng, at]);
 
   // Once the VM produces a region (GPS or fallback), point the camera at it.
   // Suppress the resulting onRegionChangeComplete so programmatic moves don't
@@ -53,6 +67,8 @@ export const MapPickerScreen = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/(dashboard)/home');
   };
+
+  const openSearch = () => router.push('/location/search');
 
   const onConfirm = async () => {
     if (await vm.confirm()) router.replace('/(dashboard)/home');
@@ -100,6 +116,19 @@ export const MapPickerScreen = () => {
           >
             <Text className="text-slate-900 font-bold text-base">{t('location_information')}</Text>
           </View>
+
+          <View className="flex-1" />
+
+          <TouchableOpacity
+            onPress={openSearch}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('search_location')}
+            className="w-10 h-10 rounded-full bg-white items-center justify-center"
+            style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
+          >
+            <Search size={22} color="#0f172a" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
 

@@ -150,6 +150,16 @@ export function useMapPickerViewModel() {
     }
   }, [resolve]);
 
+  // Point the camera at an explicitly chosen place (a village picked in the
+  // search screen). Mirrors useCurrentLocation: resolves serviceability
+  // DIRECTLY rather than waiting on the camera settle, which never fires when
+  // the target equals the current center. setRegion drives the camera through
+  // the screen's animate effect, whose settle is suppressed.
+  const moveTo = useCallback((coords: LatLng) => {
+    setRegion(regionFor(coords));
+    void resolve(coords);
+  }, [resolve]);
+
   // Re-run resolve for the current center (error-state Retry).
   const retry = useCallback(() => {
     if (region) void resolve({ latitude: region.latitude, longitude: region.longitude });
@@ -191,6 +201,7 @@ export function useMapPickerViewModel() {
     initialDetect,
     onRegionSettled,
     useCurrentLocation,
+    moveTo,
     retry,
     confirm,
     openSettings,
