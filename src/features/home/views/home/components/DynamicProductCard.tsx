@@ -165,7 +165,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
-              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
+              className={`rounded-xl py-1.5 items-center justify-center min-h-[44px] border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
             >
               <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
                 {t('add')}
