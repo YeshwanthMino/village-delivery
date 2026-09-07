@@ -12,7 +12,7 @@ jest.mock('@/src/core/store', () => ({
 const mockRawTemplates: Record<string, string> = {
   cashback_shop_more: 'Shop {n} more to get {r} cashback',
   cashback_max_unlocked: 'Max cashback unlocked · {r}',
-  vip_upsell_double: 'Add VIP for {f}/month · double it to {r}',
+  vip_upsell_double: 'Upgrade to VIP for {f}/month to double your cashback to {r}!',
 };
 
 jest.mock('@/src/core/utils/useTranslation', () => ({
@@ -51,6 +51,6 @@ describe('CashbackProgressBanner', () => {
     mockUser = { isVip: true };
     render(<CashbackProgressBanner grandTotal={toUnits(800)} />);
 
-    expect(screen.queryByText(/Add VIP for/)).toBeNull();
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 });

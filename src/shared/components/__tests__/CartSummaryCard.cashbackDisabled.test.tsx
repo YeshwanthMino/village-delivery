@@ -62,6 +62,6 @@ describe('CartSummaryCard — cashback disabled (kill switch)', () => {
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.getByText('SAVED ₹35')).toBeTruthy();
-    expect(screen.queryByText(/Add VIP for/)).toBeNull();
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 });

@@ -101,7 +101,7 @@ export const TRANSLATIONS: TranslationMap = {
   // Cashback progress & VIP upsell
   cashback_shop_more:  { te: 'ఇంకా {n} కొంటే {r} క్యాష్‌బ్యాక్',              en: 'Shop {n} more to get {r} cashback' },
   cashback_max_unlocked: { te: 'గరిష్ట క్యాష్‌బ్యాక్ అన్‌లాక్ · {r}',          en: 'Max cashback unlocked · {r}' },
-  vip_upsell_double:   { te: 'నెలకు {f}తో VIP అవ్వండి · క్యాష్‌బ్యాక్ {r} అవుతుంది', en: 'Add VIP for {f}/month · double it to {r}' },
+  vip_upsell_double:   { te: 'నెలకు {f}తో VIP కి అప్‌గ్రేడ్ చేసి మీ క్యాష్‌బ్యాక్‌ను {r}కు రెట్టింపు చేసుకోండి!', en: 'Upgrade to VIP for {f}/month to double your cashback to {r}!' },
   bill_cashback_earn:  { te: 'ఈ ఆర్డర్‌పై {r} క్యాష్‌బ్యాక్ పొందుతారు',        en: "You'll earn {r} cashback on this order" },
 
   // Coupon row
