@@ -102,16 +102,13 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
               )}
             </Text>
           ) : showCashback ? (
-            <>
-              <Text style={styles.nudge}>
-                {renderTemplateWithBold(t(cashback.primary.key), cashback.primary.vars, styles.nudgeAmount)}
-              </Text>
-              {cashback.vipUpsell && (
-                <Text style={styles.vipUpsell}>
-                  {renderTemplateWithBold(t(cashback.vipUpsell.key), cashback.vipUpsell.vars, styles.vipUpsellAmount)}
-                </Text>
-              )}
-            </>
+            // Tier progress only — the VIP upsell lives on the cart screen's
+            // CashbackProgressBanner, not here. The snackbar is a compact,
+            // glanceable strip; two competing asks (shop more + go VIP) was
+            // too much to read at a glance.
+            <Text style={styles.nudge}>
+              {renderTemplateWithBold(t(cashback.primary.key), cashback.primary.vars, styles.nudgeAmount)}
+            </Text>
           ) : bill.totalSavings > 0 ? (
             <Text style={styles.saved}>
               {renderTemplateWithBold(t('saved_amount'), { n: rupees(bill.totalSavings) }, styles.savedAmount)}
@@ -186,8 +183,6 @@ const styles = StyleSheet.create({
   total: { color: '#ffffff', fontWeight: '800', fontSize: 16 },
   nudge: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, marginTop: 3 },
   nudgeAmount: { color: '#ffffff', fontWeight: '800' },
-  vipUpsell: { color: 'rgba(255,255,255,0.75)', fontWeight: '500', fontSize: 10.5, marginTop: 2 },
-  vipUpsellAmount: { color: '#ffffff', fontWeight: '800' },
   saved: { color: '#d1fae5', fontWeight: '500', fontSize: 12.5, letterSpacing: 0.5, marginTop: 3 },
   savedAmount: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
   progressTrack: {

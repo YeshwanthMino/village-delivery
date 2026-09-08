@@ -23,7 +23,6 @@ const mockRawTemplates: Record<string, string> = {
   saved_amount: 'SAVED {n}',
   cashback_shop_more: 'Shop {n} more to get {r} cashback',
   cashback_max_unlocked: 'Max cashback unlocked · {r}',
-  vip_upsell_double: 'Upgrade to VIP for {f}/month to double your cashback to {r}!',
   view_cart: 'View cart',
 };
 
@@ -74,7 +73,7 @@ describe('CartSummaryCard', () => {
     expect(screen.getByTestId('cart-summary-icon')).toBeTruthy();
   });
 
-  test('toward first tier: shows cashback progress and the VIP upsell for a non-VIP user', () => {
+  test('toward first tier: shows cashback progress only — no VIP upsell in the snackbar', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 250) }; // mrp === price, no MRP savings
     mockUser = { isVip: false };
@@ -85,8 +84,11 @@ describe('CartSummaryCard', () => {
     expect(screen.getByText('₹250')).toBeTruthy();
     expect(screen.getByText('₹500')).toBeTruthy(); // shortfall to ₹750
     expect(screen.getByText('₹25')).toBeTruthy(); // tier-1 standard reward
-    expect(screen.getByText('₹45')).toBeTruthy(); // VIP fee
-    expect(screen.getByText('₹50')).toBeTruthy(); // doubled VIP reward
+    // The VIP upsell (fee + doubled reward) now lives only on the cart
+    // screen's CashbackProgressBanner — the snackbar stays tier-progress only.
+    expect(screen.queryByText('₹45')).toBeNull();
+    expect(screen.queryByText('₹50')).toBeNull();
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
     expect(screen.queryByText('Ready to place your order!')).toBeNull();
     expect(screen.queryByText(/SAVED/)).toBeNull();
   });
@@ -101,9 +103,10 @@ describe('CartSummaryCard', () => {
     expect(screen.getByText('₹700')).toBeTruthy(); // shortfall to ₹1500
     expect(screen.getByText('₹50')).toBeTruthy(); // tier-2 standard reward
     expect(screen.queryByText('₹25')).toBeNull(); // already-unlocked reward not shown here
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 
-  test('max tier: shows the max-unlocked line and still upsells VIP', () => {
+  test('max tier: shows the max-unlocked line, no VIP upsell', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 8000) };
     mockUser = { isVip: false };
@@ -111,10 +114,10 @@ describe('CartSummaryCard', () => {
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.getByText('₹250')).toBeTruthy(); // max standard reward
-    expect(screen.getByText('₹500')).toBeTruthy(); // doubled max reward
+    expect(screen.queryByText('₹500')).toBeNull(); // doubled reward is upsell-only, not shown here
   });
 
-  test('a VIP user sees only the VIP reward, never the standard one, and no upsell line', () => {
+  test('a VIP user sees only the VIP reward, never the standard one', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 800) };
     mockUser = { isVip: true };
@@ -126,17 +129,19 @@ describe('CartSummaryCard', () => {
     expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 
-  test('a logged-out user (no profile) is treated as non-VIP and sees the upsell', () => {
+  test('a logged-out user (no profile) is treated as non-VIP, still no upsell in the snackbar', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 800) };
     mockUser = null;
 
     render(<CartSummaryCard onPress={jest.fn()} />);
 
-    expect(screen.getByText(/Upgrade to VIP for/)).toBeTruthy();
+    expect(screen.getByText('₹700')).toBeTruthy(); // shortfall to ₹1500
+    expect(screen.getByText('₹50')).toBeTruthy(); // tier-2 standard reward (non-VIP)
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 
-  test('a discount with cashback active: cashback replaces the "SAVED" line', () => {
+  test('a discount with cashback active: cashback replaces the "SAVED" line, still no upsell', () => {
     mockCart = { p1: 1 };
     mockSnapshots = { p1: snapshot('p1', 250, { mrp: toUnits(285) }) }; // saved ₹35
     mockUser = { isVip: false };
@@ -144,7 +149,7 @@ describe('CartSummaryCard', () => {
     render(<CartSummaryCard onPress={jest.fn()} />);
 
     expect(screen.queryByText('SAVED ₹35')).toBeNull();
-    expect(screen.getByText(/Upgrade to VIP for/)).toBeTruthy();
+    expect(screen.queryByText(/Upgrade to VIP for/)).toBeNull();
   });
 
   test('fans up to 3 distinct products in a deck-of-cards stack', () => {
