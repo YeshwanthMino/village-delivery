@@ -12,6 +12,7 @@ const mockRawTemplates: Record<string, string> = {
   to_pay: 'To pay',
   you_saved_order: 'You saved {n} on this order',
   bill_cashback_earn: "You'll earn {r} cashback on this order",
+  vip_membership_title: 'VIP Membership',
 };
 
 jest.mock('@/src/core/utils/useTranslation', () => ({
@@ -76,5 +77,26 @@ describe('BillSummaryCard', () => {
     expect(screen.getByText('₹900')).toBeTruthy();
     expect(screen.getByText('-₹100')).toBeTruthy();
     expect(screen.getByText('₹800')).toBeTruthy();
+  });
+
+  test('shows a VIP Membership line item when the fee was added to this order', () => {
+    const withVip = bill({
+      itemTotal: toUnits(179),
+      mrpTotal: toUnits(179),
+      vipMembershipFee: toUnits(45),
+      grandTotal: toUnits(224),
+    });
+
+    render(<BillSummaryCard bill={withVip} couponApplied={false} />);
+
+    expect(screen.getByText('VIP Membership')).toBeTruthy();
+    expect(screen.getByText('₹45')).toBeTruthy();
+    expect(screen.getByText('₹224')).toBeTruthy(); // To Pay reflects the fee
+  });
+
+  test('hides the VIP Membership row when no fee was added', () => {
+    render(<BillSummaryCard bill={bill()} couponApplied={false} />);
+
+    expect(screen.queryByText('VIP Membership')).toBeNull();
   });
 });

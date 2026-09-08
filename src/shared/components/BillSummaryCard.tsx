@@ -49,6 +49,9 @@ export const BillSummaryCard = ({ bill, couponApplied, cashbackReward }: BillSum
       {couponApplied && bill.couponDiscount > 0 && (
         <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
       )}
+      {bill.vipMembershipFee > 0 && (
+        <BillRow label={t('vip_membership_title')} value={rupees(bill.vipMembershipFee)} />
+      )}
 
       <View className="border-t border-dashed border-slate-300 my-2" />
 
