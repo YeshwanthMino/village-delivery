@@ -11,6 +11,9 @@ export const useCartViewModel = () => {
   const setQuantity = useVillageStore(state => state.setQuantity);
   const clearCart = useVillageStore(state => state.clearCart);
   const cartCount = useVillageStore(selectCartCount);
+  const vipAdded = useVillageStore(state => state.vipAddedInCart);
+  const addVipMembership = useVillageStore(state => state.addVipMembership);
+  const removeVipMembership = useVillageStore(state => state.removeVipMembership);
 
   const [couponApplied, setCouponApplied] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
@@ -18,8 +21,8 @@ export const useCartViewModel = () => {
   const cartItems = useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);
 
   const bill = useMemo(() =>
-    computeBill(cartItems, { couponApplied }),
-    [cartItems, couponApplied]
+    computeBill(cartItems, { couponApplied, vipAdded }),
+    [cartItems, couponApplied, vipAdded]
   );
 
   return {
@@ -28,6 +31,9 @@ export const useCartViewModel = () => {
     cartCount,
     couponApplied,
     toggleCoupon: () => setCouponApplied(v => !v),
+    vipAdded,
+    addVipMembership,
+    removeVipMembership,
     variantProduct,
     openVariants: (product: Product) => setVariantProduct(product),
     closeVariants: () => setVariantProduct(null),

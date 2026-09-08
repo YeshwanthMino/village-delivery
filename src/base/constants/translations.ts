@@ -104,6 +104,12 @@ export const TRANSLATIONS: TranslationMap = {
   vip_upsell_double:   { te: 'నెలకు {f}తో VIP కి అప్‌గ్రేడ్ చేసి మీ క్యాష్‌బ్యాక్‌ను {r}కు రెట్టింపు చేసుకోండి!', en: 'Upgrade to VIP for {f}/month to double your cashback to {r}!' },
   bill_cashback_earn:  { te: 'ఈ ఆర్డర్‌పై {r} క్యాష్‌బ్యాక్ పొందుతారు',        en: "You'll earn {r} cashback on this order" },
 
+  // VIP membership card (cart screen, addable like a product)
+  vip_membership_title:          { te: 'VIP సభ్యత్వం',                                          en: 'VIP Membership' },
+  vip_membership_benefit:        { te: 'ప్రతి ఆర్డర్‌పై క్యాష్‌బ్యాక్ రెట్టింపు · నెలకు {f}',   en: 'Double cashback on every order · {f}/month' },
+  vip_membership_added_title:    { te: 'VIP సభ్యత్వం జోడించబడింది',                             en: 'VIP Membership added' },
+  vip_membership_added_benefit:  { te: 'ఈ ఆర్డర్‌పై క్యాష్‌బ్యాక్ ఇప్పుడు రెట్టింపు',           en: 'Cashback on this order is now doubled' },
+
   // Coupon row
   coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
   apply_coupon:        { te: 'కూపన్ వర్తించండి',                                   en: 'Apply coupon' },

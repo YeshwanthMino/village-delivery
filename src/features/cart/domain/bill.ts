@@ -18,7 +18,8 @@ import {
   Product,
 } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
-import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
+import { toUnits, UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
+import { CASHBACK_SETTINGS } from './cashbackConfig';
 import { parseCartKey } from './cartKey';
 
 /**
@@ -122,7 +123,7 @@ export function deriveMinOrderFields(grandTotal: number): {
 
 export function computeBill(
   items: CartLineItem[],
-  opts?: { couponApplied?: boolean }
+  opts?: { couponApplied?: boolean; vipAdded?: boolean }
 ): Bill {
   let itemTotal = 0;
   let mrpTotal = 0;
@@ -140,13 +141,19 @@ export function computeBill(
   const couponDiscount = opts?.couponApplied
     ? Math.min(itemTotal * 0.1, COUPON_CAP_RUPEES / UNITS_PER_RUPEE)
     : 0;
-  const grandTotal = itemTotal + deliveryFee + platformFee - couponDiscount;
+  // Added to the order's total the same way deliveryFee/platformFee are —
+  // an earned/purchased add-on, not a per-item charge. Sourced from the same
+  // CASHBACK_SETTINGS.vipUpgradeFee the cashback upsell copy quotes, so the
+  // two can't drift apart. See cashbackConfig.ts for the "local until a real
+  // settings API exists" note this constant already carries.
+  const vipMembershipFee = opts?.vipAdded ? toUnits(CASHBACK_SETTINGS.vipUpgradeFee) : 0;
+  const grandTotal = itemTotal + deliveryFee + platformFee + vipMembershipFee - couponDiscount;
   const totalSavings = itemDiscount + couponDiscount;
 
   const { minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotal);
 
   return {
-    itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount,
+    itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, vipMembershipFee,
     grandTotal, totalSavings, totalCount, minOrderValue, belowMinimum, amountToMinimum,
   };
 }

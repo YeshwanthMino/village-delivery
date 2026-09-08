@@ -13,6 +13,7 @@ export { CartItemRow } from './CartItemRow';
 export { DeliveryETACard } from './DeliveryETACard';
 export { SavingsStrip } from './SavingsStrip';
 export { CashbackProgressBanner } from './CashbackProgressBanner';
+export { VipMembershipCard } from './VipMembershipCard';
 export { CouponRow } from './CouponRow';
 export { BillSummaryCard } from './BillSummaryCard';
 export { CheckoutBar } from './CheckoutBar';

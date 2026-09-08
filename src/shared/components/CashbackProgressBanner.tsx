@@ -5,6 +5,11 @@
 // `useCartCashback` hook, so the two surfaces cannot drift. Renders nothing
 // below the ₹199 minimum (CheckoutBar already carries that message there)
 // or when the cashback programme is disabled.
+//
+// Tier progress only — the VIP upsell used to render here as a text line,
+// but now lives on its own as VipMembershipCard (an addable line item, not
+// a caption), so the two "asks" on this screen (shop more / go VIP) get
+// their own distinct visual weight instead of competing inside one banner.
 
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -39,11 +44,6 @@ export const CashbackProgressBanner = ({ grandTotal }: CashbackProgressBannerPro
           style={{ width: `${cashback.progress * 100}%` }}
         />
       </View>
-      {cashback.vipUpsell && (
-        <Text className="text-emerald-700 text-xs">
-          {renderTemplateWithBold(t(cashback.vipUpsell.key), cashback.vipUpsell.vars, BOLD_STYLE)}
-        </Text>
-      )}
     </View>
   );
 };

@@ -19,7 +19,7 @@ import {
   selectProductCartCount,
 } from '../useVillageStore';
 
-const reset = () => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} });
+const reset = () => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {}, vipAddedInCart: false });
 
 // Persistence is fire-and-forget so mutations stay synchronous; let the
 // microtask queue drain before asserting on what was written.
@@ -384,5 +384,33 @@ describe('selectProductCartCount', () => {
     addToCart('p10-v0', variantSnapshot('p10', 0, 20));
 
     expect(selectProductCartCount('p1')(useVillageStore.getState())).toBe(1);
+  });
+});
+
+describe('VIP membership add-on', () => {
+  beforeEach(reset);
+
+  test('addVipMembership sets vipAddedInCart to true', () => {
+    useVillageStore.getState().addVipMembership();
+    expect(useVillageStore.getState().vipAddedInCart).toBe(true);
+  });
+
+  test('removeVipMembership sets it back to false', () => {
+    const { addVipMembership, removeVipMembership } = useVillageStore.getState();
+    addVipMembership();
+    removeVipMembership();
+
+    expect(useVillageStore.getState().vipAddedInCart).toBe(false);
+  });
+
+  test('clearCart also resets vipAddedInCart', () => {
+    const { addToCart, addVipMembership, clearCart } = useVillageStore.getState();
+    addToCart('p1', snapshot('p1'));
+    addVipMembership();
+
+    clearCart();
+
+    expect(useVillageStore.getState().vipAddedInCart).toBe(false);
+    expect(useVillageStore.getState().cart).toEqual({});
   });
 });

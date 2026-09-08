@@ -106,6 +106,9 @@ export interface Bill {
   deliveryFee: number;
   platformFee: number;
   couponDiscount: number;
+  /** VIP membership fee (internal units) added to this order when the
+   *  customer added VIP membership from the cart screen; 0 otherwise. */
+  vipMembershipFee: number;
   grandTotal: number;
   totalSavings: number;
   totalCount: number;

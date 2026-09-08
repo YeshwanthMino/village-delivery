@@ -15,6 +15,7 @@ import {
   PaymentMethodSection,
   SavingsStrip,
   VariantBottomSheet,
+  VipMembershipCard,
 } from '@/src/shared/components';
 import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
@@ -288,6 +289,13 @@ export const CartScreen = () => {
 
           {/* Cashback progress */}
           <CashbackProgressBanner grandTotal={vm.bill.grandTotal} />
+
+          {/* VIP membership — addable like a product line item */}
+          <VipMembershipCard
+            added={vm.vipAdded}
+            onAdd={vm.addVipMembership}
+            onRemove={vm.removeVipMembership}
+          />
 
           {/* Items */}
           <View>

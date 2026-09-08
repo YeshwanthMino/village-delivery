@@ -26,6 +26,7 @@ function bill(overrides: Partial<Bill> = {}): Bill {
     deliveryFee: 0,
     platformFee: 0,
     couponDiscount: 0,
+    vipMembershipFee: 0,
     grandTotal: toUnits(800),
     totalSavings: 0,
     totalCount: 1,

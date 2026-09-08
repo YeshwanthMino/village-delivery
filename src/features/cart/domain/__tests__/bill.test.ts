@@ -51,3 +51,35 @@ describe('computeBill — minimum order value', () => {
     expect(bill.belowMinimum).toBe(true);
   });
 });
+
+describe('computeBill — VIP membership add-on', () => {
+  test('vipMembershipFee is 0 and excluded from grandTotal when not added', () => {
+    const bill = computeBill([lineItem(250, 1)]);
+
+    expect(bill.vipMembershipFee).toBe(0);
+    expect(Math.round(bill.grandTotal * 20)).toBe(250);
+  });
+
+  test('adding VIP adds the ₹45 fee to vipMembershipFee and grandTotal', () => {
+    const bill = computeBill([lineItem(250, 1)], { vipAdded: true });
+
+    expect(Math.round(bill.vipMembershipFee * 20)).toBe(45);
+    expect(Math.round(bill.grandTotal * 20)).toBe(295);
+  });
+
+  test('the VIP fee can itself push a cart from belowMinimum to eligible', () => {
+    // ₹160 in items alone is below the ₹199 minimum; +₹45 VIP fee clears it.
+    const bill = computeBill([lineItem(160, 1)], { vipAdded: true });
+
+    expect(bill.belowMinimum).toBe(false);
+  });
+
+  test('VIP fee and a coupon discount apply together, fee first then discount', () => {
+    // itemTotal ₹220 = 11 units, +₹45 VIP fee = 2.25 units → 13.25 units,
+    // couponDiscount = min(11*0.1, 40/20) = 1.1 units (coupon is on itemTotal only).
+    // grandTotal = 11 + 2.25 - 1.1 = 12.15 units = ₹243.
+    const bill = computeBill([lineItem(220, 1)], { couponApplied: true, vipAdded: true });
+
+    expect(Math.round(bill.grandTotal * 20)).toBe(243);
+  });
+});

@@ -12,6 +12,11 @@ interface VillageState {
    *  mirror that line's price and pack size; the cart itself does not use it. */
   lastVariantKey: Record<string, string>;
   favs: Record<string, boolean>;
+  /** Whether the customer added VIP membership to the current cart, from the
+   *  cart screen's membership card. Session-only (not persisted, not synced
+   *  to any backend yet) — resets with the cart. See the membership card's
+   *  own comment for the backend gap this doesn't yet close. */
+  vipAddedInCart: boolean;
   locale: Locale;
 }
 
@@ -23,6 +28,8 @@ interface VillageActions {
    *  adjusting by n fired n render passes across every subscriber. */
   setQuantity: (key: string, quantity: number, maxQuantity?: number) => void;
   toggleFav: (productId: string) => void;
+  addVipMembership: () => void;
+  removeVipMembership: () => void;
   clearCart: () => void;
   setLocale: (locale: Locale) => Promise<void>;
   loadLocale: () => Promise<void>;
@@ -37,6 +44,7 @@ const initialState: VillageState = {
   cartSnapshots: {},
   lastVariantKey: {},
   favs: {},
+  vipAddedInCart: false,
   locale: 'en',
 };
 
@@ -167,7 +175,10 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       },
     })),
 
-  clearCart: () => set({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }),
+  addVipMembership: () => set({ vipAddedInCart: true }),
+  removeVipMembership: () => set({ vipAddedInCart: false }),
+
+  clearCart: () => set({ cart: {}, cartSnapshots: {}, lastVariantKey: {}, vipAddedInCart: false }),
 
   setLocale: async (locale) => {
     set({ locale });
