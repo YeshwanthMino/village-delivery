@@ -1,3 +1,4 @@
+import { logger } from '@/src/base/services/logger';
 /**
  * Mobile Environment Configuration
  * Uses Expo's process.env for EXPO_PUBLIC_* variables
@@ -16,7 +17,7 @@
  *
  * Usage:
  *   import { env } from '@/src/core/config/env';
- *   console.log(env.apiBaseUrl);
+ *   logger.debug(env.apiBaseUrl);
  */
 export const env = {
   // Environment flags
@@ -32,7 +33,7 @@ export const env = {
 
 // Debug log for mobile (only in development)
 if (__DEV__) {
-  console.log('Mobile Env Config Loaded:', {
+  logger.debug('Mobile Env Config Loaded:', {
     apiBaseUrl: env.apiBaseUrl,
     isStaging: env.isStaging,
     isProduction: env.isProduction,

@@ -1,3 +1,4 @@
+import { logger } from '@/src/base/services/logger';
 /**
  * Web Environment Configuration
  * Uses Vite's import.meta.env for VITE_* variables
@@ -16,7 +17,7 @@
  *
  * Usage:
  *   import { env } from '@/src/core/config/env';
- *   console.log(env.apiBaseUrl);
+ *   logger.debug(env.apiBaseUrl);
  */
 // NOTE: this Expo app bundles web with Metro, not Vite. A bare `import.meta`
 // literal cannot be parsed in Metro's web output ("Cannot use 'import.meta'

@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { env } from '@/src/core/config/env';
 
 // Environment configuration
@@ -15,10 +16,22 @@ export const WebService = {
   villageBaseURL: env.villageApiBaseUrl,
 };
 
+// AppAuth (customer app) endpoint paths — joined onto WebService.villageBaseURL.
+export const AppAuthRoutes = {
+  loginOtp: '/app/auth/login',
+  loginVerify: '/app/auth/verify-otp',
+  loginSignup: '/app/auth/signup',
+  me: '/app/auth/me',
+  refresh: '/app/auth/refresh',
+};
+
 // App configuration
 export const AppConfig = {
   name: 'Village',
-  version: '1.0.0', // This should come from package.json in production
+  // Read from app.json rather than hardcoded — this ships in the
+  // Village-App-Version header, so a stale literal made server-side version
+  // analytics wrong for every release.
+  version: Constants.expoConfig?.version ?? '0.0.0',
   bundleId: 'com.village.delivery',
 
   // API configuration
@@ -64,9 +77,14 @@ export const StorageKeys = {
   IS_FIRST_LAUNCH: 'isFirstLaunch',
   LAST_APP_VERSION: 'lastAppVersion',
 
+  // Cart — survives process death, which is routine on the low-RAM devices
+  // this app targets.
+  CART: 'cart',
+
   // Location
   SERVICEABLE_VILLAGE: 'serviceable_village',
   SELECTED_ADDRESS_ID: 'selected_address_id',
+  RECENT_LOCATIONS: 'recent_locations',
 
   // Deep linking
   DEFERRED_DEEP_LINK: 'deferredDeepLink',
@@ -76,9 +94,8 @@ export const StorageKeys = {
 };
 
 export const Support = {
-  // Set this to your real WhatsApp support number before release.
-  // Format: country code + number, no '+' or spaces. Example: '919876543210'
-  WHATSAPP_NUMBER: '91XXXXXXXXXX',
+  // Real WhatsApp support number. Format: country code + number, no '+' or spaces.
+  WHATSAPP_NUMBER: '916364463644',
 };
 
 // Error codes and messages

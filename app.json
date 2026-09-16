@@ -7,10 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "villagedelivery",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.villagedelivery"
+      "bundleIdentifier": "in.villagedelivery.consumer"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,9 +18,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.villagedelivery"
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "in.villagedelivery.consumer"
     },
     "web": {
       "output": "static",
@@ -46,7 +45,8 @@
         {
           "locationWhenInUsePermission": "Village Delivery uses your location to find your village and check if we deliver there."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

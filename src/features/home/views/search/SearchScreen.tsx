@@ -1,18 +1,22 @@
 import { ArrowLeft, Search, X } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import {
+  ActivityIndicator,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { FloatingCartPill, ProductCard, VariantBottomSheet } from '@/src/shared/components';
+import { CartSummaryCard } from '@/src/shared/components';
+import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
+import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { useSearchViewModel } from '../../viewmodel/search/useSearchViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
+import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const SearchScreen = () => {
   const router = useRouter();
@@ -20,8 +24,9 @@ export const SearchScreen = () => {
   const vm = useSearchViewModel();
   const inputRef = useRef<TextInput>(null);
   const { t } = useTranslation();
-  const TAB_BAR_CONTENT_HEIGHT = 64;
-  const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+  const sheet = useVariantSheet();
+  // Standalone route (no tab bar). Reserve only enough for the floating cart pill.
+  const scrollPadding = 96;
 
   const goToCart = () => router.push('/cart');
 
@@ -58,7 +63,7 @@ export const SearchScreen = () => {
         </View>
 
         {/* Category chip + result count row */}
-        {(vm.activeCategoryId || vm.results.length > 0) && (
+        {(vm.activeCategoryId || vm.total > 0) && (
           <View className="flex-row items-center gap-2 pl-12">
             {vm.activeCategoryId && (
               <TouchableOpacity
@@ -71,9 +76,9 @@ export const SearchScreen = () => {
                 <X size={12} color="#15803d" />
               </TouchableOpacity>
             )}
-            {vm.results.length > 0 && (
+            {vm.total > 0 && (
               <Text className="text-slate-400 text-xs">
-                {vm.results.length} result{vm.results.length !== 1 ? 's' : ''}
+                {vm.total} result{vm.total !== 1 ? 's' : ''}
               </Text>
             )}
           </View>
@@ -81,7 +86,11 @@ export const SearchScreen = () => {
       </View>
 
       {/* ── Body ── */}
-      {vm.results.length === 0 ? (
+      {vm.isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#15803d" />
+        </View>
+      ) : vm.results.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           {vm.query.trim().length > 0 ? (
             <Text className="text-slate-400 text-sm">{interpolate(t('no_results'), vm.query.trim())}</Text>
@@ -90,27 +99,38 @@ export const SearchScreen = () => {
           )}
         </View>
       ) : (
-        <ScrollView
+        // Search results are unbounded — mapping them inside a ScrollView mounted
+        // every card, with its image, before the first frame could paint.
+        <FlatList
+          data={vm.results}
+          keyExtractor={(product) => product.id}
+          numColumns={2}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: scrollPadding }}
+          columnWrapperStyle={{ gap: 12, marginBottom: 12 }}
           keyboardShouldPersistTaps="handled"
-        >
-          <View className="flex-row flex-wrap gap-3">
-            {vm.results.map(product => (
-              <View key={product.id} style={{ width: '47.5%' }}>
-                <ProductCard product={product} openVariants={vm.openVariants} />
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+          renderItem={({ item }) => (
+            <View style={{ width: '47.5%' }}>
+              <DynamicProductCard
+                product={item}
+                width="100%"
+                onOpenVariants={sheet.open}
+              />
+            </View>
+          )}
+        />
       )}
 
       {/* ── Overlays ── */}
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} />
+        <CartSummaryCard onPress={goToCart} bottomOffset={0} />
       )}
-      <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
+
+      <VariantBottomSheet
+        product={sheet.product}
+        onClose={sheet.close}
+      />
     </SafeAreaView>
   );
 };

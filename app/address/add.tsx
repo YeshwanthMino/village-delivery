@@ -1,7 +1,6 @@
 // app/address/add.tsx
+import { DeliveryAddressScreen } from '@/src/features/location/views/DeliveryAddressScreen';
 
-import { AddressFormScreen } from '@/src/features/location/views/AddressFormScreen';
-
-export default function AddAddressRoute() {
-  return <AddressFormScreen />;
+export default function AddressAddRoute() {
+  return <DeliveryAddressScreen />;
 }

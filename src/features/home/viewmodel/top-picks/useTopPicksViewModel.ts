@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Product, SortKey } from '@/src/base/types/village.types';
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { sortProducts } from '@/src/features/home/data/static/villageData';
 import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
 
 export const useTopPicksViewModel = () => {
-  const cartCount = useVillageStore(state => state.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
   const { data: allProducts = [] } = useProductsQuery();
 
   const [searchQuery, setSearchQuery] = useState('');

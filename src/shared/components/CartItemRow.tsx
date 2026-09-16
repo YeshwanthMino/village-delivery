@@ -1,36 +1,77 @@
+import { Image } from 'expo-image';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { AlertCircle, Trash2 } from 'lucide-react-native';
 import { CartLineItem } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useVillageStore } from '@/src/core/store';
 import { FullWidthStepper } from './FullWidthStepper';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
-interface CartItemRowProps {
-  item: CartLineItem;
+interface StockStatus {
+  inStock: boolean;
+  availableQuantity?: number;
 }
 
-export const CartItemRow = ({ item }: CartItemRowProps) => {
+interface CartItemRowProps {
+  item: CartLineItem;
+  stockStatus?: StockStatus;
+  onOutOfStockPress?: () => void;
+  /** Px to float the stock-limit snackbar above the bottom of the screen. */
+  bottomOffset?: number;
+}
+
+const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffset }: CartItemRowProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
+  const setQuantity = useVillageStore(state => state.setQuantity);
   const { locale } = useTranslation();
 
-  const displayName = locale === 'te' ? item.product.nameTE : item.product.name;
+  // Drop the whole line in a single store write rather than decrementing per unit.
+  const handleRemoveItem = () => setQuantity(item.key, 0);
+
+  const displayName = locale === 'te' && item.nameTE ? item.nameTE : item.name;
 
   const discount = item.mrp > item.price
     ? Math.round((1 - item.price / item.mrp) * 100)
     : 0;
 
+  const isOutOfStock = stockStatus && !stockStatus.inStock;
+
   return (
-    <View className="bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center gap-3">
-      <View className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.gradientFrom} ${item.gradientTo} items-center justify-center relative`}>
-        <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
-        {discount > 0 && (
-          <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
-            <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
-          </View>
-        )}
-      </View>
+    <View className={`bg-white border rounded-2xl p-2.5 flex-row items-center gap-3 ${
+      isOutOfStock ? 'border-red-200 opacity-70' : 'border-slate-100'
+    }`}>
+      {item.imageUrl ? (
+        <View className="w-16 h-16 rounded-xl overflow-hidden bg-slate-50 relative">
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={150}
+          />
+          {discount > 0 && (
+            <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
+              <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
+            </View>
+          )}
+          {isOutOfStock && (
+            <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-xl" />
+          )}
+        </View>
+      ) : (
+        <View className={`w-16 h-16 rounded-xl bg-gradient-to-br ${item.gradientFrom} ${item.gradientTo} items-center justify-center relative`}>
+          <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
+          {discount > 0 && (
+            <View className="absolute top-0 left-0 bg-green-600 rounded-tl-xl rounded-br-xl px-1 py-0.5">
+              <Text className="text-white text-[8px] font-extrabold">{discount}%</Text>
+            </View>
+          )}
+          {isOutOfStock && (
+            <View className="absolute inset-0 bg-black/40 rounded-xl" />
+          )}
+        </View>
+      )}
 
       <View className="flex-1">
         <Text
@@ -40,7 +81,9 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
         >
           {displayName}
         </Text>
-        <Text className="text-slate-500 text-xs mt-0.5">{item.weight}</Text>
+        {item.weight ? (
+          <Text className="text-slate-500 text-xs mt-0.5">{item.weight}</Text>
+        ) : null}
         <View className="flex-row items-center gap-1.5 mt-1">
           <Text className="text-slate-900 font-bold text-sm">{rupees(item.price)}</Text>
           {item.mrp > item.price && (
@@ -49,16 +92,44 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
         </View>
       </View>
 
-      <View className="items-end gap-1" style={{ width: 96 }}>
-        <FullWidthStepper
-          count={item.count}
-          onAdd={() => addToCart(item.key)}
-          onDec={() => decFromCart(item.key)}
-        />
-        <Text className="text-slate-500 text-[10px]">
-          {rupees(item.price * item.count)}
-        </Text>
+      <View className="items-end gap-1 relative" style={{ width: 96 }}>
+        {isOutOfStock ? (
+          <View className="gap-1 w-full">
+            <TouchableOpacity
+              onPress={onOutOfStockPress}
+              testID="out-of-stock-badge"
+              className="bg-red-100 rounded-lg px-2 py-1 flex-row items-center gap-1 justify-center"
+            >
+              <AlertCircle size={14} color="#dc2626" />
+              <Text className="text-red-700 text-xs font-semibold">Out of stock</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleRemoveItem}
+              className="bg-red-50 rounded-lg px-2 py-1 flex-row items-center justify-center border border-red-200"
+            >
+              <Trash2 size={12} color="#dc2626" />
+              <Text className="text-red-600 text-xs font-semibold ml-1">Remove</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <FullWidthStepper
+              count={item.count}
+              maxQuantity={stockStatus?.availableQuantity}
+              onAdd={() => addToCart(item.key, undefined, stockStatus?.availableQuantity)}
+              onDec={() => decFromCart(item.key)}
+              bottomOffset={bottomOffset}
+            />
+            <Text className="text-slate-500 text-[10px]">
+              {rupees(item.price * item.count)}
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );
 };
+
+// The cart list re-renders on every stock-verification and quantity change. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const CartItemRow = React.memo(CartItemRowComponent);

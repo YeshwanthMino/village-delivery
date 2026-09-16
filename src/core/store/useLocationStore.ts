@@ -3,48 +3,157 @@
 import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
-import { Address, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
+import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
+import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
+import { findByLocation } from '@/src/features/location/data/locationApi';
+import { reconcileSelectedId, villageFromAddress } from '@/src/features/location/domain/addressSelection';
+
+const RECENT_LIMIT = 5;
+
+export type LocationErrorKind = 'no_fix' | 'timeout' | 'network';
 
 interface LocationState {
   status: ServiceabilityStatus;
+  permission: PermissionState;
+  blocked: boolean; // permanently denied ("Don't ask again")
+  detecting: boolean;
+  lastError: LocationErrorKind | null;
   serviceableVillage: Village | null;
-  selectedAddressId: string | null;
   savedAddresses: Address[];
+  selectedAddressId: string | null;
+  recentLocations: RecentLocation[];
   hydrated: boolean;
 }
 
 interface LocationActions {
   hydrate: () => Promise<void>;
   setStatus: (status: ServiceabilityStatus) => void;
-  setServiceable: (village: Village) => Promise<void>;
+  setServiceable: (village: Village, opts?: { keepSelectedAddress?: boolean }) => Promise<void>;
   setNotServiceable: () => void;
   setSavedAddresses: (addresses: Address[]) => void;
-  setSelectedAddressId: (id: string | null) => Promise<void>;
+  setSelectedAddress: (address: Address) => Promise<void>;
+  addRecent: (recent: RecentLocation) => Promise<void>;
   clearLocation: () => Promise<void>;
-  hasServiceableLocation: () => boolean;
+  refreshPermission: () => Promise<PermissionState>;
+  detectCurrentLocation: () => Promise<boolean>;
+  searchLocation: (query: string) => Promise<boolean>;
+  selectAddress: (address: Address) => Promise<boolean>;
+  selectRecent: (recent: RecentLocation) => Promise<void>;
+  selectVillage: (village: Village) => Promise<boolean>;
 }
 
 type LocationStore = LocationState & LocationActions;
 
+type SetState = (partial: Partial<LocationState>) => void;
+type GetState = () => LocationStore;
+
 const initialState: LocationState = {
   status: 'idle',
+  permission: 'undetermined',
+  blocked: false,
+  detecting: false,
+  lastError: null,
   serviceableVillage: null,
-  selectedAddressId: null,
   savedAddresses: [],
+  selectedAddressId: null,
+  recentLocations: [],
   hydrated: false,
 };
+
+// Module-level race guards (not in render state).
+let inflight: Promise<boolean> | null = null;
+let seq = 0;
+
+/**
+ * Coords → serviceability. Drops its result if a newer detect/search started.
+ * `addToRecents` defaults true (GPS detect / search); pass false when resolving
+ * a saved address, which must never pollute the recent-locations list.
+ */
+async function resolveCoords(
+  set: SetState,
+  get: GetState,
+  coords: LatLng,
+  label: string | undefined,
+  token: number,
+  opts?: { addToRecents?: boolean },
+): Promise<boolean> {
+  set({ status: 'checking' });
+  try {
+    const result = await findByLocation(coords);
+    if (token !== seq) return false; // stale — a newer request won
+    if (result.serviceable && result.village) {
+      const v = result.village;
+      await get().setServiceable(v);
+      if (v.storeId && opts?.addToRecents !== false) {
+        await get().addRecent({
+          storeId: v.storeId,
+          villageName: v.name,
+          latitude: v.latitude ?? coords.latitude,
+          longitude: v.longitude ?? coords.longitude,
+          label: label ?? v.name,
+          savedAt: Date.now(),
+        });
+      }
+      set({ status: 'serviceable', detecting: false, lastError: null });
+      return true;
+    }
+    set({ status: 'not_serviceable', detecting: false });
+    return false;
+  } catch {
+    if (token !== seq) return false;
+    set({ status: 'error', lastError: 'network', detecting: false });
+    return false;
+  }
+}
+
+/** Permission → GPS fix → resolve. */
+async function runDetect(set: SetState, get: GetState): Promise<boolean> {
+  const token = ++seq;
+  set({ status: 'locating', detecting: true, lastError: null });
+
+  const current = await LocationService.getPermissionState();
+  if (current !== 'granted') {
+    const res = await LocationService.requestPermission();
+    set({
+      permission: res.granted ? 'granted' : 'denied',
+      blocked: !res.granted && !res.canAskAgain,
+    });
+    if (!res.granted) {
+      set({ status: 'idle', detecting: false });
+      return false;
+    }
+  } else {
+    set({ permission: 'granted', blocked: false });
+  }
+
+  let coords: LatLng;
+  try {
+    coords = await LocationService.getCurrentPosition();
+  } catch (e: any) {
+    set({
+      status: 'error',
+      lastError: e?.message === 'LOCATION_TIMEOUT' ? 'timeout' : 'no_fix',
+      detecting: false,
+    });
+    return false;
+  }
+
+  return resolveCoords(set, get, coords, undefined, token);
+}
 
 export const useLocationStore = create<LocationStore>((set, get) => ({
   ...initialState,
 
   hydrate: async () => {
-    const [village, selectedId] = await Promise.all([
+    const [village, recents, selectedAddressId] = await Promise.all([
       StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
+      StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
       StoredPrefs.getCustomData<string>(StorageKeys.SELECTED_ADDRESS_ID),
     ]);
     set({
       serviceableVillage: village ?? null,
-      selectedAddressId: selectedId ?? null,
+      recentLocations: Array.isArray(recents) ? recents : [],
+      selectedAddressId: selectedAddressId ?? null,
       status: village ? 'serviceable' : 'idle',
       hydrated: true,
     });
@@ -52,28 +161,150 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   setStatus: (status) => set({ status }),
 
-  setServiceable: async (village) => {
+  setServiceable: async (village, opts) => {
     set({ serviceableVillage: village, status: 'serviceable' });
+    // Switching the active store from a non-address source (GPS, search, recent,
+    // map picker) deselects the saved delivery address, so the toolbar shows the
+    // new village name. selectAddress passes keepSelectedAddress to re-select.
+    if (!opts?.keepSelectedAddress) {
+      set({ selectedAddressId: null });
+      await StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID);
+    }
     await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
   },
 
   setNotServiceable: () => set({ status: 'not_serviceable' }),
 
-  setSavedAddresses: (addresses) => set({ savedAddresses: addresses }),
+  setSavedAddresses: (addresses) => {
+    const prev = get().selectedAddressId;
+    // Keep an existing explicit selection only while that address still exists;
+    // a stale id (e.g. the selected address was deleted) is cleared. We never
+    // auto-select the default — the cart shows an address only when the user
+    // explicitly picked one. This deliberately does NOT switch the active
+    // serviceable village — that is hydrated/resolved separately.
+    const reconciled = reconcileSelectedId(addresses, prev);
+    set({ savedAddresses: addresses, selectedAddressId: reconciled });
+    if (reconciled !== prev) {
+      void StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, reconciled);
+    }
+  },
 
-  setSelectedAddressId: async (id) => {
-    set({ selectedAddressId: id });
-    if (id) await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, id);
-    else await StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID);
+  addRecent: async (recent) => {
+    const next = [
+      recent,
+      ...get().recentLocations.filter((r) => r.storeId !== recent.storeId),
+    ].slice(0, RECENT_LIMIT);
+    set({ recentLocations: next });
+    await StoredPrefs.setCustomData(StorageKeys.RECENT_LOCATIONS, next);
   },
 
   clearLocation: async () => {
-    set({ serviceableVillage: null, status: 'idle', selectedAddressId: null, savedAddresses: [] });
-    await Promise.all([
-      StoredPrefs.removeCustomData(StorageKeys.SERVICEABLE_VILLAGE),
-      StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID),
-    ]);
+    set({ serviceableVillage: null, status: 'idle' });
+    await StoredPrefs.removeCustomData(StorageKeys.SERVICEABLE_VILLAGE);
   },
 
-  hasServiceableLocation: () => get().serviceableVillage !== null,
+  refreshPermission: async () => {
+    const permission = await LocationService.getPermissionState();
+    set({ permission });
+    return permission;
+  },
+
+  detectCurrentLocation: async () => {
+    if (inflight) return inflight; // dedupe concurrent callers
+    inflight = runDetect(set, get);
+    try {
+      return await inflight;
+    } finally {
+      inflight = null;
+    }
+  },
+
+  searchLocation: async (query) => {
+    const q = query.trim();
+    if (!q) return false;
+    const token = ++seq;
+    set({ status: 'locating', detecting: true, lastError: null });
+    let coords: LatLng | null;
+    try {
+      coords = await LocationService.geocode(q);
+    } catch {
+      set({ status: 'error', lastError: 'network', detecting: false });
+      return false;
+    }
+    if (!coords) {
+      set({ status: 'idle', detecting: false });
+      return false;
+    }
+    return resolveCoords(set, get, coords, q, token);
+  },
+
+  selectAddress: async (address) => {
+    // The address payload already carries its village + storeId, so switch the
+    // active store directly — no find-by-location round-trip. Selecting a saved
+    // address never adds a recent location (recents are for ad-hoc GPS/search).
+    const village = villageFromAddress(address);
+    if (village) {
+      await get().setServiceable(village, { keepSelectedAddress: true });
+      set({ selectedAddressId: address.id });
+      await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+      return true;
+    }
+    // Legacy fallback: an address without a storeId — resolve serviceability
+    // from its coords, but skip the recents write.
+    if (address.latitude == null || address.longitude == null) return false;
+    const token = ++seq;
+    const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
+    set({ status: 'locating', detecting: true, lastError: null });
+    const ok = await resolveCoords(
+      set,
+      get,
+      { latitude: address.latitude, longitude: address.longitude },
+      label,
+      token,
+      { addToRecents: false },
+    );
+    if (ok) {
+      set({ selectedAddressId: address.id });
+      await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+    }
+    return ok;
+  },
+
+  setSelectedAddress: async (address) => {
+    // Record the selection so the cart reflects it instantly, then switch the
+    // active store. selectAddress handles the store switch without find-by-
+    // location (when the address has a storeId) and never adds a recent.
+    set({ selectedAddressId: address.id });
+    await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+    await get().selectAddress(address);
+  },
+
+  selectRecent: async (r) => {
+    const v: Village = {
+      id: r.storeId,
+      name: r.villageName,
+      storeId: r.storeId,
+      latitude: r.latitude,
+      longitude: r.longitude,
+    };
+    await get().setServiceable(v);
+    await get().addRecent({ ...r, savedAt: Date.now() });
+  },
+
+  selectVillage: async (village) => {
+    // Search results already carry storeId + defaultLocation, so switch the
+    // active store directly — no find-by-location round-trip (like selectRecent).
+    await get().setServiceable(village);
+    if (village.storeId) {
+      await get().addRecent({
+        storeId: village.storeId,
+        villageName: village.name,
+        latitude: village.latitude ?? 0,
+        longitude: village.longitude ?? 0,
+        label: [village.name, village.secondaryName].filter(Boolean).join(', '),
+        savedAt: Date.now(),
+      });
+    }
+    return true;
+  },
 }));

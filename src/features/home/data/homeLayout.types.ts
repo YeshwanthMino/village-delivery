@@ -4,6 +4,8 @@
 // (GET /app/page-layout/path/main). Raw API objects are mapped into these by
 // homeLayoutMapper so the UI never touches backend field shapes directly.
 
+import { Variant } from '@/src/base/types/village.types';
+
 export interface BannerSlide {
   id: string;
   title: string;
@@ -27,9 +29,16 @@ export interface HomeProduct {
   price: number; // dealPrice ?? listPrice ?? mrp
   discountPct: number; // 0 when no discount
   inStock: boolean;
+  stock?: number; // available quantity
   slug?: string;
   link?: string;
   categoryId?: string;
+  categoryName?: string; // human-readable name, e.g. "Pulses"
+  categoryPath?: string; // backend category path, e.g. "_Pulses"
+  hasVariants?: boolean; // product has multiple variant options
+  /** Variants as they arrived in the list response — the variant sheet renders
+   *  these directly, so opening it costs no extra request. */
+  variants?: Variant[];
 }
 
 export interface BannerSection {

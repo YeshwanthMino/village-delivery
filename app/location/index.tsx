@@ -1,7 +1,7 @@
 // app/location/index.tsx
 
-import { LocationGateScreen } from '@/src/features/location/views/LocationGateScreen';
+import { SelectLocationScreen } from '@/src/features/location/views/SelectLocationScreen';
 
 export default function LocationRoute() {
-  return <LocationGateScreen />;
+  return <SelectLocationScreen />;
 }

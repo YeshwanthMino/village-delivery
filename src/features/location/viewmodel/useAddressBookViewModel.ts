@@ -1,16 +1,16 @@
 // src/features/location/viewmodel/useAddressBookViewModel.ts
+//
+// Loads the signed-in user's saved delivery addresses.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '@/src/core/store';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
-import { RemoteAddressRepository } from '../data/AddressRepository';
+import { listAddresses, deleteAddress } from '../data/locationApi';
 
 export function useAddressBookViewModel() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const addresses = useLocationStore((s) => s.savedAddresses);
   const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
-  const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
-  const setSelectedAddressId = useLocationStore((s) => s.setSelectedAddressId);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +20,7 @@ export function useAddressBookViewModel() {
     setLoading(true);
     setError(null);
     try {
-      const list = await RemoteAddressRepository.list();
-      setSavedAddresses(list);
+      setSavedAddresses(await listAddresses());
     } catch {
       setError('failed');
     } finally {
@@ -33,12 +32,10 @@ export function useAddressBookViewModel() {
     void refresh();
   }, [refresh]);
 
-  const select = useCallback((id: string) => setSelectedAddressId(id), [setSelectedAddressId]);
-
   const remove = useCallback(
     async (id: string) => {
       try {
-        await RemoteAddressRepository.remove(id);
+        await deleteAddress(id);
         setSavedAddresses(addresses.filter((a) => a.id !== id));
       } catch {
         setError('failed');
@@ -47,14 +44,5 @@ export function useAddressBookViewModel() {
     [addresses, setSavedAddresses],
   );
 
-  return {
-    isAuthenticated,
-    addresses,
-    selectedAddressId,
-    loading,
-    error,
-    refresh,
-    select,
-    remove,
-  };
+  return { isAuthenticated, addresses, loading, error, refresh, remove };
 }
