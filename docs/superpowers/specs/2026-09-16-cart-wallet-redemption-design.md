@@ -52,16 +52,18 @@ Implementation detail: `useCartViewModel` tracks two pieces of state — `wallet
 
 ## Bill computation
 
-The wallet discount is **not capped** by the ₹199 minimum — instead, the minimum-order check is computed on the pre-wallet total, so redeeming cashback you're entitled to can never block checkout, and "amount to pay" can legitimately land below ₹199 (even ₹0) once wallet is applied:
+The ₹199 minimum-order check is about whether the actual products ordered clear the threshold — neither the wallet discount nor the VIP membership fee is real product value, so **both are excluded** from the amount fed to `deriveMinOrderFields`. VIP fee is still charged (it lands in the final `grandTotal`), it just no longer helps or hurts eligibility for the minimum:
 
 ```
-grandTotalBeforeWallet = itemTotal + deliveryFee + platformFee + vipMembershipFee - couponDiscount
-{ minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotalBeforeWallet)  // wallet omitted
+minCheckBasis = itemTotal + deliveryFee + platformFee - couponDiscount        // no VIP fee, no wallet
+{ minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(minCheckBasis)
+
+grandTotalBeforeWallet = minCheckBasis + vipMembershipFee
 walletDiscount = walletApplied ? Math.min(walletBalance, grandTotalBeforeWallet) : 0
-grandTotal = grandTotalBeforeWallet - walletDiscount   // final "to pay" — may be under ₹199
+grandTotal = grandTotalBeforeWallet - walletDiscount   // final "to pay" — may be under ₹199, even ₹0
 ```
 
-`deriveMinOrderFields` itself is unchanged (still just compares a total against ₹199); the change is *which* total feeds it — `computeBill` now calls it with `grandTotalBeforeWallet` instead of the final `grandTotal`. This is a deliberate divergence from how `couponDiscount` interacts with the minimum today (coupon still applies before the check, unchanged, out of scope here) — wallet is the one case getting the fix, per direct request.
+`deriveMinOrderFields` itself is unchanged (still just compares a total against ₹199); the change is *which* total feeds it. This is a deliberate divergence from today's behavior, where the VIP fee currently *does* count toward clearing the minimum (and coupon discount still applies before the check, unchanged, out of scope here) — wallet and VIP fee are the two things being pulled out of that check, per direct request.
 
 ## UI
 
@@ -91,7 +93,7 @@ Since `useWallet` is boolean, the **backend** decides the real amount deducted �
 
 ## Testing
 
-- `bill.ts` unit tests: wallet discount capped at balance (not at `minOrderValue`); `belowMinimum`/`amountToMinimum` computed off the pre-wallet total regardless of whether wallet is applied; `grandTotal` can land below ₹199 or at ₹0 once wallet is applied without flipping `belowMinimum`; `walletApplied=false` yields 0 discount.
+- `bill.ts` unit tests: wallet discount capped at balance (not at `minOrderValue`); `belowMinimum`/`amountToMinimum` computed off `minCheckBasis` (excludes both VIP fee and wallet) regardless of whether either is applied; a VIP-only cart that previously cleared the minimum via the fee now correctly reports `belowMinimum` off item value alone; `grandTotal` can land below ₹199 or at ₹0 once wallet is applied without flipping `belowMinimum`; `walletApplied=false` yields 0 discount.
 - `orderApi.createOrder` test: `useWallet` included in the POST body when set, defaults to `false` when omitted.
 - `useCreateOrderMutation` test: wallet query invalidated on successful placement (and not on stock-conflict/error paths, matching the existing orders-invalidation tests).
 - `BillSummaryCard` test: wallet row shown/hidden by `walletApplied`.
