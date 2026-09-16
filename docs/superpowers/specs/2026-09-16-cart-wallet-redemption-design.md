@@ -52,12 +52,21 @@ Implementation detail: `useCartViewModel` tracks two pieces of state — `wallet
 
 ## Bill computation
 
-- New `Bill.walletDiscount` field: `walletApplied ? Math.min(walletBalance, amountBeforeWallet) : 0`, applied after coupon discount and VIP fee — same slot in the pipeline, so `minOrderValue`/`belowMinimum` derive from the post-wallet total, consistent with how coupon/VIP discounts already work.
-- `grandTotal` is reduced by `walletDiscount`, same as today's `couponDiscount`.
+The wallet discount is **not capped** by the ₹199 minimum — instead, the minimum-order check is computed on the pre-wallet total, so redeeming cashback you're entitled to can never block checkout, and "amount to pay" can legitimately land below ₹199 (even ₹0) once wallet is applied:
+
+```
+grandTotalBeforeWallet = itemTotal + deliveryFee + platformFee + vipMembershipFee - couponDiscount
+{ minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotalBeforeWallet)  // wallet omitted
+walletDiscount = walletApplied ? Math.min(walletBalance, grandTotalBeforeWallet) : 0
+grandTotal = grandTotalBeforeWallet - walletDiscount   // final "to pay" — may be under ₹199
+```
+
+`deriveMinOrderFields` itself is unchanged (still just compares a total against ₹199); the change is *which* total feeds it — `computeBill` now calls it with `grandTotalBeforeWallet` instead of the final `grandTotal`. This is a deliberate divergence from how `couponDiscount` interacts with the minimum today (coupon still applies before the check, unchanged, out of scope here) — wallet is the one case getting the fix, per direct request.
 
 ## UI
 
-- `WalletApplyCard` sits right after `VipMembershipCard`, before the items list (see mockup reviewed in the visual companion).
+- VIP Membership upsell is hidden from the Cart screen for this pass (unrelated to wallet, bundled in per direct request) — `CartScreen.tsx` no longer renders `<VipMembershipCard />`. The component, its hook wiring (`vipAdded`/`addVipMembership`/`removeVipMembership`), and its tests are left intact for a future re-enable, not deleted.
+- `WalletApplyCard` now occupies the top of that "addable adjustment" slot, before the items list (see mockup reviewed in the visual companion, which showed it below VIP — it now sits first since VIP is hidden).
 - Hidden entirely when: unauthenticated, wallet query loading/error, or balance is 0/null — mirrors the "confident data or nothing" rule already in `walletApi.mapWallet`. This is a convenience feature, not core checkout; it must never show a broken or misleading state.
 - Applied (default) state: teal/cyan card, "Wallet balance" + "₹50 applied to this order" + a **Remove** pill.
 - Removed state: same card, outline style, "₹50 cashback available" + an **Apply** pill.
@@ -75,14 +84,14 @@ Since `useWallet` is boolean, the **backend** decides the real amount deducted �
 
 ## Edge cases
 
-- **Balance exceeds order total:** discount caps at the pre-wallet total (order can't go negative); the customer's remaining balance is whatever the backend leaves it at afterward.
-- **Applying wallet drops the total below the ₹199 minimum:** inherits the same pre-existing behavior as a large coupon discount already has today (both apply before the `minOrderValue` derivation) — not a new gap introduced here, not fixed here.
-- **Cart contents change after the toggle state is set:** the toggle (on or off) is not reset; the discount just re-estimates against the new total on every render.
+- **Balance exceeds order total:** discount caps at `grandTotalBeforeWallet` (never negative) — `grandTotal` can land anywhere from ₹0 up; nothing about that blocks placing the order, since `belowMinimum` was already decided off the pre-wallet total.
+- **Balance covers the entire order (`grandTotal` reaches ₹0):** still a valid, placeable order — COD/UPI payment methods and the checkout bar operate on `grandTotal` as-is, and ₹0 is a legitimate value for them to display and send.
+- **Cart contents change after the toggle state is set:** the toggle (on or off) is not reset; both the pre-wallet minimum check and the discount re-estimate against the new total on every render.
 - **Query still loading on first paint:** card is hidden (not a skeleton) until the balance is known, then appears already-applied if positive.
 
 ## Testing
 
-- `bill.ts` unit tests: wallet discount capped at balance vs. capped at total; `walletApplied=false` yields 0 discount.
+- `bill.ts` unit tests: wallet discount capped at balance (not at `minOrderValue`); `belowMinimum`/`amountToMinimum` computed off the pre-wallet total regardless of whether wallet is applied; `grandTotal` can land below ₹199 or at ₹0 once wallet is applied without flipping `belowMinimum`; `walletApplied=false` yields 0 discount.
 - `orderApi.createOrder` test: `useWallet` included in the POST body when set, defaults to `false` when omitted.
 - `useCreateOrderMutation` test: wallet query invalidated on successful placement (and not on stock-conflict/error paths, matching the existing orders-invalidation tests).
 - `BillSummaryCard` test: wallet row shown/hidden by `walletApplied`.
