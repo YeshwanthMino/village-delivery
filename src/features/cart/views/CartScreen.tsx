@@ -15,7 +15,7 @@ import {
   PaymentMethodSection,
   SavingsStrip,
   VariantBottomSheet,
-  VipMembershipCard,
+  WalletApplyCard,
 } from '@/src/shared/components';
 import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
@@ -164,6 +164,7 @@ export const CartScreen = () => {
         address: addressId,
         paymentMethod: paymentMethod ?? 'cod',
         isPriority: false,
+        useWallet: vm.walletApplied && vm.bill.walletDiscount > 0,
       });
 
       logger.debug('[handlePlaceOrder] createOrder returned:', result);
@@ -290,11 +291,14 @@ export const CartScreen = () => {
           {/* Cashback progress */}
           <CashbackProgressBanner grandTotal={vm.bill.grandTotal} />
 
-          {/* VIP membership — addable like a product line item */}
-          <VipMembershipCard
-            added={vm.vipAdded}
-            onAdd={vm.addVipMembership}
-            onRemove={vm.removeVipMembership}
+          {/* Wallet balance — addable like a product line item, applied by
+              default when a balance exists (see useCartViewModel). VIP
+              membership upsell is hidden here for now, unrelated to wallet. */}
+          <WalletApplyCard
+            balance={vm.walletBalance}
+            applied={vm.walletApplied}
+            onApply={vm.applyWallet}
+            onRemove={vm.removeWallet}
           />
 
           {/* Items */}
@@ -316,7 +320,12 @@ export const CartScreen = () => {
           </View>
 
           {/* Bill summary */}
-          <BillSummaryCard bill={vm.bill} couponApplied={vm.couponApplied} cashbackReward={cashback.unlockedReward} />
+          <BillSummaryCard
+            bill={vm.bill}
+            couponApplied={vm.couponApplied}
+            walletApplied={vm.walletApplied}
+            cashbackReward={cashback.unlockedReward}
+          />
 
           {/* Payment method — always shown (COD preselected) */}
           <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
