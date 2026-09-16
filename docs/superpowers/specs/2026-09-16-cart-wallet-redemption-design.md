@@ -39,7 +39,7 @@ This is **all-or-nothing** — a boolean flag, not a partial amount. The backend
 
 ## Architecture & data flow
 
-- Reuse the existing `useWalletQuery` (already fetches `/app/wallet` → `{ cashback, expiryDate, daysLeft }`) on the Cart screen. Same query key as Profile (`queryKeys.wallet.detail()`), so the cache is shared — no new network call pattern.
+- Reuse the existing `useWalletQuery` (already fetches `/app/wallet` → `{ cashback, expiryDate, daysLeft }`) on the Cart screen. Same query key as Profile (`queryKeys.wallet.detail()`), so cached data (if any) paints instantly — no blank flash. But this balance directly affects real money at checkout, so the Cart screen must not trust a value that might be stale from an earlier Profile visit: `useWalletQuery` gains an optional `{ alwaysFresh?: boolean }` param that sets React Query's `refetchOnMount: 'always'`. Profile keeps calling it with no args (normal caching behavior); the Cart screen calls `useWalletQuery({ alwaysFresh: true })` so it always revalidates against the server the moment the Cart screen mounts, while still showing the cached figure immediately if one exists.
 - New `WalletApplyCard` component in `src/shared/components/`, modeled directly on `VipMembershipCard`'s controlled add/remove pattern: the screen owns the boolean, the component only renders it.
 - `useCartViewModel` gains `walletApplied` state, seeded from whether a usable balance exists once the wallet query resolves (see "Default behavior" below), plus `toggleWallet`/`removeWallet` to flip it.
 - `computeBill()` gains new opts: `walletApplied?: boolean`, `walletBalance?: number` (internal units, from the wallet query).
@@ -88,3 +88,4 @@ Since `useWallet` is boolean, the **backend** decides the real amount deducted �
 - `BillSummaryCard` test: wallet row shown/hidden by `walletApplied`.
 - `WalletApplyCard` component tests: hidden states (loading/error/zero/unauthenticated), default-applied state when balance > 0, apply/remove interaction, and that a manual removal survives a background refetch.
 - `useCartViewModel` test: default-applied seeding happens once per resolved balance, not on every refetch.
+- `useWalletQuery` test: `alwaysFresh: true` sets `refetchOnMount: 'always'`; the default (no args) call keeps normal caching, matching Profile's existing usage.
