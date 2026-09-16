@@ -114,6 +114,7 @@ function buildBill(items: OrderItem[], orderTotalRupees: unknown): Bill {
     platformFee: 0,
     couponDiscount: 0,
     vipMembershipFee: 0, // past orders predate the cart's VIP membership add-on
+    walletDiscount: 0, // past orders predate wallet redemption / not reconstructed from server data
     grandTotal,
     totalSavings: itemDiscount,
     totalCount,
