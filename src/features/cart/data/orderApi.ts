@@ -33,6 +33,10 @@ export interface CreateOrderInput {
   scheduledOn?: string;
   notes?: string;
   isPriority?: boolean;
+  /** Redeem the customer's wallet/cashback balance against this order.
+   *  Boolean/all-or-nothing on the backend — it decides the real amount
+   *  deducted, not this app. Defaults to false. */
+  useWallet?: boolean;
 }
 
 export interface CreateOrderResult {
@@ -56,6 +60,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     scheduledOn: input.scheduledOn,
     notes: input.notes,
     isPriority: input.isPriority ?? false,
+    useWallet: input.useWallet ?? false,
   };
 
   try {

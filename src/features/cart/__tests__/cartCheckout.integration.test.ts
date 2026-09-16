@@ -123,4 +123,35 @@ describe('Cart Checkout with Stock Conflicts', () => {
       })
     );
   });
+
+  test('includes useWallet: true in the request body when set', async () => {
+    mockApiClient.post.mockResolvedValue({ _id: 'order127' });
+
+    await createOrder({
+      products: [{ productId: 'prod1', quantity: 1 }],
+      address: 'addr123',
+      paymentMethod: 'cod',
+      useWallet: true,
+    });
+
+    expect(mockApiClient.post).toHaveBeenCalledWith(
+      expect.stringContaining('/app/orders'),
+      expect.objectContaining({ useWallet: true })
+    );
+  });
+
+  test('defaults useWallet to false when omitted', async () => {
+    mockApiClient.post.mockResolvedValue({ _id: 'order128' });
+
+    await createOrder({
+      products: [{ productId: 'prod1', quantity: 1 }],
+      address: 'addr123',
+      paymentMethod: 'cod',
+    });
+
+    expect(mockApiClient.post).toHaveBeenCalledWith(
+      expect.stringContaining('/app/orders'),
+      expect.objectContaining({ useWallet: false })
+    );
+  });
 });
