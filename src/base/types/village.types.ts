@@ -109,6 +109,13 @@ export interface Bill {
   /** VIP membership fee (internal units) added to this order when the
    *  customer added VIP membership from the cart screen; 0 otherwise. */
   vipMembershipFee: number;
+  /** grandTotal before the wallet discount is subtracted (still includes
+   *  vipMembershipFee, still excludes the wallet). This is the basis
+   *  cashback-tier progress (useCartCashback / CashbackProgressBanner) must
+   *  use — redeeming cashback you already earned is not a reason to show a
+   *  lower tier than the order actually qualifies for. Equal to grandTotal
+   *  when walletDiscount is 0. */
+  grandTotalBeforeWallet: number;
   /** Wallet/cashback amount redeemed against this order (internal units);
    *  0 when not applied. A best-effort display estimate — POST /app/orders'
    *  `useWallet` flag is boolean, so the backend decides the real amount

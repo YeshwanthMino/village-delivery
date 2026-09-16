@@ -121,4 +121,20 @@ describe('computeBill — wallet redemption', () => {
 
     expect(Math.round(bill.totalSavings * 20)).toBe(50);
   });
+
+  test('grandTotalBeforeWallet is unaffected by wallet redemption', () => {
+    const withoutWallet = computeBill([lineItem(250, 1)]);
+    const withWallet = computeBill([lineItem(250, 1)], { walletApplied: true, walletBalance: toUnits(50) });
+
+    expect(Math.round(withoutWallet.grandTotalBeforeWallet * 20)).toBe(250);
+    expect(Math.round(withWallet.grandTotalBeforeWallet * 20)).toBe(250);
+    expect(Math.round(withWallet.grandTotal * 20)).toBe(200); // grandTotal itself still drops
+  });
+
+  test('grandTotalBeforeWallet includes the VIP fee, same as grandTotal does when wallet is not applied', () => {
+    const bill = computeBill([lineItem(250, 1)], { vipAdded: true, walletApplied: true, walletBalance: toUnits(50) });
+
+    expect(Math.round(bill.grandTotalBeforeWallet * 20)).toBe(295); // 250 + 45 VIP fee
+    expect(Math.round(bill.grandTotal * 20)).toBe(245); // 295 - 50 wallet
+  });
 });

@@ -175,6 +175,7 @@ export function computeBill(
 
   return {
     itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, vipMembershipFee,
-    walletDiscount, grandTotal, totalSavings, totalCount, minOrderValue, belowMinimum, amountToMinimum,
+    grandTotalBeforeWallet, walletDiscount, grandTotal, totalSavings, totalCount, minOrderValue,
+    belowMinimum, amountToMinimum,
   };
 }

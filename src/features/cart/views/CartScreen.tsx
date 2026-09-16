@@ -41,7 +41,7 @@ export const CartScreen = () => {
   // Independent from CashbackProgressBanner's own useCartCashback call — the
   // same accepted-duplication pattern used elsewhere in this screen. Needed
   // here to pass the unlocked reward into BillSummaryCard as a prop.
-  const cashback = useCartCashback(vm.bill.grandTotal);
+  const cashback = useCartCashback(vm.bill.grandTotalBeforeWallet);
   // Cash on delivery is preselected so Place Order is always available; the
   // user can switch to UPI in the inline payment section below the bill.
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('cod');
@@ -289,13 +289,14 @@ export const CartScreen = () => {
           <SavingsStrip savings={vm.bill.totalSavings} />
 
           {/* Cashback progress */}
-          <CashbackProgressBanner grandTotal={vm.bill.grandTotal} />
+          <CashbackProgressBanner grandTotal={vm.bill.grandTotalBeforeWallet} />
 
           {/* Wallet balance — addable like a product line item, applied by
               default when a balance exists (see useCartViewModel). VIP
               membership upsell is hidden here for now, unrelated to wallet. */}
           <WalletApplyCard
             balance={vm.walletBalance}
+            appliedAmount={vm.bill.walletDiscount}
             applied={vm.walletApplied}
             onApply={vm.applyWallet}
             onRemove={vm.removeWallet}

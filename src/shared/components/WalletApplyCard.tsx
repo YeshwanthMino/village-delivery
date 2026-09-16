@@ -21,19 +21,24 @@ interface WalletApplyCardProps {
    *  covers "no wallet", "still loading", "query failed", and "logged out"
    *  alike, since none of those are confident enough to offer redemption on. */
   balance: number | null | undefined;
+  /** Amount actually redeemed on this order (internal units, i.e.
+   *  Bill.walletDiscount) — used only in the applied state's copy. Can be
+   *  less than `balance` when the balance exceeds the order total (bill.ts
+   *  caps the discount at the pre-wallet total). The not-applied state's
+   *  "available" copy always shows the full `balance` regardless. */
+  appliedAmount: number;
   applied: boolean;
   onApply: () => void;
   onRemove: () => void;
 }
 
-export const WalletApplyCard = ({ balance, applied, onApply, onRemove }: WalletApplyCardProps) => {
+export const WalletApplyCard = ({ balance, appliedAmount, applied, onApply, onRemove }: WalletApplyCardProps) => {
   const { t } = useTranslation();
 
   if (balance == null || balance <= 0) return null;
 
-  const amountText = rupees(balance);
-
   if (applied) {
+    const appliedText = rupees(appliedAmount);
     return (
       <TouchableOpacity
         testID="wallet-apply-card"
@@ -47,7 +52,7 @@ export const WalletApplyCard = ({ balance, applied, onApply, onRemove }: WalletA
         <View className="flex-1">
           <Text className="text-cyan-900 font-bold text-sm">{t('wallet_apply_title')}</Text>
           <Text className="text-cyan-700 text-xs mt-0.5">
-            {interpolate(t('wallet_apply_applied'), amountText)}
+            {interpolate(t('wallet_apply_applied'), appliedText)}
           </Text>
         </View>
         <View className="border border-green-600 rounded-xl px-3.5 py-1.5">
@@ -57,6 +62,7 @@ export const WalletApplyCard = ({ balance, applied, onApply, onRemove }: WalletA
     );
   }
 
+  const availableText = rupees(balance);
   return (
     <TouchableOpacity
       testID="wallet-apply-card"
@@ -70,7 +76,7 @@ export const WalletApplyCard = ({ balance, applied, onApply, onRemove }: WalletA
       <View className="flex-1">
         <Text className="text-cyan-950 font-bold text-sm">{t('wallet_apply_title')}</Text>
         <Text className="text-cyan-700 text-xs mt-0.5">
-          {interpolate(t('wallet_apply_available'), amountText)}
+          {interpolate(t('wallet_apply_available'), availableText)}
         </Text>
       </View>
       <View className="border border-green-600 rounded-xl px-3.5 py-1.5">
