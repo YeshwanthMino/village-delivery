@@ -8,6 +8,7 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
+import { WalletCard } from '@/src/features/wallet/views/components/WalletCard';
 import { openWhatsAppSupport } from '@/src/shared/utils/whatsappSupport';
 import { ProfileRow } from './components/ProfileRow';
 
@@ -94,6 +95,9 @@ export const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Wallet (signed-in only; hides itself when the user has no wallet) */}
+        {isAuthenticated ? <WalletCard /> : null}
 
         {/* Account rows (signed-in only) */}
         {isAuthenticated ? (

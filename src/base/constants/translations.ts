@@ -277,6 +277,8 @@ export const TRANSLATIONS: TranslationMap = {
   profile_share_app:      { te: 'యాప్‌ను షేర్ చేయండి',     en: 'Share the app' },
   profile_about:          { te: 'మా గురించి',              en: 'About us' },
   profile_version_label:  { te: 'వెర్షన్',                  en: 'Version' },
+  wallet_cashback_label:  { te: 'క్యాష్‌బ్యాక్ బ్యాలెన్స్', en: 'Cashback balance' },
+  wallet_cashback_expiry: { te: '{n} రోజుల్లో గడువు ముగుస్తుంది', en: 'Expires in {n} days' },
   share_message:          { te: 'విలేజ్ డెలివరీ యాప్‌ను డౌన్‌లోడ్ చేసుకోండి: https://village.app', en: 'Check out Village Delivery — fresh groceries to your door: https://village.app' },
 
   // About screen
