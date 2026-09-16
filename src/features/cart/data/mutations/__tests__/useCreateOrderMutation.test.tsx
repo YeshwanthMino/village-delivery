@@ -71,6 +71,30 @@ describe('useCreateOrderMutation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.orders.all });
   });
 
+  test('invalidates the wallet cache when an order is actually placed', async () => {
+    mockCreateOrder.mockResolvedValue({ orderId: 'o1', raw: {} });
+    const { result, invalidateSpy } = renderWithClient();
+
+    result.current.mutate(input);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.wallet.all });
+  });
+
+  test('does not invalidate the wallet cache when the response is a stock conflict', async () => {
+    mockCreateOrder.mockResolvedValue({
+      orderId: null,
+      raw: {},
+      stockInfo: [{ productId: 'p1', availableStock: 0 }],
+    });
+    const { result, invalidateSpy } = renderWithClient();
+
+    result.current.mutate(input);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: queryKeys.wallet.all });
+  });
+
   test('does not invalidate when the response is a stock conflict, not a placed order', async () => {
     mockCreateOrder.mockResolvedValue({
       orderId: null,

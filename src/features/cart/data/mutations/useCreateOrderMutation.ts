@@ -21,6 +21,10 @@ export function useCreateOrderMutation() {
     onSuccess: (result) => {
       if (result.orderId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+        // The backend, not this app, decides how much wallet balance a
+        // useWallet:true order actually consumed — refetch so the next read
+        // (Cart or Profile) shows the real post-order balance.
+        queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
       }
     },
   });
