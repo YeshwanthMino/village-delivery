@@ -249,7 +249,11 @@ export const OrderDetailScreen = () => {
 
         {/* Bill summary */}
         <View className="mx-4 mb-3">
-          <BillSummaryCard bill={order.bill} couponApplied={order.bill.couponDiscount > 0} />
+          <BillSummaryCard
+            bill={order.bill}
+            couponApplied={order.bill.couponDiscount > 0}
+            walletApplied={order.bill.walletDiscount > 0}
+          />
         </View>
 
         {/* Delivery address */}

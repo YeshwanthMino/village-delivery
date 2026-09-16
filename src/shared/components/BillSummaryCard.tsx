@@ -25,6 +25,7 @@ const BillRow = ({ label, value, isGreen, isBold }: BillRowProps) => (
 interface BillSummaryCardProps {
   bill: Bill;
   couponApplied: boolean;
+  walletApplied: boolean;
   /** Formatted rupee string (e.g. "₹25") for an already-unlocked cashback
    *  reward. Opt-in: omit (or pass null) to keep the row hidden — e.g. on
    *  OrderDetailScreen, where a past order carries no real cashback data
@@ -32,7 +33,7 @@ interface BillSummaryCardProps {
   cashbackReward?: string | null;
 }
 
-export const BillSummaryCard = ({ bill, couponApplied, cashbackReward }: BillSummaryCardProps) => {
+export const BillSummaryCard = ({ bill, couponApplied, walletApplied, cashbackReward }: BillSummaryCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -48,6 +49,9 @@ export const BillSummaryCard = ({ bill, couponApplied, cashbackReward }: BillSum
       )}
       {couponApplied && bill.couponDiscount > 0 && (
         <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
+      )}
+      {walletApplied && bill.walletDiscount > 0 && (
+        <BillRow label={t('wallet_apply_title')} value={`-${rupees(bill.walletDiscount)}`} isGreen />
       )}
       {bill.vipMembershipFee > 0 && (
         <BillRow label={t('vip_membership_title')} value={rupees(bill.vipMembershipFee)} />
