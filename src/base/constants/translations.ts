@@ -279,6 +279,9 @@ export const TRANSLATIONS: TranslationMap = {
   profile_version_label:  { te: 'వెర్షన్',                  en: 'Version' },
   wallet_cashback_label:  { te: 'క్యాష్‌బ్యాక్ బ్యాలెన్స్', en: 'Cashback balance' },
   wallet_cashback_expiry: { te: '{n} రోజుల్లో గడువు ముగుస్తుంది', en: 'Expires in {n} days' },
+  wallet_apply_title:     { te: 'వాలెట్ బ్యాలెన్స్', en: 'Wallet balance' },
+  wallet_apply_available: { te: '{n} క్యాష్‌బ్యాక్ అందుబాటులో ఉంది', en: '{n} cashback available' },
+  wallet_apply_applied:   { te: '{n} ఈ ఆర్డర్‌కు వర్తింపజేయబడింది', en: '{n} applied to this order' },
   share_message:          { te: 'విలేజ్ డెలివరీ యాప్‌ను డౌన్‌లోడ్ చేసుకోండి: https://village.app', en: 'Check out Village Delivery — fresh groceries to your door: https://village.app' },
 
   // About screen
