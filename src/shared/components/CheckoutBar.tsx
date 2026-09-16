@@ -1,121 +1,124 @@
+import { Home } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees, rupeesCeil } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-
-export type PaymentMethod = 'cod' | 'upi' | null;
+import type { CheckoutState } from '@/src/features/cart/domain/checkoutState';
+import type { AddressTag } from '@/src/features/location/domain/models';
 
 interface CheckoutBarProps {
+  state: CheckoutState;
   grandTotal: number;
-  savings: number;
-  paymentMethod: PaymentMethod;
-  onSelectPayment: (method: PaymentMethod) => void;
-  onCheckout?: () => void;
+  /** Rupee shortfall to the minimum order value — only used in the 'below_minimum' state. */
+  amountToMinimum?: number;
+  /** Minimum order value (internal units) — only used in the 'below_minimum' state, to compute progress. */
+  minOrderValue?: number;
+  /** Selected address tag + one-line summary — shown in the 'place' state. */
+  addressTag?: AddressTag;
+  addressLine?: string;
+  onLogin: () => void;
+  onSelectAddress: () => void;
+  onPlaceOrder: () => void;
 }
 
-export const CheckoutBar = ({ grandTotal, savings, paymentMethod, onSelectPayment, onCheckout }: CheckoutBarProps) => {
-  const { t, locale } = useTranslation();
+export const CheckoutBar = ({
+  state,
+  grandTotal,
+  amountToMinimum,
+  minOrderValue,
+  addressTag,
+  addressLine,
+  onLogin,
+  onSelectAddress,
+  onPlaceOrder,
+}: CheckoutBarProps) => {
+  const { t, tShopMoreToPlaceOrder, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
-  const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
 
-  return (
-    <View style={{ marginBottom: 8, marginHorizontal: 12, gap: 10 }}>
-      {/* Payment method selector */}
-      <View>
-        <Text style={[styles.paymentTitle, teFont]}>{t('payment_title')}</Text>
-        <View style={styles.paymentRow}>
-          {(['cod', 'upi'] as ('cod' | 'upi')[]).map((method) => {
-            const isSelected = paymentMethod === method;
-            return (
-              <TouchableOpacity
-                key={method}
-                onPress={() => onSelectPayment(method)}
-                style={[
-                  styles.paymentOption,
-                  isSelected ? styles.paymentSelected : styles.paymentUnselected,
-                ]}
-              >
-                <Text style={styles.paymentIcon}>{method === 'cod' ? '💵' : '📲'}</Text>
-                <Text
-                  style={[styles.paymentLabel, isSelected && styles.paymentLabelSelected, teRegular]}
-                  numberOfLines={1}
-                >
-                  {t(method)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+  if (state === 'below_minimum') {
+    const shortfall = amountToMinimum ?? 0;
+    const progress = Math.min(1, minOrderValue ? grandTotal / minOrderValue : 0);
+
+    return (
+      <View style={styles.wrap}>
+        <View style={styles.blockedBar}>
+          <Text style={[styles.blockedText, teFont]}>
+            {tShopMoreToPlaceOrder(rupeesCeil(shortfall))}
+          </Text>
+          <View style={styles.blockedProgressTrack}>
+            <View style={[styles.blockedProgressFill, { width: `${progress * 100}%` }]} />
+          </View>
         </View>
       </View>
+    );
+  }
 
-      {/* Checkout button */}
-      <TouchableOpacity
-        style={[styles.button, !paymentMethod && styles.buttonDisabled]}
-        activeOpacity={paymentMethod ? 0.9 : 1}
-        disabled={!paymentMethod}
-        onPress={paymentMethod ? onCheckout : undefined}
-      >
-        <View>
-          <Text style={styles.total}>{rupees(grandTotal)}</Text>
-          {savings > 0 && (
-            <Text style={styles.saving}>saving {rupees(savings)}</Text>
-          )}
+  // States 'login' / 'address' are a single full-width green button.
+  if (state !== 'place') {
+    const config = {
+      login: { label: t('login_to_proceed'), onPress: onLogin },
+      address: { label: t('select_address_to_proceed'), onPress: onSelectAddress },
+    }[state];
+
+    return (
+      <View style={styles.wrap}>
+        <TouchableOpacity style={styles.fullButton} activeOpacity={0.9} onPress={config.onPress}>
+          <Text style={[styles.fullCta, teFont]}>{config.label}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.card}>
+        {/* Delivery address strip */}
+        <View style={styles.addrRow}>
+          <View style={styles.addrIcon}>
+            <Home size={18} color="#f59e0b" />
+          </View>
+          <View style={styles.addrBody}>
+            <Text style={[styles.addrTitle, teFont]} numberOfLines={1}>
+              {addressTag ? t(`delivering_to_${addressTag}`) : t('delivering_to_home')}
+            </Text>
+            {!!addressLine && (
+              <Text style={styles.addrLine} numberOfLines={1}>
+                {addressLine}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={onSelectAddress}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Text style={styles.change}>{t('change')}</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.cta, teFont]}>{t('proceed_checkout')}</Text>
-      </TouchableOpacity>
+
+        {/* Place order */}
+        <View style={styles.placeRow}>
+          <TouchableOpacity style={styles.button} activeOpacity={0.9} onPress={onPlaceOrder}>
+            <View>
+              <Text style={styles.total}>{rupees(grandTotal)}</Text>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+            </View>
+            <Text style={[styles.cta, teFont]}>{t('place_order')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  paymentTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  paymentOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  paymentSelected: {
-    borderColor: '#16a34a',
-    backgroundColor: '#f0fdf4',
-  },
-  paymentUnselected: {
-    borderColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
-  },
-  paymentIcon: { fontSize: 18 },
-  paymentLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-    flex: 1,
-  },
-  paymentLabelSelected: {
-    color: '#15803d',
-    fontWeight: '700',
-  },
-  button: {
+  wrap: { marginBottom: 8, marginHorizontal: 12 },
+  fullButton: {
     backgroundColor: '#16a34a',
     borderRadius: 16,
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 8 },
@@ -123,25 +126,78 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
-  buttonDisabled: {
-    backgroundColor: '#94a3b8',
-    shadowOpacity: 0,
-    elevation: 0,
+  fullCta: { color: '#ffffff', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
+
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  total: {
-    color: '#ffffff',
+  addrRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  addrIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: '#fff7ed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addrBody: { flex: 1, marginLeft: 11 },
+  addrTitle: { fontSize: 13, fontWeight: '700', color: '#0f172a' },
+  addrLine: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  change: { color: '#16a34a', fontWeight: '700', fontSize: 12, marginLeft: 8 },
+
+  placeRow: { paddingHorizontal: 14, paddingVertical: 12 },
+  button: {
+    backgroundColor: '#16a34a',
+    borderRadius: 14,
+    height: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+  },
+  total: { color: '#ffffff', fontWeight: '800', fontSize: 16, lineHeight: 18 },
+  totalLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 9,
     fontWeight: '700',
-    fontSize: 16,
-  },
-  saving: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 10,
+    letterSpacing: 0.5,
     marginTop: 1,
   },
-  cta: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-    letterSpacing: 0.5,
+  cta: { color: '#ffffff', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
+
+  blockedBar: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 16,
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
+  blockedText: { color: '#64748b', fontWeight: '700', fontSize: 13, textAlign: 'center' },
+  blockedProgressTrack: {
+    height: 3,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    marginTop: 8,
+    overflow: 'hidden',
+    width: 160,
+  },
+  blockedProgressFill: { height: '100%', backgroundColor: '#94a3b8', borderRadius: 3 },
 });

@@ -2,9 +2,9 @@ import { Receipt } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Bill } from '@/src/base/types/village.types';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { interpolate } from '@/src/base/constants/translations';
+import { interpolate, interpolateVars } from '@/src/base/constants/translations';
 
 interface BillRowProps {
   label: string;
@@ -25,9 +25,15 @@ const BillRow = ({ label, value, isGreen, isBold }: BillRowProps) => (
 interface BillSummaryCardProps {
   bill: Bill;
   couponApplied: boolean;
+  walletApplied: boolean;
+  /** Formatted rupee string (e.g. "₹25") for an already-unlocked cashback
+   *  reward. Opt-in: omit (or pass null) to keep the row hidden — e.g. on
+   *  OrderDetailScreen, where a past order carries no real cashback data
+   *  and must never show a promise computed from today's settings. */
+  cashbackReward?: string | null;
 }
 
-export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) => {
+export const BillSummaryCard = ({ bill, couponApplied, walletApplied, cashbackReward }: BillSummaryCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -38,15 +44,17 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
       </View>
 
       <BillRow label={t('item_total_mrp')} value={rupees(bill.mrpTotal)} />
-      <BillRow label={t('discount_on_mrp')} value={`-${rupees(bill.itemDiscount)}`} isGreen />
-      <BillRow
-        label={t('delivery_fee')}
-        value={bill.deliveryFee === 0 ? t('free') : rupees(bill.deliveryFee)}
-        isGreen={bill.deliveryFee === 0}
-      />
-      <BillRow label={t('platform_fee')} value={rupees(bill.platformFee)} />
+      {bill.itemDiscount > 0 && (
+        <BillRow label={t('discount_on_mrp')} value={`-${rupees(bill.itemDiscount)}`} isGreen />
+      )}
       {couponApplied && bill.couponDiscount > 0 && (
         <BillRow label={t('coupon_label')} value={`-${rupees(bill.couponDiscount)}`} isGreen />
+      )}
+      {walletApplied && bill.walletDiscount > 0 && (
+        <BillRow label={t('wallet_apply_title')} value={`-${rupees(bill.walletDiscount)}`} isGreen />
+      )}
+      {bill.vipMembershipFee > 0 && (
+        <BillRow label={t('vip_membership_title')} value={rupees(bill.vipMembershipFee)} />
       )}
 
       <View className="border-t border-dashed border-slate-300 my-2" />
@@ -57,6 +65,16 @@ export const BillSummaryCard = ({ bill, couponApplied }: BillSummaryCardProps) =
         <View className="bg-green-50 rounded-xl px-3 py-2 mt-2">
           <Text className="text-green-700 text-xs font-medium text-center">
             {interpolate(t('you_saved_order'), rupees(bill.totalSavings))}
+          </Text>
+        </View>
+      )}
+
+      {/* Cashback is earned, not a discount — it never touches grandTotal
+       *  above. Shown only once a tier is actually unlocked. */}
+      {cashbackReward && (
+        <View className="bg-emerald-50 rounded-xl px-3 py-2 mt-2">
+          <Text className="text-emerald-700 text-xs font-medium text-center">
+            {interpolateVars(t('bill_cashback_earn'), { r: cashbackReward })}
           </Text>
         </View>
       )}

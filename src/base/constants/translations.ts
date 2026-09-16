@@ -19,7 +19,10 @@ export const TRANSLATIONS: TranslationMap = {
   top_picks_empty_subtitle:  { te: 'వేరే పదాలతో వెతకండి',       en: 'Try a different search term' },
   shop_by_category: { te: 'వర్గాల ద్వారా కొనండి', en: 'Shop by category' },
   continue_btn:     { te: 'కొనసాగించు →', en: 'Continue →' },
-  view_cart:        { te: 'కార్ట్ చూడండి', en: 'View cart' },
+  add_to_cart:      { te: 'కార్ట్‌లో చేర్చండి', en: 'Add to cart' },
+  view_cart:        { te: 'కార్ట్ చూడండి',       en: 'View cart' },
+  out_of_stock:     { te: 'స్టాక్‌లో లేదు',       en: 'Out of Stock' },
+  product_unavailable: { te: 'ఈ ఉత్పత్తి ఇకపై అందుబాటులో లేదు', en: 'This product is no longer available' },
   nav_home:         { te: 'హోమ్', en: 'Home' },
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },
@@ -33,8 +36,16 @@ export const TRANSLATIONS: TranslationMap = {
   cod:              { te: 'నగదు చెల్లింపు', en: 'Cash on Delivery' },
   upi:              { te: 'UPI చెల్లింపు', en: 'UPI Payment' },
   proceed_checkout: { te: 'చెక్అవుట్ కు వెళ్ళండి →', en: 'PROCEED TO CHECKOUT →' },
+  login_to_proceed:        { te: 'కొనసాగడానికి లాగిన్ చేయండి', en: 'Login to proceed' },
+  select_address_to_proceed: { te: 'చిరునామా ఎంచుకోండి', en: 'Select address to proceed' },
+  place_order:             { te: 'ఆర్డర్ చేయండి', en: 'Place order' },
+  choose_payment_method:   { te: 'మీకు నచ్చిన చెల్లింపు పద్ధతిని ఎంచుకోండి.', en: "Choose the payment method you'd like to use." },
+  cod_subtitle:            { te: 'వచ్చినప్పుడు చెల్లించండి', en: 'Pay when it arrives' },
+  upi_subtitle:            { te: 'GPay, PhonePe, Paytm', en: 'GPay, PhonePe, Paytm' },
   item_count:       { te: '{n} వస్తువు', en: '{n} item' },
   discount_badge:   { te: '{n}% తగ్గింపు', en: '{n}% OFF' },
+  option_count:     { te: '{n} ఎంపికలు', en: '{n} options' },
+  variant_cart_label: { te: 'కార్ట్‌లో {n}, ఎంపికలు మార్చండి', en: '{n} in cart, change options' },
   // Category names keyed by category id
   cat_fruits:       { te: 'పండ్లు', en: 'Fruits' },
   cat_vegetables:   { te: 'కూరగాయలు', en: 'Vegetables' },
@@ -52,6 +63,8 @@ export const TRANSLATIONS: TranslationMap = {
   your_items:          { te: 'మీ వస్తువులు',                                       en: 'Your Items' },
   fbt:                 { te: 'తరచుగా కలిసి కొనే వస్తువులు',                        en: 'Frequently Bought Together' },
   delivering_to_home:  { te: 'ఇంటికి డెలివరీ',                                     en: 'Delivering to Home' },
+  delivering_to_work:  { te: 'ఆఫీస్‌కి డెలివరీ',                                    en: 'Delivering to Work' },
+  delivering_to_other: { te: 'ఇతర చిరునామాకి డెలివరీ',                             en: 'Delivering to Other' },
   change:              { te: 'మార్చు',                                              en: 'CHANGE' },
   secure_payments:     { te: 'సురక్షిత చెల్లింపులు · నిజమైన ఉత్పత్తులు',          en: 'Safe & secure payments · 100% genuine products' },
 
@@ -78,9 +91,24 @@ export const TRANSLATIONS: TranslationMap = {
   start_shopping:      { te: 'షాపింగ్ ప్రారంభించండి',                             en: 'Start Shopping' },
 
   // Floating cart pill
-  one_item_cart:       { te: '1 వస్తువు కార్ట్‌లో',                               en: '1 item in cart' },
   n_items_cart:        { te: '{n} వస్తువులు కార్ట్‌లో',                            en: '{n} items in cart' },
   view_cart_arrow:     { te: 'కార్ట్ చూడండి →',                                   en: 'View cart →' },
+  cart_summary_count:  { te: '{n} వస్తువులు',                                     en: '{n} ITEMS' },
+  shop_more_to_place_order: { te: 'ఆర్డర్ చేయడానికి ఇంకా {n} కొనండి',              en: 'Shop for {n} more to place order' },
+  order_ready_to_place: { te: 'మీ ఆర్డర్ సిద్ధంగా ఉంది!',                          en: 'Ready to place your order!' },
+  saved_amount:         { te: 'ఆదా చేసారు {n}',                                   en: 'SAVED {n}' },
+
+  // Cashback progress & VIP upsell
+  cashback_shop_more:  { te: 'ఇంకా {n} కొంటే {r} క్యాష్‌బ్యాక్',              en: 'Shop {n} more to get {r} cashback' },
+  cashback_max_unlocked: { te: 'గరిష్ట క్యాష్‌బ్యాక్ అన్‌లాక్ · {r}',          en: 'Max cashback unlocked · {r}' },
+  vip_upsell_double:   { te: 'నెలకు {f}తో VIP కి అప్‌గ్రేడ్ చేసి మీ క్యాష్‌బ్యాక్‌ను {r}కు రెట్టింపు చేసుకోండి!', en: 'Upgrade to VIP for {f}/month to double your cashback to {r}!' },
+  bill_cashback_earn:  { te: 'ఈ ఆర్డర్‌పై {r} క్యాష్‌బ్యాక్ పొందుతారు',        en: "You'll earn {r} cashback on this order" },
+
+  // VIP membership card (cart screen, addable like a product)
+  vip_membership_title:          { te: 'VIP సభ్యత్వం',                                          en: 'VIP Membership' },
+  vip_membership_benefit:        { te: 'ప్రతి ఆర్డర్‌పై క్యాష్‌బ్యాక్ రెట్టింపు · నెలకు {f}',   en: 'Double cashback on every order · {f}/month' },
+  vip_membership_added_title:    { te: 'VIP సభ్యత్వం జోడించబడింది',                             en: 'VIP Membership added' },
+  vip_membership_added_benefit:  { te: 'ఈ ఆర్డర్‌పై క్యాష్‌బ్యాక్ ఇప్పుడు రెట్టింపు',           en: 'Cashback on this order is now doubled' },
 
   // Coupon row
   coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
@@ -119,10 +147,17 @@ export const TRANSLATIONS: TranslationMap = {
   sign_in_title:       { te: 'విలేజ్ డెలివరీకి సైన్ ఇన్ చేయండి',                en: 'Sign in to Village Delivery' },
   sign_in_subtitle:    { te: 'ఆర్డర్లు ట్రాక్ చేయండి, ఫేవరెట్లు సేవ్ చేయండి',  en: 'Track orders, save favourites and unlock member-only deals.' },
   sign_in_btn:         { te: 'సైన్ ఇన్',                                          en: 'Sign In' },
+  profile_greeting:    { te: 'నమస్కారం',                                          en: 'Hello' },
+  profile_logout_btn:  { te: 'సైన్ అవుట్',                                        en: 'Sign Out' },
+  logout_confirm_title:{ te: 'సైన్ అవుట్ చేయాలా?',                                en: 'Sign out?' },
+  logout_confirm_body: { te: 'ఆర్డర్లు ట్రాక్ చేయడానికి, చిరునామాలు నిర్వహించడానికి మళ్ళీ సైన్ ఇన్ చేయాలి.', en: "You'll need to sign in again to track orders and manage your addresses." },
 
   // Orders screen
   orders_empty_title:    { te: 'ఇంకా ఆర్డర్లు లేవు',           en: 'No orders yet' },
   orders_empty_subtitle: { te: 'మీ మొదటి ఆర్డర్ ఇక్కడ కనిపిస్తుంది', en: 'Your first order will appear here' },
+  orders_login_title:    { te: 'మీ ఆర్డర్లు చూడటానికి సైన్ ఇన్ చేయండి', en: 'Sign in to see your orders' },
+  orders_login_subtitle: { te: 'మీ ఆర్డర్లను ట్రాక్ చేయండి మరియు వివరాలను చూడండి.', en: 'Track your orders and view details.' },
+  orders_load_error:     { te: 'ఆర్డర్లు లోడ్ చేయలేకపోయాం.',   en: "Couldn't load your orders." },
 
   // Order list & detail
   orders_filter_all:          { te: 'అన్నీ',                       en: 'All' },
@@ -135,10 +170,161 @@ export const TRANSLATIONS: TranslationMap = {
   status_out_for_delivery:    { te: 'డెలివరీకి బయలుదేరింది',       en: 'Out for Delivery' },
   status_delivered:           { te: 'డెలివరీ అయింది',              en: 'Delivered' },
   status_cancelled:           { te: 'రద్దు చేయబడింది',             en: 'Cancelled' },
-  reorder_btn:                { te: 'మళ్ళీ ఆర్డర్ చేయి',          en: 'Reorder' },
+  placed_at:                  { te: 'ఆర్డర్ చేసింది {n}',          en: 'Placed at {n}' },
+  order_details:              { te: 'ఆర్డర్ వివరాలు',              en: 'Order Details' },
+  get_help:                   { te: 'సహాయం',                       en: 'Get Help' },
+  status_preparing:           { te: 'సిద్ధం చేస్తోంది',            en: 'Preparing' },
+  arriving_in:                { te: '~{n} నిమిషాల్లో వస్తుంది',    en: 'Arriving in ~{n} mins' },
+  on_the_way:                 { te: 'దారిలో ఉంది',                 en: 'On the way' },
+  order_help_msg:             { te: 'నమస్కారం, నా ఆర్డర్ {n} గురించి సహాయం కావాలి.', en: 'Hi, I need help with my order {n}.' },
   delivery_address_label:     { te: 'డెలివరీ చిరునామా',            en: 'Delivery Address' },
   payment_method_used:        { te: 'చెల్లింపు',                   en: 'Payment' },
   view_details:               { te: 'వివరాలు చూడండి →',           en: 'View Details →' },
+
+  // Location & address
+  select_location:        { te: 'లొకేషన్ ఎంచుకోండి',                 en: 'Select Location' },
+  search_location:        { te: 'లొకేషన్ వెతకండి',                   en: 'Search location' },
+  search_address_ph:      { te: 'చిరునామా వెతకండి',                  en: 'Search Address' },
+  village_search_ph:      { te: 'ఊరు వెతకండి',                    en: 'Search your village' },
+  search_results:         { te: 'వెతుకుడు ఫలితాలు',              en: 'Search results' },
+  no_villages_found:      { te: '“{n}” కోసం ఊళ్లు కనబడలేదు',      en: 'No villages found for “{n}”' },
+  village_search_error:   { te: 'వెతకడం విఫలమైంది. మళ్లీ ప్రయత్నించండి.', en: "Couldn't search. Try again." },
+  use_current_location:   { te: 'నా ప్రస్తుత లొకేషన్ వాడండి',        en: 'Use my Current Location' },
+  current_location_sub:   { te: 'మెరుగైన సేవల కోసం లొకేషన్ ఆన్ చేయండి', en: 'Enable your current location for better services' },
+  enable:                 { te: 'ఆన్ చేయి',                          en: 'Enable' },
+  request_from_friend:    { te: 'స్నేహితుని నుండి చిరునామా అడగండి',  en: 'Request address from friend' },
+  search_your_location:   { te: 'మీ లొకేషన్ వెతకండి',                en: 'Search your Location' },
+  your_location:          { te: 'మీ లొకేషన్',                       en: 'Your location' },
+  permission_off_title:   { te: 'లొకేషన్ అనుమతి ఆఫ్‌లో ఉంది',        en: 'Location permission is off' },
+  permission_off_sub:     { te: 'లొకేషన్ ఆన్ చేస్తే మేము మిమ్మల్ని త్వరగా చేరుకోగలం', en: 'Enabling location helps us reach you quickly with accurate delivery' },
+  open_settings:          { te: 'సెట్టింగ్స్ తెరవండి',               en: 'Open settings' },
+  locating:               { te: 'లొకేషన్ తీసుకుంటోంది…',             en: 'Getting your location…' },
+  location_information:    { te: 'లొకేషన్ సమాచారం',                  en: 'Location Information' },
+  delivered_here_title:    { te: 'ఆర్డర్ ఇక్కడ డెలివరీ అవుతుంది',    en: 'Order will be delivered here' },
+  delivered_here_sub:      { te: 'పిన్‌ను మీ ఖచ్చితమైన లొకేషన్‌లో ఉంచండి', en: 'Place the pin to your exact location' },
+  confirm_continue:        { te: 'నిర్ధారించి కొనసాగించు',           en: 'Confirm & Continue' },
+  locating_ellipsis:       { te: 'గుర్తిస్తోంది…',                   en: 'Locating…' },
+  set_location_on_map:     { te: 'మ్యాప్‌లో లొకేషన్ ఎంచుకోండి',       en: 'Set location on map' },
+  cant_check_area:         { te: 'ఈ ప్రాంతాన్ని తనిఖీ చేయలేకపోయాం',  en: "Couldn't check this area" },
+  map_not_serviceable_title: { te: 'మేము ఇంకా ఇక్కడ డెలివరీ చేయట్లేదు', en: "We don't deliver here yet" },
+  map_not_serviceable_sub:   { te: 'సమీపంలోని సర్వీస్ ఉన్న ప్రాంతానికి మ్యాప్‌ను జరపండి', en: 'Move the map to a nearby serviceable area.' },
+  couldnt_get_location:    { te: 'లొకేషన్ పొందలేకపోయాం',            en: "Couldn't get location" },
+  location_error_title:   { te: 'లొకేషన్ దొరకలేదు',                  en: "Couldn't get your location" },
+  retry:                  { te: 'మళ్ళీ ప్రయత్నించండి',              en: 'Retry' },
+  not_serviceable_title:  { te: 'ఈ లొకేషన్‌కు సేవ లేదు',             en: 'Location Not Serviceable' },
+  not_serviceable_sub:    { te: 'మీ లొకేషన్‌కు 10 నిమిషాల డెలివరీ తీసుకురావడానికి మా బృందం కృషి చేస్తోంది', en: 'Our team is working tirelessly to bring 10 minute deliveries to your location' },
+  use_another_pincode:    { te: 'వేరే పిన్‌కోడ్ వాడండి',             en: 'Use another pincode' },
+  select_delivery_address:{ te: 'డెలివరీ చిరునామా ఎంచుకోండి',        en: 'Select delivery address' },
+  add_new_address:        { te: 'కొత్త చిరునామా జోడించండి',        en: 'Add New Address' },
+  deliver_here:           { te: 'ఇక్కడ డెలివరీ చేయండి',             en: 'Deliver Here' },
+  no_saved_addresses:     { te: 'సేవ్ చేసిన చిరునామాలు లేవు',        en: 'No saved addresses' },
+  tag_home:               { te: 'ఇల్లు',                            en: 'Home' },
+  tag_work:               { te: 'ఆఫీస్',                            en: 'Work' },
+  tag_other:              { te: 'ఇతర',                              en: 'Other' },
+  field_house_street:     { te: 'ఇంటి నెం., వీధి',                  en: 'House no., street' },
+  field_area_optional:    { te: 'ఏరియా / అపార్ట్‌మెంట్ (ఐచ్ఛికం)',  en: 'Area / apartment (optional)' },
+  field_landmark:         { te: 'ల్యాండ్‌మార్క్ (ఐచ్ఛికం)',         en: 'Landmark (optional)' },
+  field_pincode:          { te: 'పిన్‌కోడ్',                        en: 'Pincode' },
+  set_as_default:         { te: 'డిఫాల్ట్‌గా సెట్ చేయండి',           en: 'Set as default' },
+  save_address:           { te: 'చిరునామా సేవ్ చేయండి',             en: 'Save address' },
+  err_house_required:     { te: 'ఇంటి నెం./వీధి అవసరం',             en: 'House no./street is required' },
+  err_pincode_invalid:    { te: 'సరైన 6 అంకెల పిన్‌కోడ్ ఇవ్వండి',   en: 'Enter a valid 6-digit pincode' },
+  minutes_label:          { te: 'నిమిషాలు',                        en: 'minutes' },
+  // Home serviceability / toolbar states
+  select_delivery_location:{ te: 'డెలివరీ లొకేషన్ ఎంచుకోండి',        en: 'Select delivery location' },
+  service_unavailable:    { te: 'సేవ అందుబాటులో లేదు',             en: 'Service unavailable' },
+  location_not_set:       { te: 'లొకేషన్ సెట్ చేయలేదు',            en: 'Location not set' },
+  set_location_prompt:    { te: 'డెలివరీ ప్రారంభించడానికి మీ లొకేషన్ ఎంచుకోండి', en: 'Set your location to start ordering' },
+  not_available_here:     { te: 'ఈ ప్రాంతంలో డెలివరీ ఇంకా అందుబాటులో లేదు', en: "Delivery isn't available for this area yet" },
+  change_location:        { te: 'లొకేషన్ మార్చండి',                en: 'Change Location' },
+  recent_locations:       { te: 'ఇటీవలి లొకేషన్లు',               en: 'Recent locations' },
+  saved_addresses:        { te: 'సేవ్ చేసిన చిరునామాలు',          en: 'Saved addresses' },
+  add_delivery_address:   { te: 'డెలివరీ చిరునామా జోడించండి',   en: 'Add a delivery address' },
+  confirm_location:       { te: 'లొకేషన్‌ను నిర్ధారించండి',      en: 'Confirm location' },
+  address_details:        { te: 'చిరునామా వివరాలు',             en: 'Address details' },
+  flat_house_no:          { te: 'ఫ్లాట్ / ఇంటి నంబర్',           en: 'Flat / House no.' },
+  landmark_optional:      { te: 'ల్యాండ్‌మార్క్ (ఐచ్ఛికం)',     en: 'Landmark (optional)' },
+  saving_ellipsis:        { te: 'సేవ్ చేస్తోంది…',               en: 'Saving…' },
+  address_tag_home:       { te: 'ఇల్లు',                          en: 'Home' },
+  address_tag_work:       { te: 'ఆఫీస్',                          en: 'Work' },
+  address_tag_other:      { te: 'ఇతర',                            en: 'Other' },
+  // Permission-denied (blocked) sheet
+  perm_blocked_title:     { te: 'లొకేషన్ యాక్సెస్ అవసరం',          en: 'Location access needed' },
+  perm_blocked_sub:       { te: 'మీ ప్రస్తుత లొకేషన్ గుర్తించడానికి సెట్టింగ్స్‌లో లొకేషన్ అనుమతి ఇవ్వండి', en: 'Allow location access in Settings so we can detect your current location' },
+  go_to_settings:         { te: 'సెట్టింగ్స్‌కు వెళ్లండి',         en: 'Go to Settings' },
+  cancel:                 { te: 'రద్దు చేయండి',                    en: 'Cancel' },
+  // Location permission sheet (design: LocationPermissionSheet)
+  location_blocked_title: { te: 'లొకేషన్ యాక్సెస్ బ్లాక్ అయింది', en: 'Location access blocked' },
+  select_your_address:    { te: 'మీ చిరునామా ఎంచుకోండి',          en: 'Select your address' },
+  add_manage_address:     { te: '+ చిరునామా జోడించు / నిర్వహించు', en: '+ Add / Manage Address' },
+  try_again:              { te: 'మళ్ళీ ప్రయత్నించండి',            en: 'Try Again' },
+  location_denied_inline: { te: 'మీరు లొకేషన్ యాక్సెస్ నిరాకరించారు. “మళ్ళీ ప్రయత్నించండి” నొక్కండి లేదా కింద సేవ్ చేసిన చిరునామా ఎంచుకోండి.', en: 'You denied location access. Tap “Try Again”, or choose a saved address below.' },
+  // Toolbar + change-location sheet + loading gate
+  delivery_in:            { te: 'డెలివరీ',                        en: 'Delivery in' },
+  arriving_from:          { te: 'నుండి వస్తోంది',                  en: 'Arriving from' },
+  nearest_store:          { te: 'మీ సమీప స్టోర్',                  en: 'your nearest store' },
+  delivery_eta_minutes:   { te: '60 నిమిషాలు',                    en: '60 min' },
+  detecting_location:     { te: 'లొకేషన్ గుర్తిస్తోంది…',          en: 'Detecting location…' },
+  finding_address:        { te: 'మీ చిరునామా కనుగొంటోంది',         en: 'Finding your address' },
+  change_delivery_location:{ te: 'డెలివరీ లొకేషన్ మార్చండి',       en: 'Change delivery location' },
+  detect_via_gps:         { te: 'GPS ద్వారా ఆటోమేటిక్‌గా గుర్తించండి', en: 'Detect via GPS automatically' },
+  finding_location:       { te: 'మీ లొకేషన్ కనుగొంటోంది',          en: 'Finding your location' },
+  getting_ready:          { te: 'షాపింగ్ కోసం సిద్ధం చేస్తోంది',    en: "We're getting you ready to shop" },
+
+  // Profile menu
+  profile_orders:         { te: 'నా ఆర్డర్లు',            en: 'Your orders' },
+  profile_address_book:   { te: 'చిరునామా పుస్తకం',       en: 'Address book' },
+  profile_share_app:      { te: 'యాప్‌ను షేర్ చేయండి',     en: 'Share the app' },
+  profile_about:          { te: 'మా గురించి',              en: 'About us' },
+  profile_version_label:  { te: 'వెర్షన్',                  en: 'Version' },
+  wallet_cashback_label:  { te: 'క్యాష్‌బ్యాక్ బ్యాలెన్స్', en: 'Cashback balance' },
+  wallet_cashback_expiry: { te: '{n} రోజుల్లో గడువు ముగుస్తుంది', en: 'Expires in {n} days' },
+  wallet_apply_title:     { te: 'వాలెట్ బ్యాలెన్స్', en: 'Wallet balance' },
+  wallet_apply_available: { te: '{n} క్యాష్‌బ్యాక్ అందుబాటులో ఉంది', en: '{n} cashback available' },
+  wallet_apply_applied:   { te: '{n} ఈ ఆర్డర్‌కు వర్తింపజేయబడింది', en: '{n} applied to this order' },
+  share_message:          { te: 'విలేజ్ డెలివరీ యాప్‌ను డౌన్‌లోడ్ చేసుకోండి: https://village.app', en: 'Check out Village Delivery — fresh groceries to your door: https://village.app' },
+
+  // About screen
+  about_title:            { te: 'మా గురించి',              en: 'About us' },
+  about_tagline:          { te: 'మీ ఊరికి తాజా డెలివరీ',    en: 'Fresh delivery to your village' },
+  about_body:             { te: 'విలేజ్ డెలివరీ మీ స్థానిక దుకాణాల నుండి తాజా కిరాణా సామాగ్రిని మీ ఇంటి వద్దకు వేగంగా, నమ్మకంగా చేరుస్తుంది.', en: 'Village Delivery brings fresh groceries from your local stores straight to your door, fast and reliably.' },
+  about_contact_label:    { te: 'మమ్మల్ని సంప్రదించండి',   en: 'Contact us' },
+
+  // Address edit / delete
+  edit_address:           { te: 'సవరించు',                 en: 'Edit' },
+  delete_address:         { te: 'తొలగించు',                en: 'Delete' },
+  delete_address_confirm: { te: 'ఈ చిరునామాను తొలగించాలా?', en: 'Delete this address?' },
+  delete_address_body:    { te: 'ఈ చిరునామా మీ సేవ్ చేసిన జాబితా నుండి శాశ్వతంగా తొలగించబడుతుంది.', en: 'This address will be permanently removed from your saved list.' },
+  edit_address_title:     { te: 'చిరునామా సవరించండి',       en: 'Edit address' },
+
+  // Stock conflict dialog
+  stock_conflict_title:        { te: 'ఆర్డర్‌ను నవీకరించండి',                     en: 'Update your order' },
+  stock_conflict_subtitle:     { te: 'కొన్ని వస్తువులు పూర్తిగా అందుబాటులో లేవు',   en: 'Some items aren\'t fully available' },
+  stock_conflict_remove_badge: { te: 'తొలగించు',                                   en: 'Remove' },
+  stock_conflict_reduce_to:    { te: '{n}కు తగ్గించండి',                         en: 'Reduce to {n}' },
+  stock_conflict_quantity_change: { te: '{current} ఉండేది, ఇప్పుడు: {available}',  en: 'Had {current}, now: {available}' },
+  stock_conflict_update_button: { te: 'కార్ట్‌ను నవీకరించండి',                      en: 'Update Cart' },
+  stock_conflict_cancel_button: { te: 'రద్దు చేయండి',                            en: 'Cancel' },
+  stock_conflict_updating:     { te: 'మీ కార్ట్‌ను నవీకరిస్తోంది...',              en: 'Updating your cart...' },
+  stock_conflict_retrying:     { te: 'ఆర్డర్‌ను ఉంచుతోంది...',                   en: 'Placing your order...' },
+  stock_conflict_error:        { te: 'ఆర్డర్‌ను నవీకరించలేకపోయాం. మళ్ళీ ప్రయత్నించాలా?', en: 'Couldn\'t update your order. Try again?' },
+  stock_conflict_try_again:    { te: 'మళ్ళీ ప్రయత్నించండి',                      en: 'Try Again' },
+  stock_conflict_back_to_cart: { te: 'కార్ట్‌కు వెనుకకు',                        en: 'Back to Cart' },
+
+  // Order modification sheet (shown when checkout hits a stock conflict)
+  order_mod_title:      { te: 'కొన్ని విషయాలు మారాయి',                                  en: 'A couple of things changed' },
+  order_mod_subtitle:   { te: 'మీ కార్ట్‌లోని కొన్ని వస్తువులు అయిపోయాయి లేదా తక్కువగా ఉన్నాయి. కొనసాగించడానికి మీ ఆర్డర్‌ను నవీకరించండి.', en: 'Some items in your cart are sold out or running low. Update your order to continue.' },
+  order_mod_photo:      { te: 'ఫోటో',                                                   en: 'photo' },
+  order_mod_only_left:  { te: 'కేవలం {n} మిగిలి ఉన్నాయి',                              en: 'Only {n} left' },
+  stock_limit_reached: { te: 'ప్రస్తుతం మాకు {n} మాత్రమే మిగిలి ఉన్నాయి', en: 'We only have {n} left in stock' },
+  order_mod_remove_item:    { te: 'వస్తువును తొలగించండి',                             en: 'Remove item' },
+  order_mod_remove_instead: { te: 'బదులుగా తొలగించండి',                               en: 'Remove instead' },
+  order_mod_subtotal:   { te: 'ఉప మొత్తం',                                             en: 'Subtotal' },
+  order_mod_update_all: { te: 'అన్నీ నవీకరించండి',                                    en: 'Update all' },
+
+  // Promo strip (first-order discount banner)
+  promo_first_order:    { te: 'మీ మొదటి ఆర్డర్‌పై 10% తగ్గింపు',                      en: '10% off your first order' },
+  promo_use_at_checkout: { te: 'చెక్అవుట్ వద్ద కోడ్ ఉపయోగించండి',                     en: 'Use code at checkout' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
@@ -149,4 +335,12 @@ export function translate(key: string, locale: Locale): string {
 /** Replace `{n}` in a template string. */
 export function interpolate(template: string, n: number | string): string {
   return template.replaceAll('{n}', String(n));
+}
+
+/** Replace every `{token}` in a template with its value from `vars`. */
+export function interpolateVars(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (acc, [key, value]) => acc.replaceAll(`{${key}}`, value),
+    template,
+  );
 }

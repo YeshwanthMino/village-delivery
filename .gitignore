@@ -44,3 +44,8 @@ app-example
 
 # env
 .env
+
+# Superpowers visual-companion brainstorming
+.superpowers/
+
+.worktrees/

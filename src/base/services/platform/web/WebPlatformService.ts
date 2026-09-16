@@ -1,4 +1,5 @@
 import { IPlatformService } from '../interfaces/IPlatformService';
+import { logger } from '@/src/base/services/logger';
 
 /**
  * Web implementation of platform service
@@ -34,7 +35,7 @@ export class WebPlatformService implements IPlatformService {
       const versionMatch = userAgent.match(/(?:Chrome|Firefox|Safari|Edge)\/(\d+(?:\.\d+)*)/);
       return versionMatch ? versionMatch[1] : undefined;
     } catch (error) {
-      console.warn('[WebPlatformService] Could not determine browser version:', error);
+      logger.warn('[WebPlatformService] Could not determine browser version:', error);
       return undefined;
     }
   }

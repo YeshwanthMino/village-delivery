@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronDown, Heart } from 'lucide-react-native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, Image } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
+import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { CompactStepper } from './CompactStepper';
 import { useTranslation, localizeWeight } from '@/src/core/utils/useTranslation';
 
@@ -14,7 +15,7 @@ interface ProductCardProps {
   openVariants: (product: Product) => void;
 }
 
-export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
+const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
   const cart = useVillageStore(state => state.cart);
   const favs = useVillageStore(state => state.favs);
   const addToCart = useVillageStore(state => state.addToCart);
@@ -26,6 +27,8 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
   const hasVariants = !!product.variants?.length;
   const cartKey = product.id;
   const count = cart[cartKey] ?? 0;
+  const stock = product.stock ?? 0;
+  const canAdd = stock === 0 ? false : (stock === undefined || count < stock);
 
   const variantCount = hasVariants
     ? (product.variants?.reduce((sum, _, i) => sum + (cart[`${product.id}-v${i}`] ?? 0), 0) ?? 0)
@@ -38,36 +41,79 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
 
+  // Whether the product came from the API or the static catalog only decides how
+  // it is *illustrated* (image vs emoji). Prices are in units from either source
+  // now that the mappers convert at the boundary, so formatting is unconditional.
+  const isApiProduct = !!product.image;
+
+  const displayPrice = rupees(product.price);
+  const displayMrp = rupees(product.mrp);
+
   return (
     <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden flex-1">
       {/* Image area */}
-      <LinearGradient
-        colors={[gradientColor(product.gradientFrom), gradientColor(product.gradientTo)]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ aspectRatio: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' }}
-      >
-        <Text style={{ fontSize: 64 }}>{product.emoji}</Text>
+      {isApiProduct ? (
+        // API product with image
+        <View style={{ aspectRatio: 1, alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: '#f1f5f9' }}>
+          {product.image ? (
+            <Image
+              source={{ uri: product.image }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text className="text-slate-400 text-sm">No image</Text>
+          )}
 
-        {/* Heart button */}
-        <TouchableOpacity
-          onPress={() => toggleFav(product.id)}
-          className="absolute top-2 right-2 w-8 h-8 bg-white/85 rounded-full items-center justify-center"
+          {/* Heart button */}
+          <TouchableOpacity
+            onPress={() => toggleFav(product.id)}
+            className="absolute top-2 right-2 w-8 h-8 bg-white/85 rounded-full items-center justify-center"
+          >
+            <Heart
+              size={16}
+              color={isFav ? '#f43f5e' : '#94a3b8'}
+              fill={isFav ? '#f43f5e' : 'none'}
+            />
+          </TouchableOpacity>
+
+          {/* Discount badge */}
+          {discount > 0 && (
+            <View className="absolute top-2 left-2 bg-green-600 rounded-md px-2 py-1">
+              <Text className="text-white text-[10px] font-extrabold">{tDiscount(discount)}</Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        // Catalog product with emoji + gradient
+        <LinearGradient
+          colors={[gradientColor(product.gradientFrom), gradientColor(product.gradientTo)]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ aspectRatio: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' }}
         >
-          <Heart
-            size={16}
-            color={isFav ? '#f43f5e' : '#94a3b8'}
-            fill={isFav ? '#f43f5e' : 'none'}
-          />
-        </TouchableOpacity>
+          <Text style={{ fontSize: 64 }}>{product.emoji}</Text>
 
-        {/* Discount badge */}
-        {discount > 0 && (
-          <View className="absolute top-2 left-2 bg-green-600 rounded-md px-2 py-1">
-            <Text className="text-white text-[10px] font-extrabold">{tDiscount(discount)}</Text>
-          </View>
-        )}
-      </LinearGradient>
+          {/* Heart button */}
+          <TouchableOpacity
+            onPress={() => toggleFav(product.id)}
+            className="absolute top-2 right-2 w-8 h-8 bg-white/85 rounded-full items-center justify-center"
+          >
+            <Heart
+              size={16}
+              color={isFav ? '#f43f5e' : '#94a3b8'}
+              fill={isFav ? '#f43f5e' : 'none'}
+            />
+          </TouchableOpacity>
+
+          {/* Discount badge */}
+          {discount > 0 && (
+            <View className="absolute top-2 left-2 bg-green-600 rounded-md px-2 py-1">
+              <Text className="text-white text-[10px] font-extrabold">{tDiscount(discount)}</Text>
+            </View>
+          )}
+        </LinearGradient>
+      )}
 
       {/* Body */}
       <View className="p-3 flex-1 flex-col gap-2">
@@ -89,9 +135,9 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
 
         {/* Price row */}
         <View className="flex-row items-baseline gap-1 flex-wrap">
-          <Text className="text-slate-900 font-extrabold text-lg">{rupees(product.price)}</Text>
+          <Text className="text-slate-900 font-extrabold text-lg">{displayPrice}</Text>
           {product.mrp > product.price && (
-            <Text className="text-slate-400 text-xs line-through">{rupees(product.mrp)}</Text>
+            <Text className="text-slate-400 text-xs line-through">{displayMrp}</Text>
           )}
         </View>
 
@@ -117,15 +163,17 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
             )
           ) : count === 0 ? (
             <TouchableOpacity
-              onPress={() => addToCart(product.id)}
-              className="border-2 border-green-600 rounded-lg h-11 items-center justify-center"
+              disabled={!canAdd}
+              onPress={() => addToCart(product.id, productSnapshot(product, null), stock)}
+              className={`border-2 rounded-lg h-11 items-center justify-center ${canAdd ? 'border-green-600' : 'border-slate-300 opacity-50'}`}
             >
-              <Text className="text-green-700 font-bold text-base" style={teFont}>{t('add')}</Text>
+              <Text className={`font-bold text-base ${canAdd ? 'text-green-700' : 'text-slate-400'}`} style={teFont}>{t('add')}</Text>
             </TouchableOpacity>
           ) : (
             <CompactStepper
               count={count}
-              onAdd={() => addToCart(product.id)}
+              maxQuantity={stock}
+              onAdd={() => addToCart(product.id, productSnapshot(product, null), stock)}
               onDec={() => decFromCart(product.id)}
             />
           )}
@@ -134,3 +182,7 @@ export const ProductCard = ({ product, openVariants }: ProductCardProps) => {
     </View>
   );
 };
+
+// Grids and rails render many of these. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const ProductCard = React.memo(ProductCardComponent);
