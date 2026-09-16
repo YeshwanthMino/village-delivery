@@ -67,7 +67,7 @@ grandTotal = grandTotalBeforeWallet - walletDiscount   // final "to pay" — may
 
 ## UI
 
-- VIP Membership upsell is hidden from the Cart screen for this pass (unrelated to wallet, bundled in per direct request) — `CartScreen.tsx` no longer renders `<VipMembershipCard />`. The component, its hook wiring (`vipAdded`/`addVipMembership`/`removeVipMembership`), and its tests are left intact for a future re-enable, not deleted.
+- VIP Membership upsell is hidden from the Cart screen for this pass (unrelated to wallet, bundled in per direct request) — `CartScreen.tsx` no longer renders `<VipMembershipCard />`. The component, its hook wiring (`addVipMembership`/`removeVipMembership`), and its tests are left intact for a future re-enable, not deleted. `vipAddedInCart` lives in the persisted cart store, so a customer who added VIP before this shipped would otherwise keep being charged the fee with no card left to remove it — `useCartViewModel` passes `vipAdded: false` into `computeBill` unconditionally while the card is hidden, ignoring the store's actual flag, so no phantom fee can apply.
 - `WalletApplyCard` now occupies the top of that "addable adjustment" slot, before the items list (see mockup reviewed in the visual companion, which showed it below VIP — it now sits first since VIP is hidden).
 - Hidden entirely when: unauthenticated, wallet query loading/error, or balance is 0/null — mirrors the "confident data or nothing" rule already in `walletApi.mapWallet`. This is a convenience feature, not core checkout; it must never show a broken or misleading state.
 - Applied (default) state: teal/cyan card, "Wallet balance" + "₹50 applied to this order" + a **Remove** pill.
