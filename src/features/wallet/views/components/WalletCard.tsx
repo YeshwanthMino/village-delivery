@@ -60,7 +60,7 @@ export const WalletCard = () => {
               {wallet ? rupees(wallet.cashback) : '—'}
             </Text>
           )}
-          {!isPending && wallet && wallet.daysLeft != null ? (
+          {!isPending && wallet && wallet.cashback > 0 && wallet.daysLeft != null ? (
             <Text className="text-slate-400 text-xs mt-0.5" style={teRegular}>
               {interpolate(translate('wallet_cashback_expiry', locale), wallet.daysLeft)}
             </Text>
