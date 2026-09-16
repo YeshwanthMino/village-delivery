@@ -159,16 +159,26 @@ export const ProductDetailScreen = () => {
             {displayTitle}
           </Text>
 
-          <View className="flex-row items-baseline gap-2 flex-wrap mt-3">
-            <Text className="text-slate-900 font-extrabold text-2xl">{rupees(displayPrice)}</Text>
-            {displayMrp > displayPrice ? (
-              <Text className="text-slate-400 text-base line-through">{rupees(displayMrp)}</Text>
-            ) : null}
-            {displayDiscount > 0 ? (
-              <Text className="text-green-700 font-bold text-base">{displayDiscount}% Off</Text>
-            ) : null}
-          </View>
-          <Text className="text-slate-400 text-xs mt-0.5">MRP (inclusive of all taxes)</Text>
+          {/* Some catalogue records carry no populated variant and no
+           *  product-level price field either — the payload has a title and
+           *  an image and nothing priced, so this resolves to 0. "₹0" reads
+           *  as a real price rather than as "unknown", so drop the block
+           *  (price, struck MRP, and its tax caption) rather than print a
+           *  false one. Mirrors DynamicProductCard's grid-card handling. */}
+          {displayPrice > 0 ? (
+            <>
+              <View className="flex-row items-baseline gap-2 flex-wrap mt-3">
+                <Text className="text-slate-900 font-extrabold text-2xl">{rupees(displayPrice)}</Text>
+                {displayMrp > displayPrice ? (
+                  <Text className="text-slate-400 text-base line-through">{rupees(displayMrp)}</Text>
+                ) : null}
+                {displayDiscount > 0 ? (
+                  <Text className="text-green-700 font-bold text-base">{displayDiscount}% Off</Text>
+                ) : null}
+              </View>
+              <Text className="text-slate-400 text-xs mt-0.5">MRP (inclusive of all taxes)</Text>
+            </>
+          ) : null}
 
           {/* Variant selector */}
           {hasVariants && d.variants && d.variants.length > 0 ? (

@@ -66,21 +66,58 @@ const duplicateNamedVariant: HomeProduct = {
   ],
 };
 
+// The more common real-world shape of the same underlying bug: the variant's
+// title isn't identical to the product's, it's the product title with the
+// size tacked on ("<title> ( 30 ml )") — a prefix duplicate, not an exact
+// one. Shown as-is this still reads as the product name printed twice.
+const sizeSuffixedVariant: HomeProduct = {
+  id: 'p4',
+  title: 'Sri padmavathi Dheepam Oil Packet',
+  image: 'https://cdn/p4.jpg',
+  mrp: 10,
+  price: 10,
+  discountPct: 0,
+  inStock: true,
+  stock: 60,
+  hasVariants: false,
+  variants: [
+    { id: 'v0', name: 'Sri padmavathi Dheepam Oil Packet ( 30 ml )', price: 10, mrp: 10, stock: 60 },
+  ],
+};
+
+// Some catalog records have no populated variant and no product-level price
+// field either — real examples seen from the backend carry only id/title/
+// image, an empty `variants: []`, and nothing priced. mapProduct's fallback
+// chain (variant price → dealPrice → listPrice → mrp) has nothing to find,
+// so price/mrp both come out 0. Always out of stock (stock is summed from
+// variants too), but a shopper must never see that rendered as "₹0".
+const noPriceData: HomeProduct = {
+  id: 'p5',
+  title: 'Pesala Pappu - 30 Kg',
+  image: 'https://cdn/p5.jpg',
+  mrp: 0,
+  price: 0,
+  discountPct: 0,
+  inStock: false,
+  stock: 0,
+};
+
 beforeEach(() => useVillageStore.setState({ cart: {}, cartSnapshots: {}, lastVariantKey: {} }));
 beforeEach(() => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 }));
 
 describe('DynamicProductCard, multi-variant', () => {
-  it('shows the default pack with a chevron, and keeps the button plain "ADD"', () => {
+  it('shows the default pack, and "N options" under ADD in the button', () => {
     render(<DynamicProductCard product={multi} onOpenVariants={jest.fn()} />);
 
-    // The variant indicator lives next to the pack label, not inside the
-    // button — the button stays a single line ("ADD") regardless of how
-    // many variants a product has (matches Blinkit/Zepto: the pack chip is
-    // its own row, the add button never grows to fit option text).
+    // Matches the reference competitor layout: a multi-variant card's button
+    // carries its own "N options" line under "ADD" (button grows a line
+    // taller for these cards only — single-variant/plain cards are unaffected).
+    // No chevron next to the pack label — the button's own "N options" line
+    // is the only "this opens a picker" signal now; a second one was redundant.
     expect(screen.getByText('1 pc (250 ml)')).toBeTruthy();
-    expect(screen.getByTestId('variant-options-indicator')).toBeTruthy();
+    expect(screen.queryByTestId('variant-options-indicator')).toBeNull();
     expect(screen.getByText('ADD')).toBeTruthy();
-    expect(screen.queryByText(/option/i)).toBeNull();
+    expect(screen.getByTestId('add-button-options-count')).toHaveTextContent('2 options');
     expect(screen.getByText('₹310')).toBeTruthy();
   });
 
@@ -156,6 +193,51 @@ describe('DynamicProductCard, no variants', () => {
   it('hides the pack line rather than repeating the title when the variant name duplicates it', () => {
     render(<DynamicProductCard product={duplicateNamedVariant} onOpenVariants={jest.fn()} />);
     expect(screen.getAllByText('GOPURAM Kumkum (Red) - 40 G')).toHaveLength(1);
+  });
+
+  // Regression: the more common real shape of the same bug — the variant
+  // name is the product title with " ( 30 ml )" tacked on, not an exact
+  // duplicate. The title should render once, and the pack line should show
+  // only the size, bracket-free ("30 ml"), not the full "<title> ( 30 ml )"
+  // string or a parenthesized "( 30 ml )".
+  it('strips the repeated title and wrapping parens from a size-suffixed variant name', () => {
+    render(<DynamicProductCard product={sizeSuffixedVariant} onOpenVariants={jest.fn()} />);
+    expect(screen.getAllByText('Sri padmavathi Dheepam Oil Packet')).toHaveLength(1);
+    expect(screen.getByText('30 ml')).toBeTruthy();
+    expect(screen.queryByText(/\(\s*30 ml\s*\)/)).toBeNull();
+    // Single variant: no chevron implying more options to pick.
+    expect(screen.queryByTestId('variant-options-indicator')).toBeNull();
+  });
+
+  it('hides the price row instead of showing a false "₹0" when no price data exists', () => {
+    render(<DynamicProductCard product={noPriceData} onOpenVariants={jest.fn()} />);
+    expect(screen.getByText('Pesala Pappu - 30 Kg')).toBeTruthy();
+    expect(screen.getByText('Out of Stock')).toBeTruthy();
+    expect(screen.queryByText('₹0')).toBeNull();
+  });
+
+  // Regression: a product with exactly one real variant never opens the
+  // sheet (see useVariantCardView's isMulti), so it adds via this plain
+  // path. That path used to build a variant-less snapshot (variantId
+  // omitted), even though the product's real backend record has a variant
+  // document with its own id, price, tax and HSN — the same id the order
+  // and stock-check APIs need to identify the line. Losing it made two
+  // different single-variant products, or a single-variant product added
+  // alongside a multi-variant line, indistinguishable to the backend.
+  it('carries the sole variant id into the cart snapshot on plain add', () => {
+    render(<DynamicProductCard product={duplicateNamedVariant} onOpenVariants={jest.fn()} />);
+
+    fireEvent.press(screen.getByText('ADD'));
+
+    expect(useVillageStore.getState().cartSnapshots.p3?.variantId).toBe('v0');
+  });
+
+  it('does not invent a variantId for a genuinely variant-less product', () => {
+    render(<DynamicProductCard product={plain} onOpenVariants={jest.fn()} />);
+
+    fireEvent.press(screen.getByText('ADD'));
+
+    expect(useVillageStore.getState().cartSnapshots.p2?.variantId).toBeUndefined();
   });
 
   it('ignores a phantom variant-keyed cart line for a product this card treats as plain', () => {

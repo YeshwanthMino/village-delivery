@@ -2,7 +2,7 @@
 
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronDown, Minus, Plus } from 'lucide-react-native';
+import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
@@ -13,6 +13,43 @@ import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { interpolate } from '@/src/base/constants/translations';
+
+// Every CTA this card can render — plain "ADD", "ADD" + options count, the
+// variant stepper, and the plain stepper — shares this one fixed height.
+// Without it each mode sizes to its own content (a 2-line ADD button taller
+// than a 1-line stepper), so two cards in the same grid row visibly mismatch
+// the moment one has quantity > 0 and its neighbor doesn't.
+const CTA_HEIGHT = 36;
+
+/**
+ * The backend often names a single-variant product's own variant after the
+ * product itself plus its size — e.g. product "Sri padmavathi Dheepam Oil
+ * Packet" with its one variant titled "Sri padmavathi Dheepam Oil Packet
+ * ( 30 ml )". Shown as-is under the title, that reads as the product name
+ * printed twice with a size tacked on, not a pack-size line. Strip the
+ * repeated prefix so only the actually new information (the size) shows —
+ * matching the exact-duplicate case just below, which drops the line
+ * entirely because it adds nothing at all.
+ */
+function stripTitlePrefix(label: string, title?: string): string {
+  if (!title) return label;
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle || !label.startsWith(trimmedTitle)) return label;
+  return label.slice(trimmedTitle.length).trim();
+}
+
+/** Once the title prefix is gone, what's left of a backend variant name is
+ *  reliably "( size )" — e.g. "( 30 ml )". The parens made sense trailing
+ *  the product name; standing alone as the entire pack label they just add
+ *  visual noise around a plain measurement. Unwrap them when they wrap the
+ *  whole label; leave a label with parens only in part of it untouched. */
+function stripWrappingParens(label: string): string {
+  const trimmed = label.trim();
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
 
 interface Props {
   product: HomeProduct;
@@ -34,7 +71,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
   // (possible today because ProductCard's sheet threshold differs from this
   // card's, so a product classified "plain" here can still carry a variant line).
   const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
-  const { t, tDiscount, tVariantCartLabel, locale } = useTranslation();
+  const { t, tDiscount, tVariantCartLabel, tOptionCount, locale } = useTranslation();
   const router = useRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
@@ -104,21 +141,56 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
       openSheet();
       return;
     }
+    // A product with exactly one variant never opens the sheet (see
+    // useVariantCardView), but it still HAS a real variant document — price,
+    // stock, tax and HSN all live there, not on the product. Carrying its id
+    // as variantId keeps this line addressable; omitting it (as a genuinely
+    // variant-less product must) previously made single-variant lines
+    // indistinguishable from "no variant" downstream (cart lines, stock
+    // checks, order placement) — see productMapper.ts's mapVariants comment
+    // for the sibling case of this same failure mode.
+    const soleVariant = product.variants?.length === 1 ? product.variants[0] : undefined;
     addToCart(product.id, {
       key: product.id,
       productId: product.id,
       variantIndex: null,
+      ...(soleVariant ? { variantId: soleVariant.id } : {}),
       name: product.title,
       nameTE: product.teluguTitle,
-      weight: '',
+      weight: soleVariant?.name ?? '',
       price: product.price,
       mrp: product.mrp,
+      listPrice: soleVariant?.listPrice,
+      dealPrice: soleVariant?.dealPrice,
       imageUrl: product.image,
+      images: soleVariant?.images,
+      taxType: soleVariant?.taxType,
+      taxRate: soleVariant?.taxRate,
+      hasFreeItem: soleVariant?.hasFreeItem,
+      hsn: soleVariant?.hsn,
     }, stock);
   };
 
+  // A grid caller (CategoryDetailsScreen, SearchScreen) passes width="100%"
+  // inside a row wrapper that FlatList's numColumns stretches to the row's
+  // tallest card — signalled here by width==='100%' — so this card must grow
+  // to fill that stretched height (flex: 1) rather than stay at its own
+  // content height, or the taller sibling's extra height just becomes dead
+  // space in the wrapper instead of equalizing the two visible cards. A
+  // fixed-width carousel card (ProductCarouselRow, ProductDetailScreen) has
+  // no such wrapper and no extra space to grow into, so flex: 1 there would
+  // be a no-op if applied — skipping it entirely just avoids relying on that.
+  const fillsGridRow = width === '100%';
+
+  const cleanedPackLabel = view.packLabel
+    ? stripWrappingParens(stripTitlePrefix(stripTitlePrefix(view.packLabel, product.title), product.teluguTitle))
+    : '';
+
   return (
-    <View className="bg-white border border-slate-100 rounded-2xl overflow-hidden" style={{ width }}>
+    <View
+      className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
+      style={{ width, flex: fillsGridRow ? 1 : undefined }}
+    >
       <TouchableOpacity activeOpacity={0.9} onPress={openDetail} style={{ position: 'relative' }}>
         <Image
           source={{ uri: product.image }}
@@ -138,7 +210,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
         ) : null}
       </TouchableOpacity>
 
-      <View className="p-2.5">
+      <View className="p-2.5" style={{ flex: 1 }}>
         <TouchableOpacity activeOpacity={0.9} onPress={openDetail}>
           <Text
             className="text-slate-800 text-sm font-semibold"
@@ -149,41 +221,74 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
           </Text>
         </TouchableOpacity>
 
-        {view.packLabel && view.packLabel !== product.title && view.packLabel !== product.teluguTitle ? (
-          <View className="flex-row items-center mt-1">
-            <Text className="text-slate-500 text-[11px]">{view.packLabel}</Text>
-            {view.optionsCount > 0 ? (
-              <View testID="variant-options-indicator" style={{ marginLeft: 2 }}>
-                <ChevronDown size={12} color="#64748b" />
-              </View>
+        {/* No chevron here even for a multi-variant product: the ADD
+         *  button's own "N options" line already signals that this card
+         *  opens a picker, so a second indicator next to the pack label
+         *  was a redundant, duplicate affordance. */}
+        {cleanedPackLabel ? (
+          <Text className="text-slate-500 text-[11px] mt-1">{cleanedPackLabel}</Text>
+        ) : null}
+
+        {/* A product with no populated variant and no product-level price
+         *  field (seen on some incompletely-catalogued, always-out-of-stock
+         *  records) maps to price 0 — there's no real number anywhere in the
+         *  payload to fall back to. Showing "₹0" reads as a real price, not
+         *  as "unknown," so skip the row rather than print a false one. */}
+        {view.price > 0 ? (
+          <View className="flex-row items-center mt-1.5">
+            <Text className="text-slate-900 font-bold text-sm">{rupees(view.price)}</Text>
+            {view.mrp > view.price ? (
+              <Text className="text-slate-400 text-xs line-through ml-1.5">{rupees(view.mrp)}</Text>
             ) : null}
           </View>
         ) : null}
 
-        <View className="flex-row items-center mt-1.5">
-          <Text className="text-slate-900 font-bold text-sm">{rupees(view.price)}</Text>
-          {view.mrp > view.price ? (
-            <Text className="text-slate-400 text-xs line-through ml-1.5">{rupees(view.mrp)}</Text>
-          ) : null}
-        </View>
+        {/* Consumes whatever height the grid row's stretch handed this card
+         *  beyond its own content — zero-height (a no-op) for a fixed-width
+         *  carousel card with nothing extra to give. Pins the CTA to the
+         *  bottom so two cards in the same grid row line up their buttons
+         *  even when one has a longer title or an extra pack-label line. */}
+        <View style={{ flex: 1 }} />
 
         <View className="mt-2">
           {mode === 'add' ? (
             <TouchableOpacity
               disabled={!product.inStock}
               onPress={handleAdd}
-              className={`rounded-xl py-1.5 items-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
+              // Fixed height regardless of one line ("ADD") or two ("ADD" +
+              // options count) — every add-mode button in the grid must be
+              // the same size, matching the reference: a competitor's plain
+              // "ADD" button is padded to match its 2-line neighbor's height,
+              // not left to size to its own (shorter) content. "ADD" itself
+              // stays full size in both cases — the reference keeps it the
+              // dominant label and lets "N options" read as a quiet, muted
+              // caption underneath, rather than shrinking ADD to make room.
+              className={`rounded-xl items-center justify-center border ${product.inStock ? 'border-green-600' : 'border-slate-200'}`}
+              style={{ minHeight: CTA_HEIGHT, paddingVertical: 3 }}
             >
-              <Text className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}>
+              <Text
+                className={`font-bold text-sm ${product.inStock ? 'text-green-700' : 'text-slate-400'}`}
+                style={{ lineHeight: 15 }}
+              >
                 {t('add')}
               </Text>
+              {view.opensSheet ? (
+                <Text
+                  testID="add-button-options-count"
+                  className={`text-[10px] font-medium tracking-wide ${product.inStock ? 'text-green-700/70' : 'text-slate-400'}`}
+                  style={{ lineHeight: 11 }}
+                >
+                  {tOptionCount(view.optionsCount)}
+                </Text>
+              ) : null}
             </TouchableOpacity>
           ) : view.opensSheet ? (
             <TouchableOpacity
               onPress={openSheet}
               accessibilityRole="button"
               accessibilityLabel={tVariantCartLabel(view.count)}
-              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2"
+              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2"
+              style={{ minHeight: CTA_HEIGHT }}
             >
               {/* The − / count / + below are display only — the whole row opens
                   the sheet as one control, so these two Views intentionally
@@ -197,7 +302,10 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
               </View>
             </TouchableOpacity>
           ) : (
-            <View className="flex-row items-center justify-between bg-green-600 rounded-xl px-2 py-2">
+            <View
+              className="flex-row items-center justify-between bg-green-600 rounded-xl px-2"
+              style={{ minHeight: CTA_HEIGHT }}
+            >
               <TouchableOpacity testID="stepper-dec" onPress={() => decFromCart(product.id)} hitSlop={6}>
                 <Minus size={16} color="#ffffff" />
               </TouchableOpacity>

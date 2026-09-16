@@ -148,12 +148,18 @@ function rawVariants(p: RawApiProduct): unknown[] {
 
 /**
  * Maps a product's variants, dropping unpopulated refs (a raw ObjectId
- * string instead of the populated variant object) so callers never see a
- * nameless, ₹0 row.
+ * string instead of the populated variant object) and populated objects that
+ * still lack an `_id` (seen in the wild — a variant object with title/price
+ * but no `_id`). Either shape would otherwise map to `Variant.id: ''`, which
+ * threads through `productSnapshot` as an empty `variantId` — indistinguishable
+ * from "no variant" everywhere downstream (cart lines, stock checks, order
+ * placement), so two different variants of one product can silently collide
+ * into one unaddressable cart line. Drop them here so callers never see a
+ * nameless, ₹0, or unaddressable row.
  */
 export function mapVariants(p: RawApiProduct): Variant[] {
   return rawVariants(p)
-    .filter((v): v is RawVariant => v != null && typeof v === 'object')
+    .filter((v): v is RawVariant => v != null && typeof v === 'object' && Boolean((v as RawVariant)._id))
     .map(mapVariant);
 }
 
