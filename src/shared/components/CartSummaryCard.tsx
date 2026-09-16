@@ -65,12 +65,11 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   // Most-recently-added distinct products, fanned in a deck-of-cards stack —
   // shown regardless of threshold state.
   const recentItems = distinctRecentItems(cartItems, MAX_THUMBNAILS);
-  // cashback.phase !== 'below_minimum' guards against bill.ts's and
-  // cashbackConfig.ts's independently-hardcoded minOrderValue constants
-  // diverging in the future — without it, a cart that already clears
-  // bill.ts's minimum (belowMinimum === false) but not cashbackConfig's own
-  // (higher) minimum would render "shop more to place order" on an order
-  // that can already be placed.
+  // cashback.phase !== 'below_minimum' guards against bill.ts's hardcoded
+  // minOrderValue and the store-config cashback settings' own (server-driven)
+  // one diverging — without it, a cart that already clears bill.ts's minimum
+  // (belowMinimum === false) but not the cashback minimum would render
+  // "shop more to place order" on an order that can already be placed.
   const showCashback = !bill.belowMinimum && cashback.phase !== 'disabled' && cashback.phase !== 'below_minimum';
   // Below the minimum, the bar tracks progress to the order minimum itself.
   // Once cashback takes over, it tracks the current tier segment instead —

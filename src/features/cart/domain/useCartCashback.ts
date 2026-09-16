@@ -6,7 +6,7 @@
 // and the same settings and cannot drift apart.
 
 import { useAuthStore, useVillageStore } from '@/src/core/store';
-import { CASHBACK_SETTINGS } from './cashbackConfig';
+import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { getCartProgressState, type CartProgressState } from './cartProgress';
 
 export function useCartCashback(grandTotalUnits: number): CartProgressState {
@@ -16,5 +16,8 @@ export function useCartCashback(grandTotalUnits: number): CartProgressState {
   // cashback" pitch applies to the order it was added on, not a future one.
   const vipAddedInCart = useVillageStore(state => state.vipAddedInCart);
   const isVip = Boolean(user?.isVip) || vipAddedInCart;
-  return getCartProgressState(grandTotalUnits, isVip, CASHBACK_SETTINGS);
+  // Store-config settings: the bundled defaults until the startup fetch lands,
+  // then the fetched ones — this re-renders when they swap.
+  const settings = useCashbackSettings();
+  return getCartProgressState(grandTotalUnits, isVip, settings);
 }

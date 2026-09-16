@@ -9,7 +9,7 @@
 // reasoning behind the upsell wording.
 
 import { rupees, rupeesCeil, toUnits } from '@/src/shared/utils/currency';
-import type { CashbackSettings, CashbackTier } from './cashbackConfig';
+import type { CashbackSettings, CashbackTier } from '@/src/features/storeConfig/data/storeConfig.types';
 
 export type CartProgressPhase =
   | 'below_minimum'

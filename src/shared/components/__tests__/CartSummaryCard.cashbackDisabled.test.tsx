@@ -27,20 +27,22 @@ jest.mock('@/src/core/store', () => ({
 
 // active: false, so getCartProgressState returns phase 'disabled' and the
 // card must fall back to its pre-cashback ternary exactly as before.
-jest.mock('@/src/features/cart/domain/cashbackConfig', () => ({
-  CASHBACK_SETTINGS: {
-    active: false,
-    isDeleted: false,
-    minOrderValue: 199,
-    vipUpgradeFee: 45,
-    monthlyCap: 500,
-    activationDelay: '1d',
-    expiryPeriod: '2mo',
-    vipMonthlySpendTarget: 2500,
-    tiers: [],
-  },
-  STORE_TIMINGS: { opensAt: '07:00', closesAt: '20:00' },
+jest.mock('@/src/core/store/useStoreConfigStore', () => ({
+  getCashbackSettings: () => mockCashbackSettings,
+  useCashbackSettings: () => mockCashbackSettings,
 }));
+
+const mockCashbackSettings = {
+  active: false,
+  isDeleted: false,
+  minOrderValue: 199,
+  vipUpgradeFee: 45,
+  monthlyCap: 500,
+  activationDelay: '1d',
+  expiryPeriod: '2mo',
+  vipMonthlySpendTarget: 2500,
+  tiers: [],
+};
 
 const mockRawTemplates: Record<string, string> = {
   order_ready_to_place: 'Ready to place your order!',

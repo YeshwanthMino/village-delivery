@@ -6,8 +6,8 @@ import type { CartRecord, CartSnapshotRecord } from '@/src/base/types/village.ty
 
 // Regression test for the finding where showCashback trusted only
 // cashback.phase !== 'disabled', so a future divergence between bill.ts's
-// hardcoded minOrderValue (₹199) and cashbackConfig.ts's own (independently
-// hardcoded, today also ₹199) could render the cashback "shop more" branch
+// hardcoded minOrderValue (₹199) and the store-config cashback settings' own
+// (today also ₹199) could render the cashback "shop more" branch
 // on a cart that already clears bill.ts's minimum and can be checked out.
 //
 // Cart total here is ₹300 — above bill.ts's real ₹199 minimum (so
@@ -34,20 +34,22 @@ jest.mock('@/src/core/store', () => ({
   useAuthStore: jest.fn(selector => selector({ user: { isVip: false } })),
 }));
 
-jest.mock('@/src/features/cart/domain/cashbackConfig', () => ({
-  CASHBACK_SETTINGS: {
-    active: true,
-    isDeleted: false,
-    minOrderValue: 500,
-    vipUpgradeFee: 45,
-    monthlyCap: 500,
-    activationDelay: '1d',
-    expiryPeriod: '2mo',
-    vipMonthlySpendTarget: 2500,
-    tiers: [{ amount: 750, standardReward: 25, vipReward: 50 }],
-  },
-  STORE_TIMINGS: { opensAt: '07:00', closesAt: '20:00' },
+jest.mock('@/src/core/store/useStoreConfigStore', () => ({
+  getCashbackSettings: () => mockCashbackSettings,
+  useCashbackSettings: () => mockCashbackSettings,
 }));
+
+const mockCashbackSettings = {
+  active: true,
+  isDeleted: false,
+  minOrderValue: 500,
+  vipUpgradeFee: 45,
+  monthlyCap: 500,
+  activationDelay: '1d',
+  expiryPeriod: '2mo',
+  vipMonthlySpendTarget: 2500,
+  tiers: [{ amount: 750, standardReward: 25, vipReward: 50 }],
+};
 
 const mockRawTemplates: Record<string, string> = {
   order_ready_to_place: 'Ready to place your order!',

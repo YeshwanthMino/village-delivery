@@ -1,5 +1,6 @@
 import { getCartProgressState } from '../cartProgress';
-import { CASHBACK_SETTINGS, type CashbackSettings } from '../cashbackConfig';
+import { DEFAULT_CASHBACK_SETTINGS as CASHBACK_SETTINGS } from '@/src/features/storeConfig/data/storeConfigDefaults';
+import type { CashbackSettings } from '@/src/features/storeConfig/data/storeConfig.types';
 import { toUnits } from '@/src/shared/utils/currency';
 
 describe('getCartProgressState — below the ₹199 minimum', () => {

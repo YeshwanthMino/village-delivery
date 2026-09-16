@@ -19,7 +19,7 @@ import {
 } from '@/src/base/types/village.types';
 import { ALL_PRODUCTS } from '@/src/features/home/data/static/villageData';
 import { toUnits, UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
-import { CASHBACK_SETTINGS } from './cashbackConfig';
+import { getCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { parseCartKey } from './cartKey';
 
 /**
@@ -142,11 +142,10 @@ export function computeBill(
     ? Math.min(itemTotal * 0.1, COUPON_CAP_RUPEES / UNITS_PER_RUPEE)
     : 0;
   // Added to the order's total the same way deliveryFee/platformFee are —
-  // an earned/purchased add-on, not a per-item charge. Sourced from the same
-  // CASHBACK_SETTINGS.vipUpgradeFee the cashback upsell copy quotes, so the
-  // two can't drift apart. See cashbackConfig.ts for the "local until a real
-  // settings API exists" note this constant already carries.
-  const vipMembershipFee = opts?.vipAdded ? toUnits(CASHBACK_SETTINGS.vipUpgradeFee) : 0;
+  // an earned/purchased add-on, not a per-item charge. Read from the same
+  // store-config settings the cashback upsell copy quotes (sync getter: this
+  // is a pure function, not a hook), so the two can't drift apart.
+  const vipMembershipFee = opts?.vipAdded ? toUnits(getCashbackSettings().vipUpgradeFee) : 0;
   const grandTotal = itemTotal + deliveryFee + platformFee + vipMembershipFee - couponDiscount;
   const totalSavings = itemDiscount + couponDiscount;
 

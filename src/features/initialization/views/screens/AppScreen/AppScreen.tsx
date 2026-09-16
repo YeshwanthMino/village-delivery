@@ -1,4 +1,5 @@
 import { useAuthStore, useLocationStore } from '@/src/core/store';
+import { loadStoreConfig } from '@/src/core/store/useStoreConfigStore';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useLocationLifecycle } from '@/src/features/location/lifecycle/useLocationLifecycle';
@@ -24,6 +25,10 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
+      // Store timings + cashback settings for the session. Deliberately not
+      // awaited: the app runs on bundled defaults until it lands, so a slow
+      // network must not hold the first paint behind it.
+      void loadStoreConfig();
       await Promise.all([checkExistingAuth(), hydrateLocation()]);
       // MVP: only English is shipped. On first launch default to English and
       // mark onboarding complete so the language screen is never shown.

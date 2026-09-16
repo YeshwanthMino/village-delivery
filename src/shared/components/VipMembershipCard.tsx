@@ -24,7 +24,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolateVars } from '@/src/base/constants/translations';
-import { CASHBACK_SETTINGS } from '@/src/features/cart/domain/cashbackConfig';
+import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { rupees, toUnits } from '@/src/shared/utils/currency';
 
 interface VipMembershipCardProps {
@@ -36,15 +36,16 @@ interface VipMembershipCardProps {
 export const VipMembershipCard = ({ added, onAdd, onRemove }: VipMembershipCardProps) => {
   const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
+  const cashbackSettings = useCashbackSettings();
 
   // Already a real member — nothing to upsell. Kill switch mirrors
   // cartProgress.ts's own `disabled` condition so this card and the
   // cashback banner turn off together.
   const isRealVip = Boolean(user?.isVip);
-  const cashbackEnabled = CASHBACK_SETTINGS.active && !CASHBACK_SETTINGS.isDeleted;
+  const cashbackEnabled = cashbackSettings.active && !cashbackSettings.isDeleted;
   if (isRealVip || !cashbackEnabled) return null;
 
-  const feeText = rupees(toUnits(CASHBACK_SETTINGS.vipUpgradeFee));
+  const feeText = rupees(toUnits(cashbackSettings.vipUpgradeFee));
 
   if (added) {
     return (
