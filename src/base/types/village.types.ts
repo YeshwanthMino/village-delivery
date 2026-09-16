@@ -109,6 +109,12 @@ export interface Bill {
   /** VIP membership fee (internal units) added to this order when the
    *  customer added VIP membership from the cart screen; 0 otherwise. */
   vipMembershipFee: number;
+  /** Wallet/cashback amount redeemed against this order (internal units);
+   *  0 when not applied. A best-effort display estimate — POST /app/orders'
+   *  `useWallet` flag is boolean, so the backend decides the real amount
+   *  deducted. Excluded from the ₹199 minimum-order check, same as
+   *  vipMembershipFee — see minOrderValue/belowMinimum below. */
+  walletDiscount: number;
   grandTotal: number;
   totalSavings: number;
   totalCount: number;

@@ -67,11 +67,14 @@ describe('computeBill — VIP membership add-on', () => {
     expect(Math.round(bill.grandTotal * 20)).toBe(295);
   });
 
-  test('the VIP fee can itself push a cart from belowMinimum to eligible', () => {
-    // ₹160 in items alone is below the ₹199 minimum; +₹45 VIP fee clears it.
+  test('the VIP fee no longer helps clear the ₹199 minimum', () => {
+    // ₹160 in items alone is below the ₹199 minimum. The fee still lands in
+    // grandTotal (₹205), but it's excluded from the minimum-order check, so
+    // this cart stays belowMinimum despite grandTotal clearing ₹199.
     const bill = computeBill([lineItem(160, 1)], { vipAdded: true });
 
-    expect(bill.belowMinimum).toBe(false);
+    expect(bill.belowMinimum).toBe(true);
+    expect(Math.round(bill.grandTotal * 20)).toBe(205);
   });
 
   test('VIP fee and a coupon discount apply together, fee first then discount', () => {
@@ -81,5 +84,41 @@ describe('computeBill — VIP membership add-on', () => {
     const bill = computeBill([lineItem(220, 1)], { couponApplied: true, vipAdded: true });
 
     expect(Math.round(bill.grandTotal * 20)).toBe(243);
+  });
+});
+
+describe('computeBill — wallet redemption', () => {
+  test('walletDiscount is 0 when not applied, even if a balance is passed', () => {
+    const bill = computeBill([lineItem(250, 1)], { walletApplied: false, walletBalance: toUnits(50) });
+
+    expect(bill.walletDiscount).toBe(0);
+    expect(Math.round(bill.grandTotal * 20)).toBe(250);
+  });
+
+  test('applying wallet subtracts the balance from grandTotal', () => {
+    const bill = computeBill([lineItem(250, 1)], { walletApplied: true, walletBalance: toUnits(50) });
+
+    expect(Math.round(bill.walletDiscount * 20)).toBe(50);
+    expect(Math.round(bill.grandTotal * 20)).toBe(200);
+  });
+
+  test('wallet discount caps at the pre-wallet total, grandTotal never negative', () => {
+    const bill = computeBill([lineItem(250, 1)], { walletApplied: true, walletBalance: toUnits(400) });
+
+    expect(Math.round(bill.walletDiscount * 20)).toBe(250);
+    expect(bill.grandTotal).toBe(0);
+  });
+
+  test('a cart that clears ₹199 stays eligible even after wallet drops the total to ₹0', () => {
+    const bill = computeBill([lineItem(250, 1)], { walletApplied: true, walletBalance: toUnits(400) });
+
+    expect(bill.belowMinimum).toBe(false);
+    expect(bill.grandTotal).toBe(0);
+  });
+
+  test('totalSavings includes the wallet discount', () => {
+    const bill = computeBill([lineItem(250, 1)], { walletApplied: true, walletBalance: toUnits(50) });
+
+    expect(Math.round(bill.totalSavings * 20)).toBe(50);
   });
 });

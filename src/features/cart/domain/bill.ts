@@ -123,7 +123,15 @@ export function deriveMinOrderFields(grandTotal: number): {
 
 export function computeBill(
   items: CartLineItem[],
-  opts?: { couponApplied?: boolean; vipAdded?: boolean }
+  opts?: {
+    couponApplied?: boolean;
+    vipAdded?: boolean;
+    /** Whether the customer's wallet balance is applied to this order. */
+    walletApplied?: boolean;
+    /** Cashback balance available to redeem, internal units. Ignored unless
+     *  walletApplied is true. */
+    walletBalance?: number;
+  }
 ): Bill {
   let itemTotal = 0;
   let mrpTotal = 0;
@@ -146,13 +154,27 @@ export function computeBill(
   // store-config settings the cashback upsell copy quotes (sync getter: this
   // is a pure function, not a hook), so the two can't drift apart.
   const vipMembershipFee = opts?.vipAdded ? toUnits(getCashbackSettings().vipUpgradeFee) : 0;
-  const grandTotal = itemTotal + deliveryFee + platformFee + vipMembershipFee - couponDiscount;
-  const totalSavings = itemDiscount + couponDiscount;
 
-  const { minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(grandTotal);
+  // The ₹199 minimum is about real product value — neither the VIP fee nor a
+  // wallet redemption is product value, so both are excluded from this
+  // check. The fee still lands in grandTotal below; it just can't help (or
+  // hurt) eligibility for the minimum. Wallet is excluded so that redeeming
+  // cashback a customer is entitled to can never block checkout.
+  const minCheckBasis = itemTotal + deliveryFee + platformFee - couponDiscount;
+  const { minOrderValue, belowMinimum, amountToMinimum } = deriveMinOrderFields(minCheckBasis);
+
+  const grandTotalBeforeWallet = minCheckBasis + vipMembershipFee;
+  // useWallet on POST /app/orders is boolean/all-or-nothing — the backend
+  // decides the real amount deducted. This is a best-effort display estimate
+  // only, deliberately uncapped by the minimum (see minCheckBasis above).
+  const walletDiscount = opts?.walletApplied
+    ? Math.min(opts.walletBalance ?? 0, grandTotalBeforeWallet)
+    : 0;
+  const grandTotal = grandTotalBeforeWallet - walletDiscount;
+  const totalSavings = itemDiscount + couponDiscount + walletDiscount;
 
   return {
     itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, vipMembershipFee,
-    grandTotal, totalSavings, totalCount, minOrderValue, belowMinimum, amountToMinimum,
+    walletDiscount, grandTotal, totalSavings, totalCount, minOrderValue, belowMinimum, amountToMinimum,
   };
 }
