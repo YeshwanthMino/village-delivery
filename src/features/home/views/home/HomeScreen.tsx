@@ -17,6 +17,8 @@ import { LocationPermissionSheet } from '@/src/features/location/views/LocationP
 import { NotServiceableView } from '@/src/features/location/views/components/NotServiceableView';
 import { LocationService } from '@/src/features/location/data/LocationService';
 import { LocationSheet } from '@/src/features/location/views/LocationSheet';
+import { useNotificationStore } from '@/src/core/store/useNotificationStore';
+import { NotificationPermissionSheet } from '@/src/features/notifications/views/NotificationPermissionSheet';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -35,6 +37,13 @@ export const HomeScreen = () => {
 
   const [permSheetOpen, setPermSheetOpen] = React.useState(false);
   const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
+  const [notifSheetOpen, setNotifSheetOpen] = React.useState(false);
+  const notifPermission = useNotificationStore((s) => s.permission);
+  const notifPermissionChecked = useNotificationStore((s) => s.permissionChecked);
+  // Location is "settled" once it either resolved a village or reached a
+  // terminal non-serviceable/error state — i.e. the location sheet is done
+  // deciding what to show, whether or not it's still visibly open.
+  const locationSettled = !!village || status === 'not_serviceable' || status === 'error';
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -65,6 +74,12 @@ export const HomeScreen = () => {
       setChangeSheetOpen(false);
     }
   }, [village]);
+
+  // If permission changes while the sheet happens to be open (e.g. granted
+  // from system Settings while backgrounded), close it — nothing left to ask.
+  React.useEffect(() => {
+    if (notifPermission !== 'undetermined') setNotifSheetOpen(false);
+  }, [notifPermission]);
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
 
@@ -106,6 +121,17 @@ export const HomeScreen = () => {
         cancelled = true;
       };
     }, [hydrated, village, status, detectCurrentLocation]),
+  );
+
+  // Notification permission sheet: never competes with the location sheet.
+  // Only offered once location has settled, and only while push permission
+  // is still undetermined (already granted/blocked skip the sheet entirely).
+  useFocusEffect(
+    React.useCallback(() => {
+      if (permSheetOpen || !locationSettled) return;
+      if (!notifPermissionChecked || notifPermission !== 'undetermined') return;
+      setNotifSheetOpen(true);
+    }, [permSheetOpen, locationSettled, notifPermissionChecked, notifPermission]),
   );
 
   const goToCart = () => router.push('/cart');
@@ -205,6 +231,10 @@ export const HomeScreen = () => {
         dismissable={!!village}
       />
       <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} />
+      <NotificationPermissionSheet
+        visible={notifSheetOpen}
+        onClose={() => setNotifSheetOpen(false)}
+      />
     </SafeAreaView>
   );
 };
