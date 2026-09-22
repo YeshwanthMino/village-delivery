@@ -86,6 +86,9 @@ export const StorageKeys = {
   SELECTED_ADDRESS_ID: 'selected_address_id',
   RECENT_LOCATIONS: 'recent_locations',
 
+  // Push notifications
+  PUSH_DEVICE_TOKEN: 'push_device_token',
+
   // Deep linking
   DEFERRED_DEEP_LINK: 'deferredDeepLink',
 
