@@ -128,10 +128,10 @@ export const HomeScreen = () => {
   // is still undetermined (already granted/blocked skip the sheet entirely).
   useFocusEffect(
     React.useCallback(() => {
-      if (permSheetOpen || changeSheetOpen || !locationSettled) return;
+      if (permSheetOpen || changeSheetOpen || !!vm.variantProduct || !locationSettled) return;
       if (!notifPermissionChecked || notifPermission !== 'undetermined') return;
       setNotifSheetOpen(true);
-    }, [permSheetOpen, changeSheetOpen, locationSettled, notifPermissionChecked, notifPermission]),
+    }, [permSheetOpen, changeSheetOpen, vm.variantProduct, locationSettled, notifPermissionChecked, notifPermission]),
   );
 
   const goToCart = () => router.push('/cart');
