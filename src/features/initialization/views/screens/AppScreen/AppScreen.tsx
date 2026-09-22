@@ -3,6 +3,7 @@ import { loadStoreConfig } from '@/src/core/store/useStoreConfigStore';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { useLocationLifecycle } from '@/src/features/location/lifecycle/useLocationLifecycle';
+import { usePushNotifications } from '@/src/features/notifications/lifecycle/usePushNotifications';
 import { KNOWN_ROOT_ROUTES } from '@/src/features/initialization/domain/knownRoutes';
 import { useFonts } from 'expo-font';
 import { useRouter, useSegments } from 'expo-router';
@@ -16,6 +17,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const setLocale = useVillageStore((s) => s.setLocale);
   const hydrateLocation = useLocationStore((s) => s.hydrate);
   useLocationLifecycle();
+  usePushNotifications();
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
