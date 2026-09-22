@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
+import { logger } from '@/src/base/services/logger';
 import { useNotificationStore } from '@/src/core/store/useNotificationStore';
 import { handleNotificationResponse } from './handleNotificationResponse';
 
@@ -41,10 +42,18 @@ export function usePushNotifications() {
     // The tap that launched the app from a killed state. Cleared immediately
     // after handling so a later remount in the same session (error-boundary
     // reset, Fast Refresh) can't replay it and re-fire router.push.
-    const lastResponse = Notifications.getLastNotificationResponse();
-    if (lastResponse) {
-      handleNotificationResponse(lastResponse, router);
-      void Notifications.clearLastNotificationResponseAsync();
+    // getLastNotificationResponse throws synchronously (not a rejected
+    // promise) on a platform without the native emitter module, e.g. web —
+    // caught here so a missing native module can't abort the rest of the
+    // effect (the tap listener and AppState subscription below).
+    try {
+      const lastResponse = Notifications.getLastNotificationResponse();
+      if (lastResponse) {
+        handleNotificationResponse(lastResponse, router);
+        void Notifications.clearLastNotificationResponseAsync();
+      }
+    } catch (e) {
+      logger.warn('[PUSH] getLastNotificationResponse unavailable:', e instanceof Error ? e.message : e);
     }
 
     const tapSub = Notifications.addNotificationResponseReceivedListener((response) => {
