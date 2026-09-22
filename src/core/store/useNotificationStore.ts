@@ -31,6 +31,13 @@ const initialState: NotificationState = {
   deviceToken: null,
 };
 
+// Module-level race guard (not in render state) — mirrors useLocationStore's
+// `inflight`. usePushNotifications calls registerToken from two independent
+// places (mount-time seed and the AppState 'active' handler); without this,
+// a foreground blip shortly after cold start could trigger two concurrent
+// native getDevicePushTokenAsync() calls and a duplicate storage write.
+let registerInflight: Promise<void> | null = null;
+
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
   ...initialState,
 
@@ -46,10 +53,18 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   },
 
   registerToken: async () => {
-    const token = await NotificationService.getDeviceToken();
-    set({ deviceToken: token });
-    if (token) {
-      await StoredPrefs.setCustomData(StorageKeys.PUSH_DEVICE_TOKEN, token);
+    if (registerInflight) return registerInflight;
+    registerInflight = (async () => {
+      const token = await NotificationService.getDeviceToken();
+      set({ deviceToken: token });
+      if (token) {
+        await StoredPrefs.setCustomData(StorageKeys.PUSH_DEVICE_TOKEN, token);
+      }
+    })();
+    try {
+      await registerInflight;
+    } finally {
+      registerInflight = null;
     }
   },
 

@@ -38,10 +38,14 @@ export function usePushNotifications() {
       }
     })();
 
-    // The tap that launched the app from a killed state.
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) handleNotificationResponse(response, router);
-    });
+    // The tap that launched the app from a killed state. Cleared immediately
+    // after handling so a later remount in the same session (error-boundary
+    // reset, Fast Refresh) can't replay it and re-fire router.push.
+    const lastResponse = Notifications.getLastNotificationResponse();
+    if (lastResponse) {
+      handleNotificationResponse(lastResponse, router);
+      void Notifications.clearLastNotificationResponseAsync();
+    }
 
     const tapSub = Notifications.addNotificationResponseReceivedListener((response) => {
       handleNotificationResponse(response, router);
