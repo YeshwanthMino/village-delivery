@@ -325,6 +325,14 @@ export const TRANSLATIONS: TranslationMap = {
   // Promo strip (first-order discount banner)
   promo_first_order:    { te: 'మీ మొదటి ఆర్డర్‌పై 10% తగ్గింపు',                      en: '10% off your first order' },
   promo_use_at_checkout: { te: 'చెక్అవుట్ వద్ద కోడ్ ఉపయోగించండి',                     en: 'Use code at checkout' },
+
+  // Push notification permission sheet
+  notif_permission_title: { te: 'నోటిఫికేషన్‌లను ఆన్ చేయండి', en: 'Turn on notifications' },
+  notif_permission_sub:   { te: 'మీ ఆర్డర్ అప్‌డేట్‌లను వెంటనే తెలుసుకోండి', en: 'Get instant updates on your order status' },
+  allow_notifications:    { te: 'అనుమతించండి', en: 'Allow' },
+  not_now:                { te: 'ఇప్పుడు వద్దు', en: 'Not now' },
+  notif_blocked_title:    { te: 'నోటిఫికేషన్‌లు బ్లాక్ అయ్యాయి', en: 'Notifications are blocked' },
+  notif_blocked_sub:      { te: 'ఆర్డర్ అప్‌డేట్‌లు పొందడానికి సెట్టింగ్స్‌లో నోటిఫికేషన్‌లను ఆన్ చేయండి', en: 'Enable notifications in Settings to get order updates' },
 };
 
 /** Returns translated string; falls back to English if key missing. */
