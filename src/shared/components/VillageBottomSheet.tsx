@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -17,11 +18,12 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-
 interface VillageBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** When false the sheet cannot be dismissed (no backdrop tap, swipe springs back). */
+  dismissable?: boolean;
 }
 
 const OPEN_SPRING = { damping: 26, stiffness: 320, mass: 0.7 };
@@ -29,7 +31,7 @@ const DISMISS_THRESHOLD_PX = 80;
 const DISMISS_VELOCITY = 600;
 const MAX_HEIGHT_RATIO = 0.75;
 
-export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottomSheetProps) => {
+export const VillageBottomSheet = ({ visible, onClose, children, dismissable = true }: VillageBottomSheetProps) => {
   const { height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const maxSheetHeight = screenHeight * MAX_HEIGHT_RATIO;
@@ -37,6 +39,28 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
   const translateY = useSharedValue(screenHeight);
   const backdropOpacity = useSharedValue(0);
   const dragStartY = useSharedValue(0);
+  // Lifts the sheet above the soft keyboard so inputs stay visible. We drive this
+  // from JS Keyboard events rather than reanimated's useAnimatedKeyboard because
+  // the sheet renders inside a React Native <Modal>: on Android the Modal is a
+  // separate Dialog window that the OS doesn't pan/resize and that
+  // useAnimatedKeyboard (which tracks the root window) can't see — so it would
+  // report height 0 and never lift. Keyboard events fire regardless of window.
+  const keyboardHeight = useSharedValue(0);
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      keyboardHeight.value = withTiming(e.endCoordinates?.height ?? 0, { duration: 250 });
+    });
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      keyboardHeight.value = withTiming(0, { duration: 200 });
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Track whether the Modal's native layer is ready (iOS fires onShow after present)
   const modalReady = useRef(false);
@@ -79,7 +103,8 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
     })
     .onEnd((e) => {
       const shouldDismiss =
-        e.translationY > DISMISS_THRESHOLD_PX || e.velocityY > DISMISS_VELOCITY;
+        dismissable &&
+        (e.translationY > DISMISS_THRESHOLD_PX || e.velocityY > DISMISS_VELOCITY);
 
       if (shouldDismiss) {
         backdropOpacity.value = withTiming(0, { duration: 200 });
@@ -93,7 +118,7 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
     });
 
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value - keyboardHeight.value }],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
@@ -112,7 +137,7 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={dismissable ? onClose : undefined}
       onShow={handleShow}
     >
       <Wrapper style={StyleSheet.absoluteFillObject}>
@@ -120,7 +145,7 @@ export const VillageBottomSheet = ({ visible, onClose, children }: VillageBottom
         <Animated.View
           style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropStyle]}
         >
-          <Pressable style={{ flex: 1 }} onPress={onClose} />
+          <Pressable style={{ flex: 1 }} onPress={dismissable ? onClose : undefined} />
         </Animated.View>
 
         <Animated.View style={[styles.sheet, { maxHeight: maxSheetHeight }, sheetStyle]}>

@@ -10,6 +10,7 @@ export interface EnvironmentConfig {
 
   // API Configuration
   apiBaseUrl: string;
+  villageApiBaseUrl: string;
 }
 
 export declare const env: EnvironmentConfig;

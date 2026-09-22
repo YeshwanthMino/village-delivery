@@ -11,7 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import {
-  FloatingCartPill,
+  CartSummaryCard,
   ProductCard,
   SortBottomSheet,
   VariantBottomSheet,
@@ -172,7 +172,7 @@ export const TopPicksScreen = () => {
       </AnimatedScrollView>
 
       {vm.cartCount > 0 && (
-        <FloatingCartPill count={vm.cartCount} onPress={goToCart} />
+        <CartSummaryCard onPress={goToCart} />
       )}
       <SortBottomSheet
         visible={vm.sortSheetVisible}

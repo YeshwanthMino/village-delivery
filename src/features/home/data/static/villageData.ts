@@ -1,4 +1,4 @@
-import { Category, Product, SortKey, CartRecord, CartLineItem, Bill } from '@/src/base/types/village.types';
+import { Category, Product, SortKey, CartRecord, CartLineItem, CartSnapshot, CartSnapshotRecord, Bill } from '@/src/base/types/village.types';
 
 // ─── Hero Slide ───────────────────────────────────────────────────────────────
 
@@ -1012,78 +1012,4 @@ export function sortProducts(list: Product[], sortKey: SortKey): Product[] {
     case 'rating':     return sorted.sort((a, b) => b.rating - a.rating);
     default:           return sorted;
   }
-}
-
-export function getCartItems(cart: CartRecord): CartLineItem[] {
-  const items: CartLineItem[] = [];
-  for (const [key, count] of Object.entries(cart)) {
-    if (count <= 0) continue;
-    const dashVIdx = key.lastIndexOf('-v');
-    if (dashVIdx !== -1) {
-      // Variant key: e.g. 'f1-v0'
-      const productId = key.substring(0, dashVIdx);
-      const variantIndex = parseInt(key.substring(dashVIdx + 2), 10);
-      const product = ALL_PRODUCTS.find(p => p.id === productId);
-      if (!product || !product.variants) continue;
-      const variant = product.variants[variantIndex];
-      if (!variant) continue;
-      items.push({
-        key,
-        product,
-        variantIndex,
-        name: product.name,
-        weight: variant.name,
-        price: variant.price,
-        mrp: variant.mrp,
-        count,
-        emoji: product.emoji,
-        gradientFrom: product.gradientFrom,
-        gradientTo: product.gradientTo,
-      });
-    } else {
-      // Simple product key
-      const product = ALL_PRODUCTS.find(p => p.id === key);
-      if (!product) continue;
-      items.push({
-        key,
-        product,
-        variantIndex: null,
-        name: product.name,
-        weight: product.weight,
-        price: product.price,
-        mrp: product.mrp,
-        count,
-        emoji: product.emoji,
-        gradientFrom: product.gradientFrom,
-        gradientTo: product.gradientTo,
-      });
-    }
-  }
-  return items;
-}
-
-export function computeBill(
-  items: CartLineItem[],
-  opts?: { couponApplied?: boolean }
-): Bill {
-  let itemTotal = 0;
-  let mrpTotal = 0;
-  let totalCount = 0;
-
-  for (const item of items) {
-    itemTotal += item.price * item.count;
-    mrpTotal += item.mrp * item.count;
-    totalCount += item.count;
-  }
-
-  const itemDiscount = mrpTotal - itemTotal;
-  const deliveryFee = itemTotal >= 25 ? 0 : 2.5;  // ₹0 if ≥₹500, else ₹50
-  const platformFee = totalCount > 0 ? 0.5 : 0;   // ₹10 fixed when non-empty
-  const couponDiscount = opts?.couponApplied
-    ? Math.min(itemTotal * 0.10, 2)                // 10%, capped at ₹40 (= 2 pre-multiplier)
-    : 0;
-  const grandTotal = itemTotal + deliveryFee + platformFee - couponDiscount;
-  const totalSavings = itemDiscount + couponDiscount + (deliveryFee === 0 && itemTotal > 0 ? 2.5 : 0);
-
-  return { itemTotal, mrpTotal, itemDiscount, deliveryFee, platformFee, couponDiscount, grandTotal, totalSavings, totalCount };
 }

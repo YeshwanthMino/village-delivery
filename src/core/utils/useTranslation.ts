@@ -27,7 +27,30 @@ export function useTranslation() {
     return interpolate(translate('discount_badge', locale), pct);
   }
 
-  return { t, tEta, tItemCount, tDiscount, locale };
+  function tOptionCount(count: number): string {
+    return interpolate(translate('option_count', locale), count);
+  }
+
+  function tVariantCartLabel(count: number): string {
+    return interpolate(translate('variant_cart_label', locale), count);
+  }
+
+  function tCartSummaryCount(count: number): string {
+    return interpolate(translate('cart_summary_count', locale), count);
+  }
+
+  function tShopMoreToPlaceOrder(amountText: string): string {
+    return interpolate(translate('shop_more_to_place_order', locale), amountText);
+  }
+
+  function tSavedAmount(amountText: string): string {
+    return interpolate(translate('saved_amount', locale), amountText);
+  }
+
+  return {
+    t, tEta, tItemCount, tDiscount, tOptionCount, tVariantCartLabel,
+    tCartSummaryCount, tShopMoreToPlaceOrder, tSavedAmount, locale,
+  };
 }
 
 /**

@@ -1,7 +1,24 @@
 export interface Variant {
+  id?: string;
   name: string;
+  nameTE?: string;
+  slug?: string;
+  description?: string;
   price: number;
   mrp: number;
+  listPrice?: number;
+  dealPrice?: number;
+  stock?: number;
+  /** The variant's own landing image, verbatim from the API. Prefer `image`
+   *  for display — that one already falls back to the first gallery image. */
+  landingImage?: string;
+  image?: string;
+  images?: string[];
+  taxType?: string;
+  taxRate?: number;
+  hasFreeItem?: boolean;
+  hsn?: string;
+  active?: boolean;
 }
 
 export interface Product {
@@ -14,9 +31,20 @@ export interface Product {
   mrp: number;
   rating: number;
   reviews: number;
-  emoji: string;
-  gradientFrom: string;
-  gradientTo: string;
+  emoji?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  // API products use images instead of emojis
+  image?: string;
+  images?: string[];
+  description?: string;
+  manufacturerId?: string;
+  brandId?: string;
+  stock?: number;
+  /** Human-readable category name, e.g. "Pulses". Maps from the API's `category`. */
+  categoryName?: string;
+  /** Backend category path, e.g. "_Pulses". */
+  categoryPath?: string;
   variants?: Variant[];
 }
 
@@ -31,18 +59,44 @@ export interface Category {
 
 export type CartRecord = Record<string, number>;
 
-export interface CartLineItem {
+/**
+ * Self-contained snapshot of a product captured at add-to-cart time. Works for
+ * both static catalog products (emoji + gradient) and API products (imageUrl),
+ * so the cart never has to re-resolve an id against any catalog.
+ *
+ * Prices are stored in catalog "units" (display multiplies by 20 via `rupees`).
+ * API products, whose `price` is in real rupees, are divided by 20 on capture.
+ *
+ * When a variant is selected, includes full variant data (images, pricing tiers,
+ * tax info) to preserve the exact product state at add-to-cart time.
+ */
+export interface CartSnapshot {
   key: string;
-  product: Product;
+  productId: string;
   variantIndex: number | null;
+  variantId?: string;
   name: string;
+  nameTE?: string;
   weight: string;
   price: number;
   mrp: number;
+  listPrice?: number;
+  dealPrice?: number;
+  emoji?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  imageUrl?: string;
+  images?: string[];
+  taxType?: string;
+  taxRate?: number;
+  hasFreeItem?: boolean;
+  hsn?: string;
+}
+
+export type CartSnapshotRecord = Record<string, CartSnapshot>;
+
+export interface CartLineItem extends CartSnapshot {
   count: number;
-  emoji: string;
-  gradientFrom: string;
-  gradientTo: string;
 }
 
 export interface Bill {
@@ -52,9 +106,31 @@ export interface Bill {
   deliveryFee: number;
   platformFee: number;
   couponDiscount: number;
+  /** VIP membership fee (internal units) added to this order when the
+   *  customer added VIP membership from the cart screen; 0 otherwise. */
+  vipMembershipFee: number;
+  /** grandTotal before the wallet discount is subtracted (still includes
+   *  vipMembershipFee, still excludes the wallet). This is the basis
+   *  cashback-tier progress (useCartCashback / CashbackProgressBanner) must
+   *  use — redeeming cashback you already earned is not a reason to show a
+   *  lower tier than the order actually qualifies for. Equal to grandTotal
+   *  when walletDiscount is 0. */
+  grandTotalBeforeWallet: number;
+  /** Wallet/cashback amount redeemed against this order (internal units);
+   *  0 when not applied. A best-effort display estimate — POST /app/orders'
+   *  `useWallet` flag is boolean, so the backend decides the real amount
+   *  deducted. Excluded from the ₹199 minimum-order check, same as
+   *  vipMembershipFee — see minOrderValue/belowMinimum below. */
+  walletDiscount: number;
   grandTotal: number;
   totalSavings: number;
   totalCount: number;
+  /** The order's minimum required value (internal units) to be eligible for checkout. */
+  minOrderValue: number;
+  /** True when grandTotal is under minOrderValue. */
+  belowMinimum: boolean;
+  /** Shortfall (internal units) to reach minOrderValue; 0 when not belowMinimum. */
+  amountToMinimum: number;
 }
 
 export type SortKey = 'popular' | 'price_asc' | 'price_desc' | 'rating';
@@ -71,6 +147,8 @@ export interface OrderItem {
   name: string;
   nameTE: string;
   emoji: string;
+  /** Product thumbnail URL when the API provides one; empty/absent falls back to emoji. */
+  image?: string;
   weight: string;
   price: number;
   mrp: number;

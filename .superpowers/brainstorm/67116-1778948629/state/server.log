@@ -1,0 +1,5 @@
+{"type":"server-started","port":52856,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:52856","screen_dir":"/Users/yeshwanth/Mino/village-delivery/.superpowers/brainstorm/67116-1778948629/content","state_dir":"/Users/yeshwanth/Mino/village-delivery/.superpowers/brainstorm/67116-1778948629/state"}
+{"type":"screen-added","file":"/Users/yeshwanth/Mino/village-delivery/.superpowers/brainstorm/67116-1778948629/content/login-trigger-style.html"}
+{"type":"screen-added","file":"/Users/yeshwanth/Mino/village-delivery/.superpowers/brainstorm/67116-1778948629/content/waiting-1.html"}
+{"type":"screen-added","file":"/Users/yeshwanth/Mino/village-delivery/.superpowers/brainstorm/67116-1778948629/content/otp-sheet-flow.html"}
+{"type":"server-stopped","reason":"idle timeout"}

@@ -1,0 +1,94 @@
+<h2>How should login appear at checkout?</h2>
+<p class="subtitle">User taps "Proceed to Checkout" without being logged in. Which presentation feels right?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8fafc;padding:16px;border-radius:8px;margin-bottom:12px">
+      <!-- Phone mockup - bottom sheet style -->
+      <div style="width:180px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.12);overflow:hidden;position:relative;min-height:280px;display:flex;flex-direction:column">
+        <!-- Cart screen behind -->
+        <div style="flex:1;background:#f1f5f9;padding:12px;font-size:10px;color:#94a3b8">
+          <div style="background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;font-size:9px;color:#334155">🛒 My Cart · 3 items</div>
+          <div style="background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;height:40px"></div>
+          <div style="background:#fff;border-radius:8px;padding:8px;height:40px"></div>
+        </div>
+        <!-- Overlay dim -->
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);border-radius:20px"></div>
+        <!-- Bottom sheet -->
+        <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;padding:16px 14px 14px">
+          <div style="width:32px;height:3px;background:#e2e8f0;border-radius:99px;margin:0 auto 10px"></div>
+          <div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:4px">Login to continue</div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:10px">Enter your phone to place order</div>
+          <div style="background:#f1f5f9;border-radius:8px;height:28px;margin-bottom:8px"></div>
+          <div style="background:#16a34a;border-radius:8px;height:28px;display:flex;align-items:center;justify-content:center">
+            <span style="color:#fff;font-size:9px;font-weight:700">Send OTP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Bottom Sheet Modal</h3>
+      <p>Login slides up over the cart. Cart stays visible behind dim overlay. User never leaves cart context.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8fafc;padding:16px;border-radius:8px;margin-bottom:12px">
+      <!-- Phone mockup - full screen navigate -->
+      <div style="width:180px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.12);overflow:hidden;min-height:280px;display:flex;flex-direction:column">
+        <div style="background:#fff;padding:12px 14px 8px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px">
+          <div style="width:16px;height:16px;background:#f1f5f9;border-radius:4px"></div>
+          <div style="font-size:10px;font-weight:700;color:#0f172a">Login</div>
+        </div>
+        <div style="flex:1;padding:16px 14px">
+          <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:4px">Welcome back!</div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:14px">Login to place your order</div>
+          <div style="font-size:8px;color:#64748b;margin-bottom:4px">Phone number</div>
+          <div style="background:#f1f5f9;border-radius:8px;height:28px;margin-bottom:10px"></div>
+          <div style="background:#16a34a;border-radius:8px;height:28px;display:flex;align-items:center;justify-content:center">
+            <span style="color:#fff;font-size:9px;font-weight:700">Send OTP</span>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:8px">
+            <div style="font-size:8px;color:#15803d;font-weight:600">Your cart is saved</div>
+            <div style="font-size:7px;color:#64748b">Items waiting after login</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Navigate to Login Screen</h3>
+      <p>Push to existing <code>auth/</code> screen with a "cart saved" banner. Back button returns to cart.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8fafc;padding:16px;border-radius:8px;margin-bottom:12px">
+      <!-- Phone mockup - inline modal/alert -->
+      <div style="width:180px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.12);overflow:hidden;position:relative;min-height:280px;display:flex;flex-direction:column">
+        <div style="flex:1;background:#f1f5f9;padding:12px;font-size:10px;color:#94a3b8">
+          <div style="background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;font-size:9px;color:#334155">🛒 My Cart · 3 items</div>
+          <div style="background:#fff;border-radius:8px;padding:8px;margin-bottom:6px;height:40px"></div>
+        </div>
+        <!-- Center modal -->
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;border-radius:20px">
+          <div style="background:#fff;border-radius:16px;padding:16px;width:140px">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:4px;text-align:center">Login required</div>
+            <div style="font-size:8px;color:#64748b;margin-bottom:12px;text-align:center">Login to complete your order</div>
+            <div style="background:#16a34a;border-radius:8px;height:24px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+              <span style="color:#fff;font-size:8px;font-weight:700">Login / Sign up</span>
+            </div>
+            <div style="border:1px solid #e2e8f0;border-radius:8px;height:24px;display:flex;align-items:center;justify-content:center">
+              <span style="color:#64748b;font-size:8px">Cancel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Center Dialog (confirm first)</h3>
+      <p>Small centered modal asks "Login to continue?" with Login and Cancel buttons. Login tapped → navigates to auth screen.</p>
+    </div>
+  </div>
+
+</div>

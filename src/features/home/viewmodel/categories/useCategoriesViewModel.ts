@@ -1,9 +1,9 @@
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { useCategoriesQuery } from '@/src/features/home/data/queries/useCategoriesQuery';
 import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
 
 export const useCategoriesViewModel = () => {
-  const cartCount = useVillageStore(state => state.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: products = [] } = useProductsQuery();
 

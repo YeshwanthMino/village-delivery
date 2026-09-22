@@ -1,16 +1,28 @@
 import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { IS_WEB } from '@/src/core/utils/platform';
 import { IStorageService, StorageServiceFactory } from '../../storage';
+import { logger } from '@/src/base/services/logger';
 
 
 // Types for stored data
+//
+// Every field is optional because the profile comes straight off /app/auth/me
+// and is also read back from disk, where an older install may have written a
+// different shape. Consumers must treat each field as possibly absent — the
+// index signature is deliberately `unknown`, not `any`, so reaching for an
+// undeclared field is a compile error rather than a silent undefined.
 export interface UserObject {
-  id: number;
-  uuid: string;
+  /** Mongo ids arrive as strings; the legacy login mutation produced a number.
+   *  Both are real in this codebase, so callers must narrow before using it. */
+  id?: string | number;
+  uuid?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phoneNumber?: string;
-  [key: string]: any;
+  mobileNumber?: string;
+  [key: string]: unknown;
 }
 
 export interface UserPreferences {
@@ -67,7 +79,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getItem(StorageKeys.ACCESS_TOKEN);
     } catch (error) {
-      console.error('Failed to get access token:', error);
+      logger.error('Failed to get access token:', error);
       return null;
     }
   }
@@ -81,7 +93,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.ACCESS_TOKEN);
       }
     } catch (error) {
-      console.error('Failed to set access token:', error);
+      logger.error('Failed to set access token:', error);
     }
   }
 
@@ -90,7 +102,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getItem(StorageKeys.REFRESH_TOKEN);
     } catch (error) {
-      console.error('Failed to get refresh token:', error);
+      logger.error('Failed to get refresh token:', error);
       return null;
     }
   }
@@ -104,7 +116,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.REFRESH_TOKEN);
       }
     } catch (error) {
-      console.error('Failed to set refresh token:', error);
+      logger.error('Failed to set refresh token:', error);
     }
   }
 
@@ -113,7 +125,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getItem(StorageKeys.TOKEN_TYPE);
     } catch (error) {
-      console.error('Failed to get token type:', error);
+      logger.error('Failed to get token type:', error);
       return null;
     }
   }
@@ -127,7 +139,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.TOKEN_TYPE);
       }
     } catch (error) {
-      console.error('Failed to set token type:', error);
+      logger.error('Failed to set token type:', error);
     }
   }
 
@@ -136,7 +148,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getItem(StorageKeys.USERNAME);
     } catch (error) {
-      console.error('Failed to get username:', error);
+      logger.error('Failed to get username:', error);
       return null;
     }
   }
@@ -150,7 +162,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.USERNAME);
       }
     } catch (error) {
-      console.error('Failed to set username:', error);
+      logger.error('Failed to set username:', error);
     }
   }
 
@@ -160,7 +172,7 @@ export class StoredPrefs {
       const prefsData = await storage.getItem(StorageKeys.USER_PREFERENCES);
       return prefsData ? JSON.parse(prefsData) : null;
     } catch (error) {
-      console.error('Failed to get user preferences:', error);
+      logger.error('Failed to get user preferences:', error);
       return null;
     }
   }
@@ -174,7 +186,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.USER_PREFERENCES);
       }
     } catch (error) {
-      console.error('Failed to set user preferences:', error);
+      logger.error('Failed to set user preferences:', error);
     }
   }
 
@@ -185,7 +197,7 @@ export class StoredPrefs {
       const value = await storage.getItem(StorageKeys.IS_FIRST_LAUNCH);
       return value !== 'false'; // Default to true if not set
     } catch (error) {
-      console.error('Failed to get first launch status:', error);
+      logger.error('Failed to get first launch status:', error);
       return true;
     }
   }
@@ -195,7 +207,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       await storage.setItem(StorageKeys.IS_FIRST_LAUNCH, String(isFirstLaunch));
     } catch (error) {
-      console.error('Failed to set first launch status:', error);
+      logger.error('Failed to set first launch status:', error);
     }
   }
 
@@ -205,7 +217,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getItem(StorageKeys.DEFERRED_DEEP_LINK);
     } catch (error) {
-      console.error('Failed to get deferred deep link:', error);
+      logger.error('Failed to get deferred deep link:', error);
       return null;
     }
   }
@@ -219,7 +231,7 @@ export class StoredPrefs {
         await storage.removeItem(StorageKeys.DEFERRED_DEEP_LINK);
       }
     } catch (error) {
-      console.error('Failed to set deferred deep link:', error);
+      logger.error('Failed to set deferred deep link:', error);
     }
   }
 
@@ -229,7 +241,7 @@ export class StoredPrefs {
       const token = await StoredPrefs.getAccessToken();
       return !!token;
     } catch (error) {
-      console.error('Failed to check user login status:', error);
+      logger.error('Failed to check user login status:', error);
       return false;
     }
   }
@@ -244,7 +256,7 @@ export class StoredPrefs {
         StoredPrefs.setUserProfile(null),
       ]);
     } catch (error) {
-      console.error('Failed to clear credentials:', error);
+      logger.error('Failed to clear credentials:', error);
     }
   }
 
@@ -257,7 +269,7 @@ export class StoredPrefs {
         StoredPrefs.setDeferredDeepLink(null),
       ]);
     } catch (error) {
-      console.error('Failed to clear stored preferences:', error);
+      logger.error('Failed to clear stored preferences:', error);
     }
   }
 
@@ -268,7 +280,7 @@ export class StoredPrefs {
       const serializedValue = JSON.stringify(value);
       await storage.setItem(key, serializedValue);
     } catch (error) {
-      console.error(`Failed to set custom data for key ${key}:`, error);
+      logger.error(`Failed to set custom data for key ${key}:`, error);
     }
   }
 
@@ -278,7 +290,7 @@ export class StoredPrefs {
       const value = await storage.getItem(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      console.error(`Failed to get custom data for key ${key}:`, error);
+      logger.error(`Failed to get custom data for key ${key}:`, error);
       return null;
     }
   }
@@ -288,7 +300,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       await storage.removeItem(key);
     } catch (error) {
-      console.error(`Failed to remove custom data for key ${key}:`, error);
+      logger.error(`Failed to remove custom data for key ${key}:`, error);
     }
   }
 
@@ -298,7 +310,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       return await storage.getAllKeys();
     } catch (error) {
-      console.error('Failed to get all storage keys:', error);
+      logger.error('Failed to get all storage keys:', error);
       return [];
     }
   }
@@ -309,7 +321,7 @@ export class StoredPrefs {
       const storage = await StoredPrefs.getStorageService();
       await storage.clear();
     } catch (error) {
-      console.error('Failed to clear all storage:', error);
+      logger.error('Failed to clear all storage:', error);
     }
   }
 
@@ -318,7 +330,7 @@ export class StoredPrefs {
     try {
       return await StoredPrefs.getCustomData('village_user_profile');
     } catch (error) {
-      console.error('Failed to get user profile:', error);
+      logger.error('Failed to get user profile:', error);
       return null;
     }
   }
@@ -331,7 +343,7 @@ export class StoredPrefs {
         await StoredPrefs.removeCustomData('village_user_profile');
       }
     } catch (error) {
-      console.error('Failed to set user profile:', error);
+      logger.error('Failed to set user profile:', error);
     }
   }
 }
