@@ -61,6 +61,7 @@ const apiVillage = {
   _id: '691860854a92a246c6456b98',
   title: 'Mittoor',
   storeId: '68989c821388764b3a92f0dd',
+  branchId: '6aaf533997eadd21dfbf4325',
   pincode: '517001',
   defaultLocation: { latitude: 13.36, longitude: 79.02 },
 };
@@ -73,6 +74,7 @@ describe('mapVillageList', () => {
       id: '691860854a92a246c6456b98',
       name: 'Mittoor',
       storeId: '68989c821388764b3a92f0dd',
+      branchId: '6aaf533997eadd21dfbf4325',
       pincode: '517001',
       latitude: 13.36,
       longitude: 79.02,

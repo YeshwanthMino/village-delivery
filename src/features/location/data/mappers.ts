@@ -39,6 +39,7 @@ export function mapVillage(raw: any): Village | null {
     latitude: pick(node, ['latitude', 'lat']) ?? def?.latitude,
     longitude: pick(node, ['longitude', 'lng', 'long']) ?? def?.longitude,
     storeId: pick(node, ['storeId', 'store']),
+    branchId: pick(node, ['branchId', 'branch']),
   };
 }
 
@@ -77,6 +78,7 @@ export function mapAddress(raw: any): Address {
       ? villageObj.defaultLocation
       : null;
   const storeId = pick(node, ['storeId']) ?? villageObj?.storeId;
+  const branchId = pick(node, ['branchId']) ?? villageObj?.branchId;
   return {
     id: String(pick(node, ['_id', 'id']) ?? ''),
     villageId: String(villageObj?._id ?? villageStr ?? ''),
@@ -84,6 +86,7 @@ export function mapAddress(raw: any): Address {
       villageObj?.title ?? villageObj?.name ?? pick(node, ['villageName']) ?? villageStr ?? pick(node, ['name']) ?? '',
     ),
     storeId: storeId != null ? String(storeId) : undefined,
+    branchId: branchId != null ? String(branchId) : undefined,
     addressLine1: String(pick(node, ['addressLine', 'addressLine1']) ?? ''),
     landmark: pick(node, ['landmark']),
     pincode: pick(node, ['pincode']) ?? villageObj?.pincode,

@@ -87,6 +87,7 @@ async function resolveCoords(
       if (v.storeId && opts?.addToRecents !== false) {
         await get().addRecent({
           storeId: v.storeId,
+          branchId: v.branchId,
           villageName: v.name,
           latitude: v.latitude ?? coords.latitude,
           longitude: v.longitude ?? coords.longitude,
@@ -284,6 +285,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       id: r.storeId,
       name: r.villageName,
       storeId: r.storeId,
+      branchId: r.branchId,
       latitude: r.latitude,
       longitude: r.longitude,
     };
@@ -298,6 +300,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     if (village.storeId) {
       await get().addRecent({
         storeId: village.storeId,
+        branchId: village.branchId,
         villageName: village.name,
         latitude: village.latitude ?? 0,
         longitude: village.longitude ?? 0,

@@ -23,6 +23,7 @@ export interface Village {
   latitude?: number;
   longitude?: number;
   storeId?: string; // x-store-id for the dynamic home page-layout API
+  branchId?: string; // branch serving this village; sent when creating an order
 }
 
 export interface Address {
@@ -30,6 +31,7 @@ export interface Address {
   villageId: string;
   villageName: string;
   storeId?: string; // village's x-store-id, carried so selection can switch the active store without find-by-location
+  branchId?: string; // village's branch, carried alongside storeId
   addressLine1: string;
   addressLine2?: string;
   landmark?: string;
@@ -48,6 +50,7 @@ export interface ServiceabilityResult {
 /** A previously-resolved serviceable location, persisted locally for quick re-select. */
 export interface RecentLocation {
   storeId: string;
+  branchId?: string;
   villageName: string;
   latitude: number;
   longitude: number;

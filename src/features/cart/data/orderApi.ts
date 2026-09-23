@@ -7,6 +7,8 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { logger } from '@/src/base/services/logger';
+import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { StorageKeys } from '@/src/base/constants/AppConstants';
 
 const BASE = WebService.villageBaseURL;
 
@@ -47,7 +49,18 @@ export interface CreateOrderResult {
   stockInfo?: StockInfo[];
 }
 
+/** Branch of the active (persisted) serviceable village, if it has one. */
+async function getActiveBranchId(): Promise<string | undefined> {
+  try {
+    const village = await StoredPrefs.getCustomData<{ branchId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
+    return village?.branchId ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
+  const branchId = await getActiveBranchId();
   const body = {
     products: input.products.map((p) => ({
       productId: p.productId,
@@ -56,6 +69,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       hasFreeItem: p.hasFreeItem ?? false,
     })),
     address: input.address,
+    ...(branchId ? { branchId } : {}),
     preferredPaymentMethod: input.paymentMethod,
     scheduledOn: input.scheduledOn,
     notes: input.notes,

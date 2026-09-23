@@ -50,6 +50,7 @@ export function villageFromAddress(address: Address): Village | null {
     id: address.villageId || address.storeId,
     name: address.villageName,
     storeId: address.storeId,
+    branchId: address.branchId,
     pincode: address.pincode,
     latitude: address.latitude,
     longitude: address.longitude,
