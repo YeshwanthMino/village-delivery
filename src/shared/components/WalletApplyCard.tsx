@@ -44,19 +44,19 @@ export const WalletApplyCard = ({ balance, appliedAmount, applied, onApply, onRe
         testID="wallet-apply-card"
         onPress={onRemove}
         activeOpacity={0.9}
-        className="bg-cyan-50 border border-cyan-300 rounded-2xl p-3 flex-row items-center gap-3"
+        className="bg-amber-50 rounded-2xl p-3 flex-row items-center gap-3"
       >
-        <View className="w-11 h-11 rounded-xl bg-cyan-100 items-center justify-center">
-          <Wallet size={20} color="#0e7490" />
+        <View className="w-11 h-11 rounded-xl bg-amber-100 items-center justify-center">
+          <Wallet size={20} color="#b8860b" />
         </View>
         <View className="flex-1">
-          <Text className="text-cyan-900 font-bold text-sm">{t('wallet_apply_title')}</Text>
-          <Text className="text-cyan-700 text-xs mt-0.5">
+          <Text className="text-amber-900 font-bold text-sm">{t('wallet_apply_title')}</Text>
+          <Text className="text-amber-700 text-xs mt-0.5">
             {interpolate(t('wallet_apply_applied'), appliedText)}
           </Text>
         </View>
-        <View className="border border-green-600 rounded-xl px-3.5 py-1.5">
-          <Text className="text-green-700 font-bold text-sm">{t('remove')}</Text>
+        <View className="border border-red-600 rounded-xl px-3.5 py-1.5">
+          <Text className="text-red-600 font-bold text-sm">{t('remove')}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -68,19 +68,19 @@ export const WalletApplyCard = ({ balance, appliedAmount, applied, onApply, onRe
       testID="wallet-apply-card"
       onPress={onApply}
       activeOpacity={0.9}
-      className="bg-white border border-cyan-200 rounded-2xl p-3 flex-row items-center gap-3"
+      className="bg-white border border-amber-200 rounded-2xl p-3 flex-row items-center gap-3"
     >
-      <View className="w-11 h-11 rounded-xl bg-cyan-50 items-center justify-center">
-        <Wallet size={20} color="#0284c7" />
+      <View className="w-11 h-11 rounded-xl bg-amber-50 items-center justify-center">
+        <Wallet size={20} color="#d4a017" />
       </View>
       <View className="flex-1">
-        <Text className="text-cyan-950 font-bold text-sm">{t('wallet_apply_title')}</Text>
-        <Text className="text-cyan-700 text-xs mt-0.5">
+        <Text className="text-amber-950 font-bold text-sm">{t('wallet_apply_title')}</Text>
+        <Text className="text-amber-700 text-xs mt-0.5">
           {interpolate(t('wallet_apply_available'), availableText)}
         </Text>
       </View>
-      <View className="border border-green-600 rounded-xl px-3.5 py-1.5">
-        <Text className="text-green-700 font-bold text-sm">{t('apply')}</Text>
+      <View className="bg-green-600 border border-green-600 rounded-xl px-3.5 py-1.5">
+        <Text className="text-white font-bold text-sm">{t('apply')}</Text>
       </View>
     </TouchableOpacity>
   );

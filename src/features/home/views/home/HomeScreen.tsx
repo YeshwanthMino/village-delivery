@@ -12,6 +12,8 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { LocationBar } from '@/src/features/location/views/components/LocationBar';
+import { useAuthStore } from '@/src/core/store/useAuthStore';
+import { WalletChip } from '@/src/features/wallet/views/components/WalletChip';
 import { deriveSelectedAddress, selectedAddressLabel } from '@/src/features/location/domain/addressSelection';
 import { LocationPermissionSheet } from '@/src/features/location/views/LocationPermissionSheet';
 import { NotServiceableView } from '@/src/features/location/views/components/NotServiceableView';
@@ -30,6 +32,7 @@ export const HomeScreen = () => {
   const selectedAddress = deriveSelectedAddress(savedAddresses, selectedAddressId);
   const status = useLocationStore((s) => s.status);
   const hydrated = useLocationStore((s) => s.hydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const layout = useHomeLayoutViewModel();
   const detectCurrentLocation = useLocationStore((s) => s.detectCurrentLocation);
 
@@ -123,6 +126,7 @@ export const HomeScreen = () => {
             onPress={() => (village ? setChangeSheetOpen(true) : setPermSheetOpen(true))}
           />
           <View className="flex-row items-center gap-2">
+            {isAuthenticated ? <WalletChip /> : null}
             <TouchableOpacity
               onPress={goToCart}
               className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center relative"
