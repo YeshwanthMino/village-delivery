@@ -531,6 +531,7 @@ describe('the real Kandhi Pappu payload', () => {
       listPrice: 10,
       dealPrice: 10,
       stock: 100,
+      maxOrderQuantity: 0, // absent in the payload → 0 = no limit
       landingImage: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
       image: 'https://ik.imagekit.io/mf/Kandi_pappu.webp',
       images: ['https://ik.imagekit.io/mf/Kandi_pappu.webp'],

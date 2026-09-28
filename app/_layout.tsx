@@ -74,6 +74,7 @@ export default function RootLayout() {
               <Stack.Screen name="location/index" />
               <Stack.Screen name="address/add" />
               <Stack.Screen name="about" />
+              <Stack.Screen name="vip-membership" />
             </Stack>
             <StockSnackbar />
           </AppScreen>

@@ -140,3 +140,46 @@ describe('apiClient request timeout', () => {
     expect(init).not.toHaveProperty('timeout');
   });
 });
+
+describe('apiClient x-branch-id', () => {
+  const setup = (branch: string | undefined) => {
+    const { apiClient } = require('../apiClient');
+    apiClient.setBranchIdProvider(jest.fn().mockResolvedValue(branch));
+    (global.fetch as jest.Mock).mockResolvedValue(jsonResponse(200, { ok: true }));
+    return apiClient;
+  };
+  const sentHeaders = () => (global.fetch as jest.Mock).mock.calls[0][1].headers;
+
+  it.each([
+    ['post', 'https://api.test/app/orders/check-stock'],
+    ['post', 'https://api.test/app/orders'],
+    ['get', 'https://api.test/app/orders?sort=_id%3Adesc&skip=0&limit=24'],
+    ['get', 'https://api.test/app/store-config'],
+    ['getWithoutAuth', 'https://api.test/app/products?skip=0&limit=24'],
+    ['getWithoutAuth', 'https://api.test/app/category/flattened/all-products/c1?skip=0&limit=24'],
+  ])('adds the header on %s %s', async (method, url) => {
+    const apiClient = setup('branch-1');
+    await apiClient[method](url);
+    expect(sentHeaders()['x-branch-id']).toBe('branch-1');
+  });
+
+  it('does not add it to other endpoints, including order detail', async () => {
+    const apiClient = setup('branch-1');
+    await apiClient.get('https://api.test/app/orders/abc123');
+    await apiClient.get('https://api.test/app/product/abc123');
+    for (const call of (global.fetch as jest.Mock).mock.calls) {
+      expect(call[1].headers['x-branch-id']).toBeUndefined();
+    }
+  });
+
+  it('omits it when there is no branch or the provider throws', async () => {
+    let apiClient = setup(undefined);
+    await apiClient.get('https://api.test/app/orders');
+    expect(sentHeaders()['x-branch-id']).toBeUndefined();
+
+    (global.fetch as jest.Mock).mockClear();
+    apiClient.setBranchIdProvider(jest.fn().mockRejectedValue(new Error('boom')));
+    await apiClient.get('https://api.test/app/orders');
+    expect(sentHeaders()['x-branch-id']).toBeUndefined();
+  });
+});

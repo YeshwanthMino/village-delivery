@@ -92,6 +92,27 @@ describe('OrderModificationSheet', () => {
     });
   });
 
+  // Regression: the pre-seeded quantities (prod1 capped to 0, prod2 to its
+  // available 1) must reach the real cart even when the customer never
+  // touched a stepper — otherwise "Update all" would retry with the
+  // original, too-high quantities and the same conflict would recur.
+  it('applies the pre-seeded caps to the cart even without manual changes', async () => {
+    const mockManualAdjustment = jest.fn();
+    render(
+      <OrderModificationSheet
+        {...mockProps}
+        onManualAdjustment={mockManualAdjustment}
+        onRetryCheckout={jest.fn().mockResolvedValue(undefined)}
+      />
+    );
+
+    fireEvent.press(screen.getByText('Update all'));
+
+    await waitFor(() => {
+      expect(mockManualAdjustment).toHaveBeenCalledWith({ prod1: 0, prod2: 1 });
+    });
+  });
+
   it('calls onManualAdjustment when user manually adjusts and taps Update all', async () => {
     const mockManualAdjustment = jest.fn();
     render(

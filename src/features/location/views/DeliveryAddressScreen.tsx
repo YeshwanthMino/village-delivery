@@ -9,12 +9,13 @@ import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Briefcase, Check, Home, LocateFixed, MapPin, Pencil, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Briefcase, Check, Home, LocateFixed, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { DEFAULT_REGION } from '../viewmodel/useMapPickerViewModel';
 import { useAddAddressViewModel } from '../viewmodel/useAddAddressViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
+import { useRecenterOnFocus } from './useRecenterOnFocus';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
 import { deleteAddress } from '../data/locationApi';
@@ -36,7 +37,12 @@ export const DeliveryAddressScreen = () => {
   // "Manage" mode is reached from the profile address book: rows are read-only
   // (edit/delete only), with no tap-to-select and no selected highlight. The
   // cart entry point omits this flag, so addresses stay pickable there.
-  const { manage } = useLocalSearchParams<{ manage?: string }>();
+  const { manage, lat, lng, at } = useLocalSearchParams<{
+    manage?: string;
+    lat?: string;
+    lng?: string;
+    at?: string;
+  }>();
   const manageMode = manage === '1';
 
   const savedAddresses = useLocationStore((s) => s.savedAddresses);
@@ -67,6 +73,22 @@ export const DeliveryAddressScreen = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map.region?.latitude, map.region?.longitude, mode]);
+
+  // A village picked in the search screen arrives as route params. Recenter the
+  // pin on it; `at` is a per-pick nonce so re-picking the same village still
+  // moves. The pin's Confirm still does the committing.
+  useEffect(() => {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    map.moveTo({ latitude, longitude });
+    setShowForm(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng, at]);
+
+  const openSearch = () => router.push({ pathname: '/location/search', params: { returnTo: '/address/add' } });
+
+  useRecenterOnFocus(mapRef, map.region, () => { suppressSettle.current = true; }, mode === 'add');
 
   const handleRegionChangeComplete = useCallback(
     (next: Region) => {
@@ -255,6 +277,19 @@ export const DeliveryAddressScreen = () => {
               {vm.editingId ? t('edit_address_title') : t('add_new_address')}
             </Text>
           </View>
+
+          <View className="flex-1" />
+
+          <TouchableOpacity
+            onPress={openSearch}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('search_location')}
+            className="w-10 h-10 rounded-full bg-white items-center justify-center"
+            style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
+          >
+            <Search size={22} color="#0f172a" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
 

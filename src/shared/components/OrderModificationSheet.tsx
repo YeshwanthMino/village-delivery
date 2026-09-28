@@ -106,12 +106,16 @@ export const OrderModificationSheet: React.FC<OrderModificationSheetProps> = ({
   }, 0);
 
   const handleUpdateAllPress = async () => {
-    // Adjustments (if any) are applied to the cart first, then checkout is
-    // retried either way. On success the parent closes the sheet; on failure the
-    // parent hands down fresh conflicts, which re-seeds this sheet.
-    if (manuallyAdjusted.size > 0) {
-      onManualAdjustment?.(localQuantities);
-    }
+    // localQuantities is always seeded to what the customer can actually have
+    // (Math.min(availableStock, cartItem.count) — see the reset effect above),
+    // for every conflicted line, whether or not they touched a control. Apply
+    // it unconditionally so a shortfall the customer never adjusted by hand
+    // (the stepper already showed the capped count) is still written back to
+    // the real cart — otherwise retrying resubmits the original, too-high
+    // quantity. Checkout is then retried either way: on success the parent
+    // closes the sheet; on failure it hands down fresh conflicts, which
+    // re-seeds this one.
+    onManualAdjustment?.(localQuantities);
 
     setIsLoading(true);
     setRetryError(null);

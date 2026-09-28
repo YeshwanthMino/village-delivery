@@ -11,7 +11,10 @@ const mockDismissTo = jest.fn();
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 
+let mockParams: Record<string, string> = {};
+
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => mockParams,
   useRouter: () => ({
     dismissTo: (...args: unknown[]) => mockDismissTo(...args),
     back: () => mockBack(),
@@ -50,6 +53,7 @@ beforeEach(() => {
   mockDismissTo.mockClear();
   mockBack.mockClear();
   mockReplace.mockClear();
+  mockParams = {};
 });
 
 afterEach(() => jest.useRealTimers());
@@ -100,6 +104,30 @@ describe('MapSearchScreen', () => {
     expect(href.pathname).toBe('/location/map');
     expect(href.params.lat).toBe('13.36');
     expect(href.params.lng).toBe('79.02');
+  });
+
+  it('pops back to Add Address when it opened the search', () => {
+    mockParams = { returnTo: '/address/add' };
+    mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02)]));
+    render(<MapSearchScreen />);
+
+    search('kan');
+    fireEvent.press(screen.getByText('Village a'));
+
+    const [href] = mockDismissTo.mock.calls[0] as [{ pathname: string }];
+    expect(href.pathname).toBe('/address/add');
+  });
+
+  it('ignores an unknown returnTo and falls back to the home map', () => {
+    mockParams = { returnTo: '/somewhere/else' };
+    mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02)]));
+    render(<MapSearchScreen />);
+
+    search('kan');
+    fireEvent.press(screen.getByText('Village a'));
+
+    const [href] = mockDismissTo.mock.calls[0] as [{ pathname: string }];
+    expect(href.pathname).toBe('/location/map');
   });
 
   it('makes each pick distinct so re-picking the same village still recenters', () => {

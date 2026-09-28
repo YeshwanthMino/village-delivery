@@ -1,5 +1,5 @@
 import { AuthTokens } from './apiTypes';
-import { WebService, AppConfig, StorageKeys, AppAuthRoutes } from '../../constants/AppConstants';
+import { WebService, AppConfig, StorageKeys, AppAuthRoutes, BranchScopedRoutes } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
 import { IS_WEB } from '@/src/core/utils/platform';
@@ -22,6 +22,9 @@ class ApiClient {
   // useAuthStore so the base layer can trigger a real logout without importing
   // the store (which would create a circular dependency).
   private onSessionExpired: (() => void) | null = null;
+  // Supplies the active branch id for branch-scoped endpoints. Registered by
+  // useLocationStore (same reason as onSessionExpired: no store import here).
+  private branchIdProvider: (() => Promise<string | undefined>) | null = null;
   private storageService: IStorageService | null = null;
   private storageInitPromise: Promise<IStorageService> | null = null;
   private platformService: IPlatformService | null = null;
@@ -124,6 +127,20 @@ class ApiClient {
     }
   }
 
+  // Branch-scoped endpoints (see BranchScopedRoutes) carry `x-branch-id`, with or
+  // without auth. The provider may wait on a pending branch lookup.
+  private async getBranchHeaders(url: string): Promise<Record<string, string>> {
+    if (!this.branchIdProvider) return {};
+    const path = url.split('?')[0];
+    if (!BranchScopedRoutes.some((re) => re.test(path))) return {};
+    try {
+      const branchId = await this.branchIdProvider();
+      return branchId ? { 'x-branch-id': branchId } : {};
+    } catch {
+      return {};
+    }
+  }
+
   private async getAuthHeaders(): Promise<Record<string, string>> {
     try {
       const storage = await this.getStorageService();
@@ -145,10 +162,12 @@ class ApiClient {
     // Authed requests carry the active store's id by default; a per-call
     // `x-store-id` (spread last) still wins for endpoints targeting another store.
     const storeId = withAuth ? await this.getStoreId() : null;
+    const branchHeaders = await this.getBranchHeaders(url);
     const headers: Record<string, string> = {
       ...this.getBaseHeaders(),
       ...authHeaders,
       ...(storeId ? { 'x-store-id': storeId } : {}),
+      ...branchHeaders,
       ...(fetchOptions.headers as Record<string, string> ?? {}),
     };
 
@@ -279,6 +298,10 @@ class ApiClient {
 
   setOnSessionExpired(cb: () => void): void {
     this.onSessionExpired = cb;
+  }
+
+  setBranchIdProvider(cb: () => Promise<string | undefined>): void {
+    this.branchIdProvider = cb;
   }
 
   async initializeUserId(): Promise<void> {

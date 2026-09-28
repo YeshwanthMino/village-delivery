@@ -9,6 +9,10 @@ jest.mock('@/src/base/services/remote/apiClient', () => ({
   },
 }));
 
+jest.mock('@/src/core/store/useLocationStore', () => ({
+  getActiveBranchId: jest.fn().mockResolvedValue('branch-1'),
+}));
+
 describe('Cart Checkout with Stock Conflicts', () => {
   const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
@@ -120,6 +124,7 @@ describe('Cart Checkout with Stock Conflicts', () => {
         scheduledOn: '2026-07-20',
         notes: 'Leave at gate',
         isPriority: true,
+        branchId: 'branch-1',
       })
     );
   });

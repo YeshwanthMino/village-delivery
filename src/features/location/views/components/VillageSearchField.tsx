@@ -18,14 +18,16 @@ export const VillageSearchField = ({ value, onChangeText, autoFocus }: Props) =>
   const { t } = useTranslation();
 
   return (
-    <View className="flex-row items-center border border-slate-200 rounded-2xl px-4 py-3.5">
+    <View className="flex-row items-center border border-slate-200 rounded-2xl px-4 py-4">
       <Search size={20} color="#94a3b8" />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={t('village_search_ph')}
         placeholderTextColor="#94a3b8"
-        className="flex-1 ml-3 text-slate-900 text-base"
+        className="flex-1 ml-3 py-1 text-slate-900 text-base"
+        style={{ includeFontPadding: false }}
+        textAlignVertical="center"
         returnKeyType="search"
         autoCorrect={false}
         autoFocus={autoFocus}

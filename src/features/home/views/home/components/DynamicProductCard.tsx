@@ -12,6 +12,7 @@ import { useVariantCardView } from '@/src/shared/hooks/useVariantCardView';
 import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
+import { orderLimit } from '@/src/shared/utils/orderLimit';
 import { interpolate } from '@/src/base/constants/translations';
 
 // Every CTA this card can render — plain "ADD", "ADD" + options count, the
@@ -88,7 +89,10 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
     hasVariants: product.hasVariants,
   });
 
-  const stock = product.stock ?? 0;
+  // A single-variant product never opens the sheet, so its one variant's
+  // per-order cap (0 = none) tightens the stock limit here.
+  const soleVariant = product.variants?.length === 1 ? product.variants[0] : undefined;
+  const stock = orderLimit(product.stock, soleVariant?.maxOrderQuantity);
   const canAdd = ownCount < stock;
 
   const handlePlainAdd = () => {
@@ -149,7 +153,6 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
     // indistinguishable from "no variant" downstream (cart lines, stock
     // checks, order placement) — see productMapper.ts's mapVariants comment
     // for the sibling case of this same failure mode.
-    const soleVariant = product.variants?.length === 1 ? product.variants[0] : undefined;
     addToCart(product.id, {
       key: product.id,
       productId: product.id,
@@ -168,6 +171,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
       taxRate: soleVariant?.taxRate,
       hasFreeItem: soleVariant?.hasFreeItem,
       hsn: soleVariant?.hsn,
+      maxOrderQuantity: soleVariant?.maxOrderQuantity,
     }, stock);
   };
 

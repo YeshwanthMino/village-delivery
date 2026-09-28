@@ -14,11 +14,14 @@ import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { LocationBar } from '@/src/features/location/views/components/LocationBar';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { WalletChip } from '@/src/features/wallet/views/components/WalletChip';
+import { VipBanner } from '@/src/shared/components';
 import { deriveSelectedAddress, selectedAddressLabel } from '@/src/features/location/domain/addressSelection';
 import { LocationPermissionSheet } from '@/src/features/location/views/LocationPermissionSheet';
 import { NotServiceableView } from '@/src/features/location/views/components/NotServiceableView';
 import { LocationService } from '@/src/features/location/data/LocationService';
 import { LocationSheet } from '@/src/features/location/views/LocationSheet';
+import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
+import { useStoreClosedOnOpen } from '@/src/features/storeConfig/viewmodel/useStoreClosedOnOpen';
 
 export const HomeScreen = () => {
   const router = useRouter();
@@ -35,6 +38,7 @@ export const HomeScreen = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const layout = useHomeLayoutViewModel();
   const detectCurrentLocation = useLocationStore((s) => s.detectCurrentLocation);
+  const storeClosed = useStoreClosedOnOpen();
 
   const [permSheetOpen, setPermSheetOpen] = React.useState(false);
   const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
@@ -144,6 +148,9 @@ export const HomeScreen = () => {
           </View>
         </View>
 
+        {/* VIP banner (hides itself for non-VIP users) */}
+        {isAuthenticated ? <VipBanner /> : null}
+
         {/* Search bar */}
         <View className="flex-row items-center bg-slate-100 rounded-xl px-3 h-11 gap-2">
           <Search size={16} color="#94a3b8" />
@@ -209,6 +216,14 @@ export const HomeScreen = () => {
         dismissable={!!village}
       />
       <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} />
+      {/* Held back while the location permission sheet is up so two sheets never stack. */}
+      <StoreClosedSheet
+        visible={storeClosed.visible && !permSheetOpen}
+        status={storeClosed.status}
+        timings={storeClosed.timings}
+        context="home"
+        onClose={storeClosed.close}
+      />
     </SafeAreaView>
   );
 };

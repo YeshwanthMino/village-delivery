@@ -22,6 +22,9 @@ export interface UserObject {
   email?: string;
   phoneNumber?: string;
   mobileNumber?: string;
+  /** Real, backend-provisioned VIP membership — distinct from `vipAddedInCart`,
+   *  which is only a same-cart intent flag. */
+  isVip?: boolean;
   [key: string]: unknown;
 }
 

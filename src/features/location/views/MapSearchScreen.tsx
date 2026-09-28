@@ -11,7 +11,11 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+/** Screens that can open this search and receive the picked village as params. */
+export const SEARCH_RETURN_ROUTES = ['/location/map', '/address/add'];
+const DEFAULT_RETURN_ROUTE = '/location/map';
 import { ArrowLeft } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageSearch } from '../viewmodel/useVillageSearch';
@@ -27,18 +31,23 @@ export const MapSearchScreen = () => {
   // without coordinates would have nothing to recenter to.
   const search = useVillageSearch(withCoordinates);
 
+  // The screen that opened search (home map by default, or Add Address). Only
+  // known routes are honoured so a crafted param can't navigate elsewhere.
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const target = returnTo && SEARCH_RETURN_ROUTES.includes(returnTo) ? returnTo : DEFAULT_RETURN_ROUTE;
+
   const goBack = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/location/map');
+    else router.replace(target as never);
   };
 
-  // POP_TO the map already in the stack, carrying the pick as route params, so
+  // POP_TO the map screen already in the stack, carrying the pick as route params, so
   // the user returns to the same map rather than a fresh one. `at` makes every
   // pick distinct: without it, re-picking the village the user has since panned
   // away from would leave the params unchanged and the map would not move back.
   const onSelect = (village: LocatedVillage) => {
     router.dismissTo({
-      pathname: '/location/map',
+      pathname: target as never,
       params: {
         lat: String(village.latitude),
         lng: String(village.longitude),

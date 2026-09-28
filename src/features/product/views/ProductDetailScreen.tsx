@@ -11,6 +11,7 @@ import { useProductDetailViewModel } from '../viewmodel/useProductDetailViewMode
 import { ProductImageCarousel } from './components/ProductImageCarousel';
 import { ProductCartBar } from './components/ProductCartBar';
 import { rupees } from '@/src/shared/utils/currency';
+import { orderLimit } from '@/src/shared/utils/orderLimit';
 
 export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
@@ -80,6 +81,10 @@ export const ProductDetailScreen = () => {
 
   // Calculate stock for selected variant or product
   const variantStock = selectedVariant?.stock ?? 0;
+  // Stock, tightened by the variant's per-order cap (0 = no cap).
+  const variantLimit = selectedVariant
+    ? orderLimit(selectedVariant.stock, selectedVariant.maxOrderQuantity)
+    : 0;
   const productInStock = hasVariants ? variantStock > 0 : d.inStock;
 
   // Display price for selected variant or product
@@ -123,8 +128,9 @@ export const ProductDetailScreen = () => {
         taxRate: selectedVariant.taxRate,
         hasFreeItem: selectedVariant.hasFreeItem,
         hsn: selectedVariant.hsn,
+        maxOrderQuantity: selectedVariant.maxOrderQuantity,
       };
-      const maxQuantity = selectedVariant.stock ?? 0;
+      const maxQuantity = orderLimit(selectedVariant.stock, selectedVariant.maxOrderQuantity);
       addToCart(`${d.id}-v${selectedVariantIndex}`, snapshot, maxQuantity);
     } else {
       // No variants - add as base product
@@ -254,7 +260,7 @@ export const ProductDetailScreen = () => {
         ) : null}
       </ScrollView>
 
-      <ProductCartBar count={variantCount} inStock={productInStock} maxQuantity={variantStock} onAdd={handleAddVariant} onDec={handleDecVariant} onViewCart={vm.onViewCart} />
+      <ProductCartBar count={variantCount} inStock={productInStock} maxQuantity={variantLimit} onAdd={handleAddVariant} onDec={handleDecVariant} onViewCart={vm.onViewCart} />
     </SafeAreaView>
   );
 };

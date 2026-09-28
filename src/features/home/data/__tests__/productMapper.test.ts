@@ -35,6 +35,26 @@ describe('mapVariants', () => {
   });
 });
 
+describe('mapVariant maxOrderQuantity', () => {
+  const rusk = (extra: object) => ({
+    variants: [{ _id: '68a60033e286fe170cd17bdc', title: 'Rusk (50 gm)', mrp: 10, dealPrice: 10, stock: 19980, ...extra }],
+  });
+
+  it('carries the API value through', () => {
+    expect(mapVariants(rusk({ maxOrderQuantity: 6 }))[0].maxOrderQuantity).toBe(6);
+  });
+
+  it('keeps the API\'s 0 (meaning no limit) rather than treating it as a cap', () => {
+    const [v] = mapVariants(rusk({ maxOrderQuantity: 0 }));
+    expect(v.maxOrderQuantity).toBe(0);
+    expect(v.stock).toBe(19980);
+  });
+
+  it('defaults a missing value to 0 (no limit)', () => {
+    expect(mapVariants(rusk({}))[0].maxOrderQuantity).toBe(0);
+  });
+});
+
 describe('mapApiProduct', () => {
   it('excludes id-less variants from the mapped product', () => {
     const raw = {

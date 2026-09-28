@@ -10,6 +10,7 @@ import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
 import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
 import { WalletCard } from '@/src/features/wallet/views/components/WalletCard';
 import { openWhatsAppSupport } from '@/src/shared/utils/whatsappSupport';
+import { VipBadge, VipStatusCard } from '@/src/shared/components';
 import { ProfileRow } from './components/ProfileRow';
 
 /** Best-effort display name from the (loosely-typed) profile returned by /app/auth/me. */
@@ -67,9 +68,12 @@ export const ProfileScreen = () => {
               <Text className="text-white font-black text-xl">{initial}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-white font-black text-lg" style={teFont} numberOfLines={1}>
-                {name ?? t('profile_greeting')}
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-white font-black text-lg shrink" style={teFont} numberOfLines={1}>
+                  {name ?? t('profile_greeting')}
+                </Text>
+                <VipBadge />
+              </View>
               {phone ? (
                 <Text className="text-white/80 text-sm" style={teRegular}>{phone}</Text>
               ) : null}
@@ -95,6 +99,9 @@ export const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* VIP membership status (hides itself for non-VIP users) */}
+        {isAuthenticated ? <VipStatusCard /> : null}
 
         {/* Wallet (signed-in only; hides itself when the user has no wallet) */}
         {isAuthenticated ? <WalletCard /> : null}

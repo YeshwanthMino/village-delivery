@@ -49,6 +49,10 @@ export interface ServiceabilityResult {
 
 /** A previously-resolved serviceable location, persisted locally for quick re-select. */
 export interface RecentLocation {
+  // A store/branch can serve many villages, so identity for de-duping recents
+  // is the village, not the store — otherwise searching a second locality
+  // served by the same store would silently evict the first from the list.
+  villageId?: string;
   storeId: string;
   branchId?: string;
   villageName: string;

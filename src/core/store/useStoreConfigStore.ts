@@ -1,7 +1,8 @@
 // src/core/store/useStoreConfigStore.ts
 //
 // The single source of truth for /app/store-config: store details, weekly
-// timings and the cashback programme. Loaded once on app start (AppScreen)
+// timings and the cashback programme. Loaded on app start (AppScreen)
+// and re-fetched when the customer changes location (see storeConfigSync.ts),
 // and read everywhere else — React code through the hooks below, pure domain
 // code (bill.ts) through the sync getters.
 //
@@ -34,6 +35,7 @@ interface StoreConfigActions {
   /** Fetch once. Repeat calls while a fetch is in flight share it, and a call
    *  after a successful load is a no-op — use `refresh` to force a re-fetch. */
   load: () => Promise<void>;
+  /** Re-fetch now, superseding any request in flight (its reply is dropped). */
   refresh: () => Promise<void>;
   /** Test seam: restore the pre-fetch state. */
   reset: () => void;
@@ -49,18 +51,18 @@ const initialState: StoreConfigState = {
 // Module-scoped so every caller of load() awaits the same request rather than
 // racing one per screen on a cold start.
 let inFlight: Promise<void> | null = null;
+// Bumped by every fetch. A response only lands if it is still the latest, so a
+// slow reply for a village the user has since left cannot overwrite the new one.
+let fetchSeq = 0;
 
-export const useStoreConfigStore = create<StoreConfigState & StoreConfigActions>((set, get) => ({
-  ...initialState,
-
-  load: async () => {
-    if (get().status === 'ready') return;
-    if (inFlight) return inFlight;
-
+export const useStoreConfigStore = create<StoreConfigState & StoreConfigActions>((set, get) => {
+  const fetchLatest = (): Promise<void> => {
+    const token = ++fetchSeq;
     set({ status: 'loading' });
-    inFlight = (async () => {
+    const request = (async () => {
       try {
         const { store, cashbackSettings } = await fetchStoreConfig();
+        if (token !== fetchSeq) return;
         set({
           store,
           // A response without cashback settings leaves the defaults standing;
@@ -70,28 +72,38 @@ export const useStoreConfigStore = create<StoreConfigState & StoreConfigActions>
           loadedAt: Date.now(),
         });
       } catch (error) {
+        if (token !== fetchSeq) return;
         // Non-fatal: the app runs on the bundled defaults. Logged, not surfaced
         // — there is nothing the customer can do about it.
         logger.warn('Store config load failed; using defaults', error);
         set({ status: 'error' });
       } finally {
-        inFlight = null;
+        if (token === fetchSeq) inFlight = null;
       }
     })();
+    inFlight = request;
+    return request;
+  };
 
-    return inFlight;
-  },
+  return {
+    ...initialState,
 
-  refresh: async () => {
-    set({ status: 'idle' });
-    await get().load();
-  },
+    load: async () => {
+      if (get().status === 'ready') return;
+      if (inFlight) return inFlight;
+      return fetchLatest();
+    },
 
-  reset: () => {
-    inFlight = null;
-    set(initialState);
-  },
-}));
+    // Always issues a new request, superseding any in flight.
+    refresh: () => fetchLatest(),
+
+    reset: () => {
+      inFlight = null;
+      fetchSeq++;
+      set(initialState);
+    },
+  };
+});
 
 // ---- Sync getters, for code that cannot subscribe (pure domain, imperative
 // API paths). React code should use the hooks below so it re-renders when the

@@ -7,8 +7,7 @@
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { WebService } from '@/src/base/constants/AppConstants';
 import { logger } from '@/src/base/services/logger';
-import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
-import { StorageKeys } from '@/src/base/constants/AppConstants';
+import { getActiveBranchId } from '@/src/core/store/useLocationStore';
 
 const BASE = WebService.villageBaseURL;
 
@@ -47,16 +46,6 @@ export interface CreateOrderResult {
   raw: any;
   /** Stock conflicts returned by server instead of error. */
   stockInfo?: StockInfo[];
-}
-
-/** Branch of the active (persisted) serviceable village, if it has one. */
-async function getActiveBranchId(): Promise<string | undefined> {
-  try {
-    const village = await StoredPrefs.getCustomData<{ branchId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
-    return village?.branchId ?? undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {

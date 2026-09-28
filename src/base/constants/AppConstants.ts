@@ -25,6 +25,15 @@ export const AppAuthRoutes = {
   refresh: '/app/auth/refresh',
 };
 
+// Endpoints that are scoped to the active branch: apiClient adds `x-branch-id`
+// to these (matched against the request URL, query string ignored).
+export const BranchScopedRoutes: RegExp[] = [
+  /\/app\/orders(\/check-stock)?$/,
+  /\/app\/store-config$/,
+  /\/app\/products$/,
+  /\/app\/category\/flattened\/all-products(\/|$)/,
+];
+
 // App configuration
 export const AppConfig = {
   name: 'Village',

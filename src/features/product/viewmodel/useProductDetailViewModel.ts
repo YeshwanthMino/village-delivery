@@ -5,6 +5,7 @@ import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailQuery } from '../data/queries/useProductDetailQuery';
 import { ProductDetail } from '../data/productDetail.types';
 import { CartSnapshot } from '@/src/base/types/village.types';
+import { orderLimit } from '@/src/shared/utils/orderLimit';
 
 export function useProductDetailViewModel(selectedVariantIndex?: number | null) {
   const router = useRouter();
@@ -57,8 +58,9 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
         taxRate: selectedVariant.taxRate,
         hasFreeItem: selectedVariant.hasFreeItem,
         hsn: selectedVariant.hsn,
+        maxOrderQuantity: selectedVariant.maxOrderQuantity,
       };
-      const maxQuantity = selectedVariant.stock ?? 0;
+      const maxQuantity = orderLimit(selectedVariant.stock, selectedVariant.maxOrderQuantity);
       addToCart(`${detail.id}-v${activeVariantIndex}`, snapshot, maxQuantity);
     } else {
       // Add base product (no variant)

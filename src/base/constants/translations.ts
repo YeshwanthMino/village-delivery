@@ -23,6 +23,7 @@ export const TRANSLATIONS: TranslationMap = {
   view_cart:        { te: 'కార్ట్ చూడండి',       en: 'View cart' },
   out_of_stock:     { te: 'స్టాక్‌లో లేదు',       en: 'Out of Stock' },
   product_unavailable: { te: 'ఈ ఉత్పత్తి ఇకపై అందుబాటులో లేదు', en: 'This product is no longer available' },
+  cart_all_out_of_stock: { te: 'మీ కార్ట్‌లోని అన్ని వస్తువులు స్టాక్‌లో లేవు', en: 'All items in your cart are out of stock' },
   nav_home:         { te: 'హోమ్', en: 'Home' },
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },
@@ -109,6 +110,14 @@ export const TRANSLATIONS: TranslationMap = {
   vip_membership_benefit:        { te: 'ప్రతి ఆర్డర్‌పై క్యాష్‌బ్యాక్ రెట్టింపు · నెలకు {f}',   en: 'Double cashback on every order · {f}/month' },
   vip_membership_added_title:    { te: 'VIP సభ్యత్వం జోడించబడింది',                             en: 'VIP Membership added' },
   vip_membership_added_benefit:  { te: 'ఈ ఆర్డర్‌పై క్యాష్‌బ్యాక్ ఇప్పుడు రెట్టింపు',           en: 'Cashback on this order is now doubled' },
+
+  // VIP identity treatment (profile header badge, home banner, membership screen)
+  vip_badge_label:      { te: 'VIP',                                                          en: 'VIP' },
+  vip_home_banner:      { te: 'మీరు VIP సభ్యుడు — ప్రతి ఆర్డర్‌పై రెట్టింపు క్యాష్‌బ్యాక్',      en: "You're a VIP member — every order earns double cashback" },
+  vip_hub_active_subtitle: { te: 'సభ్యత్వం యాక్టివ్‌గా ఉంది',                                 en: 'Membership is active' },
+  vip_hub_fee_label:    { te: 'నెలవారీ రుసుము',                                               en: 'Monthly fee' },
+  vip_hub_best_reward_label: { te: 'గరిష్ట క్యాష్‌బ్యాక్',                                     en: 'Best cashback reward' },
+  vip_hub_not_member:   { te: 'మీరు ఇంకా VIP సభ్యులు కాదు. రెట్టింపు క్యాష్‌బ్యాక్ కోసం కార్ట్‌లో VIP సభ్యత్వాన్ని జోడించండి.', en: "You're not a VIP member yet. Add VIP membership from your cart to start earning double cashback." },
 
   // Coupon row
   coupon_applied:      { te: 'కూపన్ VILLAGE10 వర్తించింది',                        en: 'Coupon VILLAGE10 applied' },
@@ -321,6 +330,35 @@ export const TRANSLATIONS: TranslationMap = {
   order_mod_remove_instead: { te: 'బదులుగా తొలగించండి',                               en: 'Remove instead' },
   order_mod_subtotal:   { te: 'ఉప మొత్తం',                                             en: 'Subtotal' },
   order_mod_update_all: { te: 'అన్నీ నవీకరించండి',                                    en: 'Update all' },
+
+  // Store-closed sheet ({when} = "10:00 AM today" / "10:00 AM tomorrow" / "Monday at 10:00 AM")
+  store_opens_soon_title:     { te: 'స్టోర్ త్వరలో తెరుచుకుంటుంది',              en: 'Store opens soon' },
+  store_processed_soon_title: { te: 'మీ ఆర్డర్ త్వరలో ప్రాసెస్ అవుతుంది',          en: 'Your order will be processed soon' },
+  store_closed_title:         { te: 'స్టోర్ మూసివేయబడింది',                     en: 'Store is closed' },
+  store_temp_closed_title:    { te: 'స్టోర్ తాత్కాలికంగా మూసివేయబడింది',          en: 'Store is temporarily closed' },
+  store_closing_soon_title:   { te: 'స్టోర్ త్వరలో మూసివేయబడుతుంది',             en: 'Store closing soon' },
+  store_not_yet_open_desc:    { te: 'స్టోర్ ప్రస్తుతం మూసి ఉంది. మీరు ఇప్పుడే ఆర్డర్ చేయవచ్చు, స్టోర్ {when} తెరిచిన తర్వాత అది ప్రాసెస్ అవుతుంది.', en: 'The store is currently closed. You can place your order now, and it will be processed after the store opens at {when}.' },
+  store_closed_tomorrow_desc: { te: 'ఈరోజుకి స్టోర్ మూసివేయబడింది. మీరు ఇప్పుడే ఆర్డర్ చేయవచ్చు, స్టోర్ {when} మళ్ళీ తెరిచిన తర్వాత అది ప్రాసెస్ అవుతుంది.', en: 'The store has closed for today. You can place your order now, and it will be processed after the store reopens at {when}.' },
+  store_closed_later_desc:    { te: 'స్టోర్ ప్రస్తుతం మూసి ఉంది. స్టోర్ {when} మళ్ళీ తెరిచిన తర్వాత మీ ఆర్డర్ ప్రాసెస్ అవుతుంది.', en: 'The store is currently closed. Your order will be processed after the store reopens on {when}.' },
+  store_between_shifts_desc:  { te: 'స్టోర్ {when} మళ్ళీ తెరుచుకుంటుంది. అప్పుడు మీ ఆర్డర్ ప్రాసెస్ అవుతుంది.', en: 'The store will reopen at {when}. Your order will be processed after the store reopens.' },
+  store_closing_soon_desc:    { te: 'స్టోర్ {close} కి మూసివేయబడుతుంది. మీ ఆర్డర్ స్టోర్ {when} మళ్ళీ తెరిచిన తర్వాత ప్రాసెస్ కావచ్చు.', en: 'The store is closing at {close} today. Your order may be processed after the store reopens at {when}.' },
+  store_delivery_after_open:  { te: 'స్టోర్ తెరిచిన తర్వాత మీ ఆర్డర్ డెలివరీ అవుతుంది.', en: 'Your order will be delivered after the store opens.' },
+  store_opens_in:             { te: 'సుమారు {n} నిమిషాల్లో తెరుచుకుంటుంది',        en: 'Opens in approximately {n} minutes' },
+  store_next_opening:         { te: 'తదుపరి తెరిచే సమయం: {when}',                en: 'Next opening: {when}' },
+  store_hours:                { te: 'స్టోర్ సమయాలు',                           en: 'Store hours' },
+  store_when_today:           { te: 'ఈరోజు {time}',                            en: '{time} today' },
+  store_when_tomorrow:        { te: 'రేపు {time}',                             en: '{time} tomorrow' },
+  store_when_day:             { te: '{day} {time}',                           en: '{day} at {time}' },
+  store_place_order:          { te: 'ఆర్డర్ చేయండి',                           en: 'Place Order' },
+  store_go_back:              { te: 'వెనుకకు',                                en: 'Go Back' },
+  store_continue_shopping:    { te: 'షాపింగ్ కొనసాగించండి',                     en: 'Continue Shopping' },
+  weekday_sunday:    { te: 'ఆదివారం',   en: 'Sunday' },
+  weekday_monday:    { te: 'సోమవారం',   en: 'Monday' },
+  weekday_tuesday:   { te: 'మంగళవారం',  en: 'Tuesday' },
+  weekday_wednesday: { te: 'బుధవారం',   en: 'Wednesday' },
+  weekday_thursday:  { te: 'గురువారం',  en: 'Thursday' },
+  weekday_friday:    { te: 'శుక్రవారం',  en: 'Friday' },
+  weekday_saturday:  { te: 'శనివారం',   en: 'Saturday' },
 
   // Promo strip (first-order discount banner)
   promo_first_order:    { te: 'మీ మొదటి ఆర్డర్‌పై 10% తగ్గింపు',                      en: '10% off your first order' },

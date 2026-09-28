@@ -56,26 +56,23 @@ describe('CartItemRow', () => {
 
   test('shows out-of-stock badge when item is out of stock', () => {
     const stockStatus = { inStock: false, availableQuantity: 0 };
-    render(<CartItemRow item={mockItem} stockStatus={stockStatus} onOutOfStockPress={jest.fn()} />);
+    render(<CartItemRow item={mockItem} stockStatus={stockStatus} />);
 
     expect(screen.getByText('Out of stock')).toBeTruthy();
   });
 
-  test('calls onOutOfStockPress when badge is pressed', () => {
-    const onOutOfStockPress = jest.fn();
+  // The badge is a status label, not a control — Remove (right below it) is
+  // the one action this row's out-of-stock state needs. Opening a sheet from
+  // here as well was a second, redundant entry point; the modification sheet
+  // now opens only from Place Order (a real conflict) or the server's own
+  // response, never from tapping this badge.
+  test('the out-of-stock badge is not pressable', () => {
     const stockStatus = { inStock: false, availableQuantity: 0 };
+    render(<CartItemRow item={mockItem} stockStatus={stockStatus} />);
 
-    render(
-      <CartItemRow
-        item={mockItem}
-        stockStatus={stockStatus}
-        onOutOfStockPress={onOutOfStockPress}
-      />
-    );
-
-    fireEvent.press(screen.getByTestId('out-of-stock-badge'));
-
-    expect(onOutOfStockPress).toHaveBeenCalledTimes(1);
+    const { queryAllByRole } = screen;
+    const badge = screen.getByTestId('out-of-stock-badge');
+    expect(queryAllByRole('button').some(node => node === badge)).toBe(false);
   });
 
   test('shows stepper when item is in stock', () => {

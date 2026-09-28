@@ -39,6 +39,10 @@ export function useMapPickerViewModel() {
   const [blocked, setBlocked] = useState(false);
 
   const seq = useRef(0);
+  // Bumped whenever the user explicitly picks a place (moveTo). A GPS fix that
+  // was requested before the pick and lands after it must not move the camera
+  // back, so detect flows compare against the value they started with.
+  const pickSeq = useRef(0);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
 
@@ -97,6 +101,8 @@ export function useMapPickerViewModel() {
 
   // Initial camera: auto-detect GPS, fall back to saved village, then default.
   const initialDetect = useCallback(async () => {
+    const startedAt = pickSeq.current;
+    const superseded = () => pickSeq.current !== startedAt;
     setDetectingGps(true);
     try {
       const perm = await LocationService.getPermissionState();
@@ -105,16 +111,16 @@ export function useMapPickerViewModel() {
         if (!res.granted) {
           if (!mounted.current) return;
           setBlocked(!res.canAskAgain);
-          fallbackRegion();
+          if (!superseded()) fallbackRegion();
           return;
         }
       }
       const fix = await LocationService.getCurrentPosition();
-      if (!mounted.current) return;
+      if (!mounted.current || superseded()) return;
       setRegion(regionFor(fix));
       void resolve(fix);
     } catch {
-      if (!mounted.current) return;
+      if (!mounted.current || superseded()) return;
       fallbackRegion();
     } finally {
       if (mounted.current) setDetectingGps(false);
@@ -127,6 +133,7 @@ export function useMapPickerViewModel() {
   // move) or when the map isn't emitting region events. Returns the region so
   // the screen can recenter; the programmatic move's settle is suppressed.
   const useCurrentLocation = useCallback(async (): Promise<Region | null> => {
+    const startedAt = pickSeq.current;
     setDetectingGps(true);
     try {
       const perm = await LocationService.getPermissionState();
@@ -138,7 +145,7 @@ export function useMapPickerViewModel() {
         }
       }
       const fix = await LocationService.getCurrentPosition();
-      if (!mounted.current) return null;
+      if (!mounted.current || pickSeq.current !== startedAt) return null;
       const r = regionFor(fix);
       setRegion(r);
       void resolve(fix);
@@ -156,6 +163,10 @@ export function useMapPickerViewModel() {
   // the target equals the current center. setRegion drives the camera through
   // the screen's animate effect, whose settle is suppressed.
   const moveTo = useCallback((coords: LatLng) => {
+    pickSeq.current += 1;
+    // Drop a pending settle-resolve for the previous camera position, or it
+    // would fire after this and overwrite the pin state for the wrong place.
+    if (debounce.current) clearTimeout(debounce.current);
     setRegion(regionFor(coords));
     void resolve(coords);
   }, [resolve]);

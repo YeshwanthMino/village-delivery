@@ -35,6 +35,16 @@ export const CheckoutBar = ({
   const { t, tShopMoreToPlaceOrder, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
+  if (state === 'out_of_stock') {
+    return (
+      <View style={styles.wrap}>
+        <View style={styles.blockedBar}>
+          <Text style={[styles.blockedText, teFont]}>{t('cart_all_out_of_stock')}</Text>
+        </View>
+      </View>
+    );
+  }
+
   if (state === 'below_minimum') {
     const shortfall = amountToMinimum ?? 0;
     const progress = Math.min(1, minOrderValue ? grandTotal / minOrderValue : 0);

@@ -9,6 +9,9 @@ export interface Variant {
   listPrice?: number;
   dealPrice?: number;
   stock?: number;
+  /** Per-order cap on this variant. 0 (or missing) means no limit — see
+   *  shared/utils/orderLimit. */
+  maxOrderQuantity?: number;
   /** The variant's own landing image, verbatim from the API. Prefer `image`
    *  for display — that one already falls back to the first gallery image. */
   landingImage?: string;
@@ -91,6 +94,8 @@ export interface CartSnapshot {
   taxRate?: number;
   hasFreeItem?: boolean;
   hsn?: string;
+  /** The variant's per-order cap at add time; 0 / missing = no limit. */
+  maxOrderQuantity?: number;
 }
 
 export type CartSnapshotRecord = Record<string, CartSnapshot>;

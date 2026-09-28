@@ -6,6 +6,7 @@ import { CartLineItem } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { useVillageStore } from '@/src/core/store';
 import { FullWidthStepper } from './FullWidthStepper';
+import { cartLimit } from '@/src/shared/utils/orderLimit';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
 interface StockStatus {
@@ -16,12 +17,11 @@ interface StockStatus {
 interface CartItemRowProps {
   item: CartLineItem;
   stockStatus?: StockStatus;
-  onOutOfStockPress?: () => void;
   /** Px to float the stock-limit snackbar above the bottom of the screen. */
   bottomOffset?: number;
 }
 
-const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffset }: CartItemRowProps) => {
+const CartItemRowComponent = ({ item, stockStatus, bottomOffset }: CartItemRowProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const decFromCart = useVillageStore(state => state.decFromCart);
   const setQuantity = useVillageStore(state => state.setQuantity);
@@ -37,6 +37,8 @@ const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffs
     : 0;
 
   const isOutOfStock = stockStatus && !stockStatus.inStock;
+  // Live stock (once checked), tightened by the variant's per-order cap.
+  const quantityLimit = cartLimit(stockStatus?.availableQuantity, item.maxOrderQuantity);
 
   return (
     <View className={`bg-white border rounded-2xl p-2.5 flex-row items-center gap-3 ${
@@ -95,14 +97,17 @@ const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffs
       <View className="items-end gap-1 relative" style={{ width: 96 }}>
         {isOutOfStock ? (
           <View className="gap-1 w-full">
-            <TouchableOpacity
-              onPress={onOutOfStockPress}
+            {/* Status label only — Remove below already does the one thing this
+                row's out-of-stock state calls for, so the badge doesn't need a
+                tap action of its own (see OrderModificationSheet's own entry
+                points for the confirm-order and pre-checkout conflict flows). */}
+            <View
               testID="out-of-stock-badge"
               className="bg-red-100 rounded-lg px-2 py-1 flex-row items-center gap-1 justify-center"
             >
               <AlertCircle size={14} color="#dc2626" />
               <Text className="text-red-700 text-xs font-semibold">Out of stock</Text>
-            </TouchableOpacity>
+            </View>
             <TouchableOpacity
               onPress={handleRemoveItem}
               className="bg-red-50 rounded-lg px-2 py-1 flex-row items-center justify-center border border-red-200"
@@ -115,8 +120,8 @@ const CartItemRowComponent = ({ item, stockStatus, onOutOfStockPress, bottomOffs
           <>
             <FullWidthStepper
               count={item.count}
-              maxQuantity={stockStatus?.availableQuantity}
-              onAdd={() => addToCart(item.key, undefined, stockStatus?.availableQuantity)}
+              maxQuantity={quantityLimit}
+              onAdd={() => addToCart(item.key, undefined, quantityLimit)}
               onDec={() => decFromCart(item.key)}
               bottomOffset={bottomOffset}
             />

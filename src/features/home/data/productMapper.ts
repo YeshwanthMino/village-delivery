@@ -24,6 +24,7 @@ export interface RawVariant {
   dealPrice?: unknown;
   stockId?: { stock?: unknown };
   stock?: unknown;
+  maxOrderQuantity?: unknown;
   images?: unknown;
   landingImage?: unknown;
   taxType?: unknown;
@@ -123,6 +124,7 @@ export function mapVariant(v: RawVariant): Variant {
     listPrice,
     dealPrice,
     stock,
+    maxOrderQuantity: num(v?.maxOrderQuantity),
     landingImage: v?.landingImage ? String(v.landingImage) : undefined,
     image: primaryImage ? String(primaryImage) : undefined,
     images: images.length > 0 ? images.map(String) : undefined,

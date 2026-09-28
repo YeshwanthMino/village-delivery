@@ -74,4 +74,19 @@ describe('CheckoutBar', () => {
     expect(screen.getByText('place_order')).toBeTruthy();
     expect(screen.getByText('₹250')).toBeTruthy();
   });
+
+  test('out_of_stock: shows the blocked message, no place-order button', () => {
+    render(
+      <CheckoutBar
+        state="out_of_stock"
+        grandTotal={toUnits(250)}
+        onLogin={noop}
+        onSelectAddress={noop}
+        onPlaceOrder={noop}
+      />
+    );
+
+    expect(screen.getByText('cart_all_out_of_stock')).toBeTruthy();
+    expect(screen.queryByText('place_order')).toBeNull();
+  });
 });

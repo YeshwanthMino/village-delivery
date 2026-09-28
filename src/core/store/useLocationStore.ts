@@ -6,6 +6,7 @@ import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
 import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
+import { apiClient } from '@/src/base/services/remote/apiClient';
 import { reconcileSelectedId, villageFromAddress } from '@/src/features/location/domain/addressSelection';
 
 const RECENT_LIMIT = 5;
@@ -27,6 +28,9 @@ interface LocationState {
 
 interface LocationActions {
   hydrate: () => Promise<void>;
+  backfillBranchId: () => Promise<void>;
+  /** Resolves once any in-flight branchId lookup has settled (immediately if none). */
+  waitForBranch: () => Promise<void>;
   setStatus: (status: ServiceabilityStatus) => void;
   setServiceable: (village: Village, opts?: { keepSelectedAddress?: boolean }) => Promise<void>;
   setNotServiceable: () => void;
@@ -63,6 +67,8 @@ const initialState: LocationState = {
 // Module-level race guards (not in render state).
 let inflight: Promise<boolean> | null = null;
 let seq = 0;
+let backfillInflight: Promise<void> | null = null;
+let hydrateInflight: Promise<void> | null = null;
 
 /**
  * Coords → serviceability. Drops its result if a newer detect/search started.
@@ -86,6 +92,7 @@ async function resolveCoords(
       await get().setServiceable(v);
       if (v.storeId && opts?.addToRecents !== false) {
         await get().addRecent({
+          villageId: v.id,
           storeId: v.storeId,
           branchId: v.branchId,
           villageName: v.name,
@@ -145,19 +152,67 @@ async function runDetect(set: SetState, get: GetState): Promise<boolean> {
 export const useLocationStore = create<LocationStore>((set, get) => ({
   ...initialState,
 
-  hydrate: async () => {
-    const [village, recents, selectedAddressId] = await Promise.all([
-      StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
-      StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
-      StoredPrefs.getCustomData<string>(StorageKeys.SELECTED_ADDRESS_ID),
-    ]);
-    set({
-      serviceableVillage: village ?? null,
-      recentLocations: Array.isArray(recents) ? recents : [],
-      selectedAddressId: selectedAddressId ?? null,
-      status: village ? 'serviceable' : 'idle',
-      hydrated: true,
+  hydrate: () => {
+    hydrateInflight = (async () => {
+      const [village, recents, selectedAddressId] = await Promise.all([
+        StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
+        StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
+        StoredPrefs.getCustomData<string>(StorageKeys.SELECTED_ADDRESS_ID),
+      ]);
+      set({
+        serviceableVillage: village ?? null,
+        recentLocations: Array.isArray(recents) ? recents : [],
+        selectedAddressId: selectedAddressId ?? null,
+        status: village ? 'serviceable' : 'idle',
+        hydrated: true,
+      });
+      // Villages cached before the backend returned `branchId` lack it; refresh
+      // in the background so branch-scoped endpoints get `x-branch-id`.
+      void get().backfillBranchId();
+    })().finally(() => {
+      hydrateInflight = null;
     });
+    return hydrateInflight;
+  },
+
+  // Silent refresh of a cached village that has no branchId: re-runs
+  // find-by-location on the village's own coordinates (no GPS/permission prompt)
+  // and saves the branchId to the store + cache. Never touches status, recents or
+  // the selected address; any failure just leaves the cache as-is.
+  backfillBranchId: () => {
+    if (backfillInflight) return backfillInflight;
+    backfillInflight = (async () => {
+      const cached = get().serviceableVillage;
+      if (!cached || cached.branchId) return;
+      if (cached.latitude == null || cached.longitude == null) return;
+      try {
+        const result = await findByLocation({ latitude: cached.latitude, longitude: cached.longitude });
+        const fresh = result.village;
+        if (!result.serviceable || !fresh?.branchId) return;
+        // Only accept the branch if it is for the same store, and the user hasn't
+        // switched village while the request was in flight.
+        if (fresh.storeId !== cached.storeId) return;
+        const current = get().serviceableVillage;
+        if (!current || current.storeId !== cached.storeId || current.branchId) return;
+        const updated = { ...current, branchId: fresh.branchId };
+        set({ serviceableVillage: updated });
+        await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, updated);
+      } catch {
+        // best-effort; retried on next launch
+      }
+    })().finally(() => {
+      backfillInflight = null;
+    });
+    return backfillInflight;
+  },
+
+  // Branch-scoped requests await this so they don't go out before the lookup
+  // lands. Bounded by apiClient's request timeout; never rejects.
+  // Also waits for hydrate: startup calls (store-config) can fire before the
+  // cached village is loaded, and hydrate is what starts the lookup.
+  waitForBranch: async () => {
+    if (hydrateInflight) await hydrateInflight.catch(() => {});
+    if (backfillInflight) await backfillInflight;
   },
 
   setStatus: (status) => set({ status }),
@@ -191,9 +246,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   addRecent: async (recent) => {
+    // Identity is the village, not the store: one store/branch commonly serves
+    // several villages, so de-duping by storeId would collapse recents for
+    // different localities into a single entry. Legacy entries persisted
+    // before villageId existed fall back to comparing the display label.
+    const isSameLocation = (r: RecentLocation) =>
+      recent.villageId && r.villageId ? r.villageId === recent.villageId : r.label === recent.label;
     const next = [
       recent,
-      ...get().recentLocations.filter((r) => r.storeId !== recent.storeId),
+      ...get().recentLocations.filter((r) => !isSameLocation(r)),
     ].slice(0, RECENT_LIMIT);
     set({ recentLocations: next });
     await StoredPrefs.setCustomData(StorageKeys.RECENT_LOCATIONS, next);
@@ -282,7 +343,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   selectRecent: async (r) => {
     const v: Village = {
-      id: r.storeId,
+      id: r.villageId ?? r.storeId,
       name: r.villageName,
       storeId: r.storeId,
       branchId: r.branchId,
@@ -299,6 +360,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     await get().setServiceable(village);
     if (village.storeId) {
       await get().addRecent({
+        villageId: village.id,
         storeId: village.storeId,
         branchId: village.branchId,
         villageName: village.name,
@@ -311,3 +373,23 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     return true;
   },
 }));
+
+/**
+ * Branch of the active serviceable village. Waits for any in-flight branch
+ * lookup, then reads the store, falling back to the persisted copy if the store
+ * isn't hydrated yet.
+ */
+export async function getActiveBranchId(): Promise<string | undefined> {
+  await useLocationStore.getState().waitForBranch();
+  const fromStore = useLocationStore.getState().serviceableVillage?.branchId;
+  if (fromStore) return fromStore;
+  try {
+    const village = await StoredPrefs.getCustomData<{ branchId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
+    return village?.branchId ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// apiClient adds `x-branch-id` to branch-scoped endpoints centrally.
+apiClient.setBranchIdProvider(getActiveBranchId);

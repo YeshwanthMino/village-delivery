@@ -20,8 +20,8 @@ import {
 import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
 import { buildStockCheckItems } from '@/src/features/cart/domain/stockCheckItems';
+import { buildStockConflicts, isEveryLineOutOfStock } from '@/src/features/cart/domain/stockConflicts';
 import { stockKey } from '@/src/core/store/useCartStockStore';
-import type { CartLineItem } from '@/src/base/types/village.types';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 import { useTranslation } from '@/src/core/utils/useTranslation';
@@ -31,6 +31,13 @@ import { useAuthStore, useCartStockStore } from '@/src/core/store';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { useCreateOrderMutation } from '../data/mutations/useCreateOrderMutation';
 import { logger } from '@/src/base/services/logger';
+import { getStoreTimings } from '@/src/core/store';
+import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
+import {
+  getStoreStatus,
+  needsStoreClosedNotice,
+  type StoreStatus,
+} from '@/src/features/storeConfig/domain/storeStatus';
 
 // Stable identity so the sheet does not see a "new" empty array each render.
 const EMPTY_STOCK_INFO: StockInfo[] = [];
@@ -108,11 +115,19 @@ export const CartScreen = () => {
     runStockVerification();
   }, [runStockVerification]);
 
+  // Lines the proactive stock check says cannot be fulfilled as quantified —
+  // no stock at all, or less than the cart already holds.
+  const stockConflicts = buildStockConflicts(vm.cartItems, stockStatus);
+  // Stricter than "every line conflicts": true only once every line has been
+  // checked and every one of them has zero stock (see stockConflicts.ts).
+  const allOutOfStock = isEveryLineOutOfStock(vm.cartItems, stockStatus);
+
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
     isAuthenticated: addr.isAuthenticated,
     hasAddress,
     belowMinimum: vm.bill.belowMinimum,
+    outOfStock: allOutOfStock,
   });
   const addressLine = addr.selectedAddress
     ? [addr.selectedAddress.addressLine1, addr.selectedAddress.villageName].filter(Boolean).join(', ')
@@ -126,22 +141,32 @@ export const CartScreen = () => {
 
   const goToHome = () => router.push('/(dashboard)/home');
 
-  const handleOutOfStockPress = (item: CartLineItem) => {
-    const stock = stockStatus[stockKey(item)];
-    if (stock && !stock.inStock) {
-      setStockConflictInfo([{
-        productId: item.productId,
-        availableStock: stock.availableQuantity ?? 0,
-      }]);
-    }
-  };
-
   const handleRetryStockVerification = () => {
     clearStockError(null);
     runStockVerification();
   };
 
-  const handleCheckout = () => setSheet('checkout');
+  // Store status is recomputed at the moment of pressing Place Order — never a
+  // value captured when the cart rendered — so a cart left open across opening
+  // or closing time still gets the right message.
+  const [storeNotice, setStoreNotice] = React.useState<StoreStatus | null>(null);
+  const handleCheckout = () => {
+    // Some lines can't be fulfilled as quantified (this button isn't even
+    // reachable when every line is — that disables checkout entirely, see
+    // checkoutState): ask the customer to remove or adjust them first, rather
+    // than letting the order be attempted and rejected by the server.
+    if (stockConflicts.length > 0) {
+      setStockConflictInfo(stockConflicts);
+      return;
+    }
+    const status = getStoreStatus(getStoreTimings());
+    if (needsStoreClosedNotice(status)) setStoreNotice(status);
+    else setSheet('checkout');
+  };
+  const confirmClosedStoreCheckout = () => {
+    setStoreNotice(null);
+    setSheet('checkout');
+  };
 
   const createOrderMutation = useCreateOrderMutation();
 
@@ -313,7 +338,6 @@ export const CartScreen = () => {
                   key={item.key}
                   item={item}
                   stockStatus={stockStatus[stockKey(item)]}
-                  onOutOfStockPress={() => handleOutOfStockPress(item)}
                   bottomOffset={checkoutBarHeight}
                 />
               ))}
@@ -381,6 +405,15 @@ export const CartScreen = () => {
                 if (sheet === 'address-gate') openAddressScreen();
               },
             })}
+      />
+
+      <StoreClosedSheet
+        visible={storeNotice !== null}
+        status={storeNotice ?? { kind: 'unknown' }}
+        timings={getStoreTimings()}
+        context="checkout"
+        onClose={() => setStoreNotice(null)}
+        onPlaceOrder={confirmClosedStoreCheckout}
       />
 
       {/* Order Modification Sheet */}

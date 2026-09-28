@@ -54,6 +54,7 @@ export function productSnapshot(
       taxRate: variant.taxRate,
       hasFreeItem: variant.hasFreeItem,
       hsn: variant.hsn,
+      maxOrderQuantity: variant.maxOrderQuantity,
     };
   }
   return {

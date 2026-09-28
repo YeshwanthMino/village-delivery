@@ -5,10 +5,14 @@ import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
 import { interpolate } from '@/src/base/constants/translations';
 import { rupees } from '@/src/shared/utils/currency';
+import { orderLimit } from '@/src/shared/utils/orderLimit';
 import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { CompactStepper } from './CompactStepper';
 import { VillageBottomSheet } from './VillageBottomSheet';
+
+// Matches CompactStepper's h-11 (44px); width fits its two 48px buttons + count.
+const VARIANT_CTA_WIDTH = 112;
 
 interface VariantBottomSheetProps {
   product: Product | null;
@@ -71,7 +75,8 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
               const displayMrp = rupees(variant.mrp);
 
               const stock = variant.stock ?? 0;
-              const canAdd = count < stock;
+              // Stock, tightened by the variant's per-order cap (0 = no cap).
+              const limit = orderLimit(variant.stock, variant.maxOrderQuantity);
               return (
                 <View key={key} className="flex-row items-center py-3 border-b border-slate-50">
                   <View className="flex-1">
@@ -89,23 +94,25 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                       <Text className="text-red-600 text-xs mt-1 font-semibold">{t('out_of_stock') || 'Out of Stock'}</Text>
                     )}
                   </View>
-                  <View style={{ minWidth: 104 }}>
+                  {/* Fixed box shared by "ADD" and the stepper that replaces it, so a
+                      row never changes size when the first unit is added. */}
+                  <View style={{ width: VARIANT_CTA_WIDTH }}>
                     {stock === 0 ? (
-                      <TouchableOpacity disabled className="border-2 border-slate-300 rounded-lg h-9 px-4 items-center justify-center opacity-50">
+                      <TouchableOpacity disabled className="border-2 border-slate-300 rounded-lg h-11 items-center justify-center opacity-50">
                         <Text className="text-slate-400 font-bold text-sm">{t('add')}</Text>
                       </TouchableOpacity>
                     ) : count === 0 ? (
                       <TouchableOpacity
-                        onPress={() => addToCart(key, productSnapshot(product, i), stock)}
-                        className="border-2 border-green-600 rounded-lg h-9 px-4 items-center justify-center"
+                        onPress={() => addToCart(key, productSnapshot(product, i), limit)}
+                        className="border-2 border-green-600 rounded-lg h-11 items-center justify-center"
                       >
                         <Text className="text-green-700 font-bold text-sm">{t('add')}</Text>
                       </TouchableOpacity>
                     ) : (
                       <CompactStepper
                         count={count}
-                        maxQuantity={stock}
-                        onAdd={() => addToCart(key, productSnapshot(product, i), stock)}
+                        maxQuantity={limit}
+                        onAdd={() => addToCart(key, productSnapshot(product, i), limit)}
                         onDec={() => decFromCart(key)}
                       />
                     )}

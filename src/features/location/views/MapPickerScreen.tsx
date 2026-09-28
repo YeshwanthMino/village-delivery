@@ -12,6 +12,7 @@ import { ArrowLeft, LocateFixed, Search } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { DEFAULT_REGION, useMapPickerViewModel } from '../viewmodel/useMapPickerViewModel';
 import { MapPinMarker } from './components/MapPinMarker';
+import { useRecenterOnFocus } from './useRecenterOnFocus';
 import { LocationInfoSheet } from './components/LocationInfoSheet';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 
@@ -51,6 +52,8 @@ export const MapPickerScreen = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vm.region?.latitude, vm.region?.longitude]);
+
+  useRecenterOnFocus(mapRef, vm.region, () => { suppressSettle.current = true; });
 
   const handleRegionChangeComplete = useCallback(
     (next: Region) => {
