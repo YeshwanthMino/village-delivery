@@ -5,6 +5,8 @@ import { Stack } from "expo-router";
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { registerBackgroundHandler } from '@/src/base/services/firebase/messaging';
 import { ErrorBoundary } from '@/src/shared/components/ErrorBoundary';
 import { StockSnackbar } from '@/src/shared/components/StockSnackbar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,6 +15,9 @@ import { AppScreen } from '@/src/features/initialization/views/screens/AppScreen
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/src/base/query/queryClient';
+
+// FCM requires the background handler to be registered at import time.
+if (Platform.OS !== 'web') registerBackgroundHandler();
 
 SplashScreen.preventAutoHideAsync();
 

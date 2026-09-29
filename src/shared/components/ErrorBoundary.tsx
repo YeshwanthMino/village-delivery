@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { reportError } from '@/src/base/services/firebase/crashlytics';
 import { logger } from '@/src/base/services/logger';
 
 interface Props {
@@ -27,6 +28,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     logger.error('Unhandled render error:', error, info.componentStack);
+    if (Platform.OS !== 'web') reportError(error, info.componentStack ?? 'render error');
   }
 
   private reset = () => this.setState({ error: null });

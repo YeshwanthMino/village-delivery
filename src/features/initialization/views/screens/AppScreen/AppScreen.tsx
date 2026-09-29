@@ -1,3 +1,4 @@
+import { useFirebaseLifecycle } from '@/src/base/services/firebase/useFirebaseLifecycle';
 import { useAuthStore, useLocationStore } from '@/src/core/store';
 import { loadStoreConfig } from '@/src/core/store/useStoreConfigStore';
 import { startStoreConfigSync } from '@/src/core/store/storeConfigSync';
@@ -16,6 +17,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const setLocale = useVillageStore((s) => s.setLocale);
   const hydrateLocation = useLocationStore((s) => s.hydrate);
   useLocationLifecycle();
+  useFirebaseLifecycle();
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),

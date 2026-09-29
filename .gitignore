@@ -49,3 +49,7 @@ app-example
 .superpowers/
 
 .worktrees/
+
+# Firebase config (per-environment, supply locally or via EAS file env vars)
+google-services.json
+GoogleService-Info.plist
