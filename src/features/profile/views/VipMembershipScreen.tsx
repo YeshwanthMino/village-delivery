@@ -1,18 +1,19 @@
 // src/features/profile/views/VipMembershipScreen.tsx
 //
-// Standalone VIP membership screen, reached from the profile header badge,
-// the profile VipStatusCard, and the home VipBanner. Shows only what the
-// backend actually exposes today (isVip + the cashback config's monthly fee
-// and tier rewards) — no invented renewal date or unimplemented perks.
+// Standalone VIP membership screen, reached from the profile header badge and
+// the profile VipStatusCard. Shows only what the backend actually exposes
+// today (isVip + the cashback config's tier rewards) — no invented renewal
+// date, monthly-fee reminder, or unimplemented perks. Design approved
+// 2026-09-29 after checking Zepto Pass / Blinkit membership screens for
+// reference — those lean on real benefit numbers rather than restating cost.
 
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Crown } from 'lucide-react-native';
+import { ArrowLeft, Crown, Percent } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { interpolateVars } from '@/src/base/constants/translations';
 import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { rupees, toUnits } from '@/src/shared/utils/currency';
 
@@ -23,7 +24,6 @@ export const VipMembershipScreen = () => {
   const isVip = Boolean(useAuthStore(state => state.user?.isVip));
   const cashbackSettings = useCashbackSettings();
 
-  const feeText = rupees(toUnits(cashbackSettings.vipUpgradeFee));
   const bestTier = [...cashbackSettings.tiers].sort((a, b) => b.vipReward - a.vipReward)[0];
   const bestRewardText = bestTier ? rupees(toUnits(bestTier.vipReward)) : null;
 
@@ -48,20 +48,21 @@ export const VipMembershipScreen = () => {
               <Text className="text-amber-950 font-black text-lg mt-1">
                 {t('vip_hub_active_subtitle')}
               </Text>
-              <Text className="text-amber-800 text-xs">
-                {interpolateVars(t('vip_membership_benefit'), { f: feeText })}
-              </Text>
-            </View>
-
-            <View className="bg-white border border-slate-100 rounded-2xl p-4 mt-4 flex-row items-center justify-between">
-              <Text className="text-slate-500 text-sm">{t('vip_hub_fee_label')}</Text>
-              <Text className="text-slate-900 font-bold text-sm">{feeText}</Text>
+              <Text className="text-amber-800 text-xs">{t('vip_active_benefit')}</Text>
             </View>
 
             {bestRewardText ? (
-              <View className="bg-white border border-slate-100 rounded-2xl p-4 mt-3 flex-row items-center justify-between">
-                <Text className="text-slate-500 text-sm">{t('vip_hub_best_reward_label')}</Text>
-                <Text className="text-slate-900 font-bold text-sm">{bestRewardText}</Text>
+              <View className="bg-white border border-slate-100 rounded-2xl p-3.5 mt-4 flex-row items-center gap-3">
+                <View className="w-9 h-9 rounded-xl bg-amber-100 items-center justify-center">
+                  <Percent size={16} color="#b45309" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-semibold text-[13.5px]">
+                    {t('vip_hub_max_reward_label')}
+                  </Text>
+                  <Text className="text-slate-500 text-xs">{t('vip_hub_max_reward_subtitle')}</Text>
+                </View>
+                <Text className="text-slate-900 font-bold text-[15px]">{bestRewardText}</Text>
               </View>
             ) : null}
           </>

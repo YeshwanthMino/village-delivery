@@ -53,7 +53,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
     const allowed = [
       '(dashboard)', 'auth', 'search', 'location', 'address',
       'category-details', 'cart', 'top-picks', 'order-detail',
-      'product', 'about',
+      'product', 'about', 'vip-membership',
     ];
     if (!root || !allowed.includes(root)) {
       router.replace('/(dashboard)/home');

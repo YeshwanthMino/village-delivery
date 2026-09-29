@@ -14,7 +14,7 @@ jest.mock('@/src/core/store', () => ({
 jest.mock('@/src/core/utils/useTranslation', () => ({
   useTranslation: () => ({
     t: (key: string) =>
-      ({ vip_home_banner: "You're a VIP member — every order earns double cashback" } as Record<string, string>)[key] ?? key,
+      ({ vip_home_banner: 'VIP membership · double cashback on every order' } as Record<string, string>)[key] ?? key,
   }),
 }));
 
@@ -27,7 +27,7 @@ describe('VipBanner', () => {
   test('a real VIP user sees the banner', () => {
     mockUser = { isVip: true };
     render(<VipBanner />);
-    expect(screen.getByText("You're a VIP member — every order earns double cashback")).toBeTruthy();
+    expect(screen.getByText('VIP membership · double cashback on every order')).toBeTruthy();
   });
 
   test('tapping the banner navigates to the VIP membership screen', () => {

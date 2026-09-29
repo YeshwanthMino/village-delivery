@@ -152,6 +152,7 @@ export const LoginBottomSheet = ({
     <VillageBottomSheet
       visible={visible}
       onClose={preventClose ? () => {} : onClose}
+      dismissable={false}
     >
       {step === 'phone' && (
         <PhoneStep

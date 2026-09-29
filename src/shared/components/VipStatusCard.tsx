@@ -10,9 +10,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { interpolateVars } from '@/src/base/constants/translations';
 import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
-import { rupees, toUnits } from '@/src/shared/utils/currency';
 
 export const VipStatusCard = () => {
   const router = useRouter();
@@ -22,8 +20,6 @@ export const VipStatusCard = () => {
 
   const cashbackEnabled = cashbackSettings.active && !cashbackSettings.isDeleted;
   if (!isVip || !cashbackEnabled) return null;
-
-  const feeText = rupees(toUnits(cashbackSettings.vipUpgradeFee));
 
   return (
     <TouchableOpacity
@@ -37,9 +33,10 @@ export const VipStatusCard = () => {
       </View>
       <View className="flex-1">
         <Text className="text-amber-900 font-bold text-sm">{t('vip_membership_title')}</Text>
-        <Text className="text-amber-700 text-xs mt-0.5">
-          {interpolateVars(t('vip_membership_benefit'), { f: feeText })}
-        </Text>
+        {/* Status copy, not the cart's upsell pitch — an already-VIP customer
+            reading "double cashback · ₹45/month" reads it as an offer to pay,
+            not confirmation of what they already have. */}
+        <Text className="text-amber-700 text-xs mt-0.5">{t('vip_active_benefit')}</Text>
       </View>
       <ChevronRight size={16} color="#b45309" />
     </TouchableOpacity>

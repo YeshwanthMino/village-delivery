@@ -38,7 +38,10 @@ export function parseTokens(resp: any): AuthTokens | null {
 
 /**
  * Send the login OTP. The server replies with a `deviceId` that must be echoed
- * back on verify-otp / signup as the `x-device-id` header (never in the body).
+ * back on verify-otp / signup in the request body (confirmed against a working
+ * Postman call — an earlier version of this code sent it only as the
+ * `x-device-id` header, which the server does not honor for these two calls).
+ * It is also kept on the header for now since nothing has shown that hurts.
  * Returns null if the response carries none.
  */
 export async function requestOtp(storeId: string, mobileNumber: string): Promise<string | null> {
@@ -64,7 +67,7 @@ export async function verifyLogin(
   try {
     const resp = await apiClient.postWithoutAuth<any>(
       `${BASE}${AppAuthRoutes.loginVerify}`,
-      { mobileNumber, otp },
+      { mobileNumber, otp, deviceId },
       storeOpts(storeId, deviceId),
     );
     logger.debug('[appAuth] login-verify raw:', JSON.stringify(resp));
@@ -95,7 +98,7 @@ export async function signup(
 ): Promise<AuthTokens> {
   const resp = await apiClient.postWithoutAuth<any>(
     `${BASE}${AppAuthRoutes.loginSignup}`,
-    input,
+    { ...input, deviceId },
     storeOpts(storeId, deviceId),
   );
   logger.debug('[appAuth] login-signup raw:', JSON.stringify(resp));

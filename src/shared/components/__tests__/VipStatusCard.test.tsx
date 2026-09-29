@@ -13,7 +13,7 @@ jest.mock('@/src/core/store', () => ({
 
 const mockRawTemplates: Record<string, string> = {
   vip_membership_title: 'VIP Membership',
-  vip_membership_benefit: 'Double cashback on every order · {f}/month',
+  vip_active_benefit: "You're earning double cashback on every order",
 };
 
 jest.mock('@/src/core/utils/useTranslation', () => ({
@@ -26,12 +26,12 @@ describe('VipStatusCard', () => {
     mockPush.mockClear();
   });
 
-  test('a real VIP user sees the status card with the monthly fee', () => {
+  test('a real VIP user sees the status card', () => {
     mockUser = { isVip: true };
     render(<VipStatusCard />);
 
     expect(screen.getByText('VIP Membership')).toBeTruthy();
-    expect(screen.getByText('Double cashback on every order · ₹45/month')).toBeTruthy();
+    expect(screen.getByText("You're earning double cashback on every order")).toBeTruthy();
   });
 
   test('tapping the card navigates to the VIP membership screen', () => {

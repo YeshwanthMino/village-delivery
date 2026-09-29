@@ -113,10 +113,11 @@ export const TRANSLATIONS: TranslationMap = {
 
   // VIP identity treatment (profile header badge, home banner, membership screen)
   vip_badge_label:      { te: 'VIP',                                                          en: 'VIP' },
-  vip_home_banner:      { te: 'మీరు VIP సభ్యుడు — ప్రతి ఆర్డర్‌పై రెట్టింపు క్యాష్‌బ్యాక్',      en: "You're a VIP member — every order earns double cashback" },
+  vip_home_banner:      { te: 'VIP సభ్యత్వం · ప్రతి ఆర్డర్‌పై రెట్టింపు క్యాష్‌బ్యాక్',           en: 'VIP membership · double cashback on every order' },
   vip_hub_active_subtitle: { te: 'సభ్యత్వం యాక్టివ్‌గా ఉంది',                                 en: 'Membership is active' },
-  vip_hub_fee_label:    { te: 'నెలవారీ రుసుము',                                               en: 'Monthly fee' },
-  vip_hub_best_reward_label: { te: 'గరిష్ట క్యాష్‌బ్యాక్',                                     en: 'Best cashback reward' },
+  vip_active_benefit:   { te: 'ప్రతి ఆర్డర్‌పై మీకు రెట్టింపు క్యాష్‌బ్యాక్ లభిస్తుంది',        en: "You're earning double cashback on every order" },
+  vip_hub_max_reward_label:    { te: 'గరిష్ట క్యాష్‌బ్యాక్',                                   en: 'Max cashback per order' },
+  vip_hub_max_reward_subtitle: { te: 'మీ అతిపెద్ద ఆర్డర్లపై',                                  en: 'On your largest orders' },
   vip_hub_not_member:   { te: 'మీరు ఇంకా VIP సభ్యులు కాదు. రెట్టింపు క్యాష్‌బ్యాక్ కోసం కార్ట్‌లో VIP సభ్యత్వాన్ని జోడించండి.', en: "You're not a VIP member yet. Add VIP membership from your cart to start earning double cashback." },
 
   // Coupon row
