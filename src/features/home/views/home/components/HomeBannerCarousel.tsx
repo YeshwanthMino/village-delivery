@@ -1,13 +1,14 @@
 // src/features/home/views/home/components/HomeBannerCarousel.tsx
 
 import { Image } from 'expo-image';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { BannerSection } from '../../../data/homeLayout.types';
+import { BannerSection, BannerSlide } from '../../../data/homeLayout.types';
+import { loopBannerSlides, useBannerCarousel } from '@/src/shared/hooks/useBannerCarousel';
 
 interface Props {
   section: BannerSection;
-  onPressSlide: (link?: string) => void;
+  onPressSlide: (slide: BannerSlide) => void;
 }
 
 const H_PAD = 16;
@@ -16,36 +17,26 @@ const PEEK = 28; // sliver of the next card shown past the gap
 
 export const HomeBannerCarousel = ({ section, onPressSlide }: Props) => {
   const { width: screenWidth } = useWindowDimensions();
-  // Leave room on the right for the gap + a peek of the next card.
-  const cardWidth = screenWidth - H_PAD - GAP - PEEK;
-  const snapInterval = cardWidth + GAP;
-
-  const scrollRef = useRef<ScrollView>(null);
-  const currentRef = useRef(0);
-  const [current, setCurrent] = useState(0);
-
-  // Banner artwork has text baked in, so a fixed card height + cover crops the
-  // top/bottom (e.g. the SHOP NOW button). Track each slide's real aspect ratio
-  // and size the card to the CURRENT slide → cover fills exactly, no vertical
-  // crop, even when slides differ in dimensions. Fallback before images load.
-  const [aspects, setAspects] = useState<Record<number, number>>({});
-  const fallbackHeight = Math.min(Math.max(section.height || 180, 120), 200);
-  const currentAspect = aspects[current];
-  const height = currentAspect ? Math.round(cardWidth / currentAspect) : fallbackHeight;
-
   const slides = section.slides;
-  const delay = section.autoPlayDelay && section.autoPlayDelay > 0 ? section.autoPlayDelay : 4000;
+  // Leave room on the right for the gap + a peek of the next card.
+  const cardWidth = Math.max(1, screenWidth - H_PAD - (slides.length > 1 ? GAP + PEEK : H_PAD));
+  const snapInterval = cardWidth + GAP;
+  const delay = Number.isFinite(section.autoPlayDelay) && section.autoPlayDelay > 0 ? section.autoPlayDelay : 4000;
+  const { current, scrollRef, scrollHandlers } = useBannerCarousel({
+    count: slides.length,
+    snapInterval,
+    autoPlay: section.autoScroll,
+    delay,
+    slidesKey: JSON.stringify(slides.map(slide => [slide.id, slide.imageUrl])),
+  });
+  const renderedSlides = loopBannerSlides(slides);
 
-  useEffect(() => {
-    if (!section.autoScroll || slides.length <= 1) return;
-    const timer = setInterval(() => {
-      const next = (currentRef.current + 1) % slides.length;
-      scrollRef.current?.scrollTo({ x: next * snapInterval, animated: true });
-      currentRef.current = next;
-      setCurrent(next);
-    }, delay);
-    return () => clearInterval(timer);
-  }, [section.autoScroll, slides.length, snapInterval, delay]);
+  // Use the first artwork's ratio for a stable track height. Other image sizes
+  // fit inside it without cropping their text or resizing the page on each swipe.
+  const [aspects, setAspects] = useState<Record<string, number>>({});
+  const fallbackHeight = Math.min(Math.max(section.height || 180, 120), 200);
+  const firstAspect = aspects[slides[0]?.imageUrl];
+  const height = firstAspect ? Math.round(cardWidth / firstAspect) : fallbackHeight;
 
   if (!slides.length) return null;
 
@@ -58,31 +49,32 @@ export const HomeBannerCarousel = ({ section, onPressSlide }: Props) => {
         snapToInterval={snapInterval}
         snapToAlignment="start"
         disableIntervalMomentum
+        bounces={false}
+        scrollEnabled={slides.length > 1}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingLeft: H_PAD, paddingRight: H_PAD }}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / snapInterval);
-          currentRef.current = idx;
-          setCurrent(idx);
-        }}
+        contentOffset={{ x: slides.length > 1 ? snapInterval : 0, y: 0 }}
+        contentContainerStyle={{ paddingLeft: H_PAD, paddingRight: slides.length > 1 ? GAP + PEEK : H_PAD }}
+        {...scrollHandlers}
       >
-        {slides.map((slide, i) => (
+        {renderedSlides.map((slide, i) => (
           // Card width leaves a gap + peek of the next card on the right. Snap
           // interval = cardWidth + GAP keeps each card aligned to the left inset.
-          <View key={slide.id} style={{ width: cardWidth, marginRight: i < slides.length - 1 ? GAP : 0 }}>
+          <View key={`${slide.id}-${i}`} style={{ width: cardWidth, marginRight: i < renderedSlides.length - 1 ? GAP : 0 }}>
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => onPressSlide(slide.link)}
+              onPress={() => onPressSlide(slide)}
               style={{ width: cardWidth, height, borderRadius: 16, overflow: 'hidden' }}
             >
               <Image
                 source={{ uri: slide.imageUrl }}
                 style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
+                contentFit="contain"
                 transition={200}
                 onLoad={(e) => {
                   const { width: w, height: h } = e.source ?? {};
-                  if (w && h) setAspects((prev) => (prev[i] ? prev : { ...prev, [i]: w / h }));
+                  if (slide.imageUrl === slides[0]?.imageUrl && w && h) {
+                    setAspects((prev) => (prev[slide.imageUrl] === w / h ? prev : { ...prev, [slide.imageUrl]: w / h }));
+                  }
                 }}
               />
             </TouchableOpacity>
