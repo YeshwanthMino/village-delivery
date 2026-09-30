@@ -3,6 +3,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
+import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
 
 interface CouponRowProps {
   applied: boolean;
@@ -31,7 +32,7 @@ export const CouponRow = ({ applied, savings, onToggle }: CouponRowProps) => {
         </Text>
         <Text className="text-slate-500 text-xs mt-0.5">
           {applied
-            ? interpolate(t('coupon_savings'), Math.round(savings * 20))
+            ? interpolate(t('coupon_savings'), Math.round(savings * UNITS_PER_RUPEE))
             : t('coupon_hint')}
         </Text>
       </View>

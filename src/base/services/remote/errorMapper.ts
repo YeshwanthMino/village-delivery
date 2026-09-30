@@ -41,7 +41,8 @@ const buildNetworkError = (
   code?: string,
   statusCode?: number,
   timestamp?: string,
-  errors?: ValidationError[]
+  errors?: ValidationError[],
+  rawData?: any
 ): NetworkError => {
   const primaryMessage = message || getErrorMessage(type);
   const validationMessages = errors?.flatMap(e => e.messages) || [];
@@ -49,7 +50,7 @@ const buildNetworkError = (
     ? `${primaryMessage}\n${validationMessages.join('\n')}`
     : primaryMessage;
 
-  return { type, message: primaryMessage, code, statusCode, timestamp, errors, fullMessage };
+  return { type, message: primaryMessage, code, statusCode, timestamp, errors, fullMessage, rawData };
 };
 
 export class ErrorMapper {
@@ -61,22 +62,26 @@ export class ErrorMapper {
     const statusCode = response.status;
 
     let errorDto: ErrorDto | null = null;
+    let rawData: any = null;
     try {
       const text = await response.text();
-      if (text) errorDto = JSON.parse(text) as ErrorDto;
+      if (text) {
+        rawData = JSON.parse(text);
+        errorDto = rawData as ErrorDto;
+      }
     } catch {
       // Ignore parse errors — fall through to status-only mapping
     }
 
     if (!errorDto) {
-      return buildNetworkError(getErrorTypeFromStatus(statusCode), undefined, undefined, statusCode);
+      return buildNetworkError(getErrorTypeFromStatus(statusCode), undefined, undefined, statusCode, undefined, undefined, rawData);
     }
 
     const dtoStatus = errorDto.status ? parseInt(errorDto.status) : undefined;
     const errorType = getErrorTypeFromStatus(dtoStatus || statusCode);
     const validationErrors = parseValidationErrors(errorDto.errors);
 
-    return buildNetworkError(errorType, errorDto.message, errorDto.code, statusCode, errorDto.timestamp, validationErrors);
+    return buildNetworkError(errorType, errorDto.message, errorDto.code, statusCode, errorDto.timestamp, validationErrors, rawData);
   }
 
   static isNetworkError(type: ErrorType): boolean {

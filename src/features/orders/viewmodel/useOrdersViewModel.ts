@@ -4,7 +4,7 @@ import { useOrdersQuery } from '@/src/features/orders/data/queries/useOrdersQuer
 const ACTIVE_STATUSES = new Set(['placed', 'confirmed', 'out_for_delivery']);
 
 export const useOrdersViewModel = () => {
-  const { data: orders = [], isLoading, isError } = useOrdersQuery();
+  const { data: orders = [], isLoading, isError, refetch, isRefetching } = useOrdersQuery();
 
   const activeOrders = useMemo(
     () => orders.filter(o => ACTIVE_STATUSES.has(o.status)),
@@ -16,5 +16,5 @@ export const useOrdersViewModel = () => {
     [orders]
   );
 
-  return { allOrders: orders, activeOrders, pastOrders, isLoading, isError };
+  return { allOrders: orders, activeOrders, pastOrders, isLoading, isError, refetch, isRefetching };
 };
