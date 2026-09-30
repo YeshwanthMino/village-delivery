@@ -8,6 +8,7 @@ import { LocationService, PermissionResult, PermissionState } from '@/src/featur
 import { findByLocation } from '@/src/features/location/data/locationApi';
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { reconcileSelectedId, villageFromAddress } from '@/src/features/location/domain/addressSelection';
+import { normalizeRecentLocation, sameRecentLocation, usableVillageId } from '@/src/features/location/domain/recentLocations';
 
 const RECENT_LIMIT = 5;
 
@@ -98,6 +99,20 @@ async function commitServiceable(
   }
   if (token !== seq) return;
   await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
+}
+
+async function rememberSavedAddressVillage(get: GetState, address: Address, village: Village): Promise<void> {
+  if (!village.storeId || !village.name) return;
+  await get().addRecent({
+    villageId: usableVillageId(address.villageId) ?? usableVillageId(village.id),
+    storeId: village.storeId,
+    branchId: village.branchId,
+    villageName: village.name,
+    latitude: address.latitude ?? village.latitude,
+    longitude: address.longitude ?? village.longitude,
+    label: village.name,
+    savedAt: Date.now(),
+  });
 }
 
 /**
@@ -205,7 +220,9 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       }
       set({
         serviceableVillage: village ?? null,
-        recentLocations: Array.isArray(recents) ? recents : [],
+        recentLocations: Array.isArray(recents)
+          ? recents.filter((recent): recent is RecentLocation => !!recent && typeof recent === 'object').map(normalizeRecentLocation)
+          : [],
         selectedAddressId: selectedAddressId ?? null,
         status: village ? 'serviceable' : 'idle',
         hydrated: true,
@@ -286,15 +303,10 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   addRecent: async (recent) => {
-    // Identity is the village, not the store: one store/branch commonly serves
-    // several villages, so de-duping by storeId would collapse recents for
-    // different localities into a single entry. Legacy entries persisted
-    // before villageId existed fall back to comparing the display label.
-    const isSameLocation = (r: RecentLocation) =>
-      recent.villageId && r.villageId ? r.villageId === recent.villageId : r.label === recent.label;
+    const normalized = normalizeRecentLocation(recent);
     const next = [
-      recent,
-      ...get().recentLocations.filter((r) => !isSameLocation(r)),
+      normalized,
+      ...get().recentLocations.filter((r) => !sameRecentLocation(r, normalized)),
     ].slice(0, RECENT_LIMIT);
     set({ recentLocations: next });
     await StoredPrefs.setCustomData(StorageKeys.RECENT_LOCATIONS, next);
@@ -359,8 +371,8 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   selectAddress: async (address) => {
     // The address payload already carries its village + storeId, so switch the
-    // active store directly — no find-by-location round-trip. Selecting a saved
-    // address never adds a recent location (recents are for ad-hoc GPS/search).
+    // active store directly — no find-by-location round-trip. Record that
+    // village as recent after the saved address becomes the active selection.
     const village = villageFromAddress(address);
     if (village) {
       const commit = get().setServiceable(village, { keepSelectedAddress: true });
@@ -371,10 +383,11 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       // read that persisted store, and cart stock checks react to this id.
       set({ selectedAddressId: address.id });
       await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+      if (token === seq) await rememberSavedAddressVillage(get, address, village);
       return token === seq;
     }
     // Legacy fallback: an address without a storeId — resolve serviceability
-    // from its coords, but skip the recents write.
+    // from its coordinates, then record the resolved village.
     if (address.latitude == null || address.longitude == null) return false;
     const token = invalidateLocationRequest();
     locationController = new AbortController();
@@ -391,6 +404,8 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     if (ok && token === seq) {
       set({ selectedAddressId: address.id });
       await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+      const resolvedVillage = get().serviceableVillage;
+      if (token === seq && resolvedVillage) await rememberSavedAddressVillage(get, address, resolvedVillage);
     }
     return ok && token === seq;
   },
@@ -402,7 +417,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
   selectRecent: async (r) => {
     const v: Village = {
-      id: r.villageId ?? r.storeId,
+      id: usableVillageId(r.villageId) ?? r.storeId,
       name: r.villageName,
       storeId: r.storeId,
       branchId: r.branchId,
@@ -429,8 +444,8 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         storeId: village.storeId,
         branchId: village.branchId,
         villageName: village.name,
-        latitude: village.latitude ?? 0,
-        longitude: village.longitude ?? 0,
+        latitude: village.latitude,
+        longitude: village.longitude,
         label: [village.name, village.secondaryName].filter(Boolean).join(', '),
         savedAt: Date.now(),
       });

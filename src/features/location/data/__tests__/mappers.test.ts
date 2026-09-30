@@ -1,5 +1,5 @@
 // src/features/location/data/__tests__/mappers.test.ts
-import { mapAddress, mapVillageList } from '../mappers';
+import { mapAddress, mapVillage, mapVillageList } from '../mappers';
 
 // Shape returned by GET /app/addresses (village nested under `villageId`).
 const apiAddress = {
@@ -54,6 +54,13 @@ it('still parses the legacy flat/village-key shape', () => {
   expect(a.storeId).toBeUndefined();
   expect(a.latitude).toBe(1);
   expect(a.tag).toBe('work');
+});
+
+it('reads a nested village ID rather than using the same object string for every location', () => {
+  expect(mapVillage({
+    title: 'Mittoor',
+    villageId: { _id: 'v2', storeId: 's1', defaultLocation: { latitude: 13, longitude: 79 } },
+  })).toMatchObject({ id: 'v2', name: 'Mittoor', storeId: 's1', latitude: 13, longitude: 79 });
 });
 
 // Shape returned by GET /app/villages?search=… (array of village objects).

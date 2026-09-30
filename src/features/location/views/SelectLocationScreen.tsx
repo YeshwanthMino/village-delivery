@@ -16,6 +16,7 @@ import { AddressTag } from '../domain/models';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { useAddressBookViewModel } from '../viewmodel/useAddressBookViewModel';
 import { useVillageSearch } from '../viewmodel/useVillageSearch';
+import { recentLocationKey } from '../domain/recentLocations';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { VillageSearchField } from './components/VillageSearchField';
 import { VillageSearchResults } from './components/VillageSearchResults';
@@ -116,7 +117,7 @@ export const SelectLocationScreen = () => {
               </Text>
               {vm.recentLocations.map((r) => (
                 <TouchableOpacity
-                  key={r.villageId ?? `${r.storeId}-${r.label}`}
+                  key={recentLocationKey(r)}
                   onPress={() => run(() => vm.selectRecent(r).then(() => true))}
                   className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
                 >

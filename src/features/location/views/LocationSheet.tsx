@@ -10,6 +10,7 @@ import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Check, MapPin, Search, X } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { isActiveRecentLocation, recentLocationKey } from '../domain/recentLocations';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedContent } from './components/PermissionDeniedSheet';
@@ -24,7 +25,6 @@ export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
   const { t } = useTranslation();
   const router = useGuardedRouter();
   const vm = useLocationViewModel(visible);
-  const activeStoreId = vm.village?.storeId;
 
   const run = useSingleFlight(async (action: () => Promise<boolean> | Promise<void>) => {
     const ok = await action();
@@ -83,10 +83,10 @@ export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
               </Text>
               <View className="gap-2">
                 {vm.recentLocations.map((r) => {
-                  const active = r.storeId === activeStoreId;
+                  const active = isActiveRecentLocation(r, vm.village);
                   return (
                     <TouchableOpacity
-                      key={r.villageId ?? `${r.storeId}-${r.label}`}
+                      key={recentLocationKey(r)}
                       onPress={() => run(() => vm.selectRecent(r))}
                       className={`flex-row items-center gap-3 p-3 rounded-2xl border ${active ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white'}`}
                     >

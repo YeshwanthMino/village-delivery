@@ -21,15 +21,32 @@ export function mapVillage(raw: any): Village | null {
   const node = Array.isArray(data) ? data[0] : data;
   if (!node) return null;
 
-  const id = pick(node, ['_id', 'id', 'villageId']);
+  // Some serviceability responses wrap the matched village in `villageId` or
+  // `village`. Treat that as an object, not as an ID: String({ ... }) becomes
+  // `[object Object]`, which made every recent location collide under one key.
+  const nestedVillage =
+    node.villageId && typeof node.villageId === 'object'
+      ? node.villageId
+      : node.village && typeof node.village === 'object'
+        ? node.village
+        : null;
+  const id = pick(node, ['_id', 'id'])
+    ?? pick(nestedVillage, ['_id', 'id', 'villageId'])
+    ?? (typeof node.villageId === 'string' ? node.villageId : undefined);
   // find-by-location returns the village name in `title`.
-  const name = pick(node, ['title', 'name', 'villageName', 'village']);
+  const name = pick(node, ['title', 'name', 'villageName'])
+    ?? pick(nestedVillage, ['title', 'name', 'villageName']);
   if (!id && !name) return null;
 
   const def =
-    node.defaultLocation && typeof node.defaultLocation === 'object' ? node.defaultLocation : null;
+    node.defaultLocation && typeof node.defaultLocation === 'object'
+      ? node.defaultLocation
+      : nestedVillage?.defaultLocation && typeof nestedVillage.defaultLocation === 'object'
+        ? nestedVillage.defaultLocation
+        : null;
 
-  const secondaryName = pick(node, ['subtitle', 'locality', 'mandal', 'district', 'area']);
+  const secondaryName = pick(node, ['subtitle', 'locality', 'mandal', 'district', 'area'])
+    ?? pick(nestedVillage, ['subtitle', 'locality', 'mandal', 'district', 'area']);
 
   return {
     id: id ? String(id) : 'unknown',
@@ -38,8 +55,8 @@ export function mapVillage(raw: any): Village | null {
     pincode: pick(node, ['pincode', 'pinCode', 'postalCode']),
     latitude: pick(node, ['latitude', 'lat']) ?? def?.latitude,
     longitude: pick(node, ['longitude', 'lng', 'long']) ?? def?.longitude,
-    storeId: pick(node, ['storeId', 'store']),
-    branchId: pick(node, ['branchId', 'branch']),
+    storeId: pick(node, ['storeId', 'store']) ?? pick(nestedVillage, ['storeId', 'store']),
+    branchId: pick(node, ['branchId', 'branch']) ?? pick(nestedVillage, ['branchId', 'branch']),
   };
 }
 

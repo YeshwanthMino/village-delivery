@@ -56,8 +56,9 @@ export interface RecentLocation {
   storeId: string;
   branchId?: string;
   villageName: string;
-  latitude: number;
-  longitude: number;
+  // A saved address can identify its village without carrying coordinates.
+  latitude?: number;
+  longitude?: number;
   label: string;
   savedAt: number;
 }

@@ -2,6 +2,7 @@ import { useLocationStore } from '../useLocationStore';
 import { LocationService } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { isActiveRecentLocation } from '@/src/features/location/domain/recentLocations';
 
 jest.mock('@/src/features/location/data/locationApi', () => ({ findByLocation: jest.fn() }));
 jest.mock('@/src/base/services/remote/apiClient', () => ({ apiClient: { setBranchIdProvider: jest.fn() } }));
@@ -138,4 +139,34 @@ it('publishes the selected address only after its store is persisted for API hea
   saved.resolve();
   expect(await request).toBe(true);
   expect(useLocationStore.getState().selectedAddressId).toBe('address-1');
+});
+
+it('shows recently selected saved-address villages separately even when one store serves both', async () => {
+  const first = {
+    id: 'address-1', villageId: 'v1', villageName: 'Errepalli', storeId: 's1',
+    addressLine1: '1 Main Street', tag: 'home' as const, isDefault: false,
+  };
+  const second = {
+    id: 'address-2', villageId: 'v2', villageName: 'Mittoor', storeId: 's1',
+    addressLine1: '2 Main Street', tag: 'work' as const, isDefault: false,
+  };
+
+  expect(await useLocationStore.getState().selectAddress(first)).toBe(true);
+  expect(await useLocationStore.getState().selectAddress(second)).toBe(true);
+
+  const state = useLocationStore.getState();
+  expect(state.recentLocations.map((recent) => recent.villageName)).toEqual(['Mittoor', 'Errepalli']);
+  expect(isActiveRecentLocation(state.recentLocations[0], state.serviceableVillage)).toBe(true);
+  expect(isActiveRecentLocation(state.recentLocations[1], state.serviceableVillage)).toBe(false);
+});
+
+it('records the resolved village when selecting a legacy saved address without a store ID', async () => {
+  const address = {
+    id: 'legacy-address', villageId: '', villageName: 'Old name',
+    latitude: 13, longitude: 79, addressLine1: '3 Main Street',
+    tag: 'home' as const, isDefault: false,
+  };
+
+  expect(await useLocationStore.getState().selectAddress(address)).toBe(true);
+  expect(useLocationStore.getState().recentLocations[0].villageName).toBe('GPS village');
 });
