@@ -49,6 +49,7 @@ export const LoginBottomSheet = ({
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
+  const [resendingOtp, setResendingOtp] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [signingUp, setSigningUp] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -129,6 +130,21 @@ export const LoginBottomSheet = ({
     }
   };
 
+  const handleOtpResend = async () => {
+    if (resendingOtp || verifying) return false;
+    setResendingOtp(true);
+    setOtpError(null);
+    try {
+      await requestOtp(phone);
+      return true;
+    } catch (e) {
+      setOtpError(errText(e, 'Could not resend OTP. Try again.'));
+      return false;
+    } finally {
+      setResendingOtp(false);
+    }
+  };
+
   const handleSignup = async (firstName: string, lastName: string) => {
     setSigningUp(true);
     setSignupError(null);
@@ -171,6 +187,9 @@ export const LoginBottomSheet = ({
           phone={phone}
           onBack={() => { setStep('phone'); setOtpError(null); }}
           onVerified={handleVerified}
+          onRetryStart={() => setOtpError(null)}
+          onResend={handleOtpResend}
+          resending={resendingOtp}
           verifying={verifying}
           error={otpError}
         />

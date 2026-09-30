@@ -8,11 +8,14 @@ interface OtpStepProps {
   phone: string;
   onBack: () => void;
   onVerified: (otp: string) => void;
+  onRetryStart: () => void;
+  onResend: () => Promise<boolean>;
+  resending: boolean;
   verifying: boolean;
   error: string | null;
 }
 
-export const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStepProps) => {
+export const OtpStep = ({ phone, onBack, onVerified, onRetryStart, onResend, resending, verifying, error }: OtpStepProps) => {
   const [digits, setDigits] = useState<string[]>(Array(OTP_LEN).fill(''));
   const [seconds, setSeconds] = useState(30);
   const refs = useRef<(TextInput | null)[]>([]);
@@ -45,8 +48,21 @@ export const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStep
   }, [error]);
 
   const handleChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, '').slice(-1);
+    const entered = value.replace(/\D/g, '');
+    if (entered && error) onRetryStart();
     const next = [...digits];
+    if (entered.length > 1) {
+      // iOS SMS AutoFill and paste send the entire code to the focused input.
+      // A complete code always starts at box one, even if another box has focus.
+      const start = entered.length >= OTP_LEN ? 0 : index;
+      const pasted = entered.slice(0, OTP_LEN - start);
+      pasted.split('').forEach((digit, offset) => { next[start + offset] = digit; });
+      setDigits(next);
+      const nextIndex = start + pasted.length;
+      if (nextIndex < OTP_LEN) refs.current[nextIndex]?.focus();
+      return;
+    }
+    const digit = entered;
     next[index] = digit;
     setDigits(next);
     if (digit && index < OTP_LEN - 1) {
@@ -69,11 +85,13 @@ export const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStep
     }
   };
 
-  const handleResend = () => {
-    if (seconds > 0) return;
-    setSeconds(30);
-    setDigits(Array(OTP_LEN).fill(''));
-    refs.current[0]?.focus();
+  const handleResend = async () => {
+    if (seconds > 0 || resending || verifying) return;
+    if (await onResend()) {
+      setSeconds(30);
+      setDigits(Array(OTP_LEN).fill(''));
+      refs.current[0]?.focus();
+    }
   };
 
   return (
@@ -122,12 +140,13 @@ export const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStep
                 hasError ? s.otpBoxError : d ? s.otpBoxFilled : isActive ? s.otpBoxActive : s.otpBoxEmpty,
               ]}
               keyboardType="number-pad"
-              maxLength={1}
+              maxLength={OTP_LEN}
+              selectTextOnFocus
               value={d}
               onChangeText={v => handleChange(i, v)}
               onKeyPress={e => handleKeyPress(i, e.nativeEvent.key)}
               autoComplete="one-time-code"
-              editable={!verifying}
+              editable={!verifying && !resending}
               textAlign="center"
               caretHidden
             />
@@ -157,11 +176,11 @@ export const OtpStep = ({ phone, onBack, onVerified, verifying, error }: OtpStep
         </View>
         <TouchableOpacity
           onPress={handleResend}
-          disabled={seconds > 0}
+          disabled={seconds > 0 || resending || verifying}
           activeOpacity={0.7}
         >
           <Text style={[s.resendBtn, seconds > 0 && s.resendBtnDisabled]}>
-            Resend OTP
+            {resending ? 'Sending…' : 'Resend OTP'}
           </Text>
         </TouchableOpacity>
       </View>

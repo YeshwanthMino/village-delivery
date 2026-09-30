@@ -21,8 +21,8 @@ function storeOpts(storeId: string, deviceId?: string | null) {
 /**
  * Defensive token parse — mirrors apiClient.performTokenRefresh. The exact
  * login-verify/signup token JSON is undocumented in swagger, so accept either a
- * bare object or a `{ data }` wrapper. Returns null when no accessToken present
- * (drives the new-user branch in verifyLogin).
+ * bare object or a `{ data }` wrapper. A missing accessToken is checked against
+ * response errors before verifyLogin treats it as a verified new user.
  */
 export function parseTokens(resp: any): AuthTokens | null {
   const t = resp?.data ?? resp;
@@ -58,6 +58,26 @@ export type VerifyResult =
   | { status: 'ok'; tokens: AuthTokens }
   | { status: 'new_user' };
 
+function isUnregisteredUserError(err: any): boolean {
+  const status = err?.statusCode;
+  if (typeof status !== 'number' || status < 400 || status >= 500) return false;
+  const details = [err?.code, err?.message, err?.fullMessage, err?.rawData?.code, err?.rawData?.message]
+    .filter((part): part is string => typeof part === 'string')
+    .join(' ')
+    .replace(/[_-]/g, ' ');
+  return /\b(user|account|customer|mobile number|phone number)\b.{0,60}\b(not found|does not exist|doesn't exist|not registered|unregistered)\b/i.test(details)
+    || /\b(not found|does not exist|doesn't exist|not registered|unregistered)\b.{0,60}\b(user|account|customer|mobile number|phone number)\b/i.test(details);
+}
+
+function isOtpErrorResponse(data: any): boolean {
+  const details = [data?.code, data?.message, data?.error]
+    .filter((part): part is string => typeof part === 'string')
+    .join(' ')
+    .replace(/[_-]/g, ' ');
+  return /\b(otp|code)\b.{0,60}\b(invalid|incorrect|wrong|expired|mismatch|not found)\b/i.test(details)
+    || /\b(invalid|incorrect|wrong|expired|mismatch|not found)\b.{0,60}\b(otp|code)\b/i.test(details);
+}
+
 export async function verifyLogin(
   storeId: string,
   mobileNumber: string,
@@ -73,13 +93,16 @@ export async function verifyLogin(
     logger.debug('[appAuth] login-verify raw:', JSON.stringify(resp));
     const tokens = parseTokens(resp);
     if (tokens) return { status: 'ok', tokens };
-    // 2xx without tokens → unregistered number, needs signup.
+    const data = resp?.data ?? resp;
+    if (data?.success === false || data?.error || isOtpErrorResponse(data)) {
+      throw new Error(data?.message || 'OTP verification failed. Please try again.');
+    }
+    // A successful verification with no tokens means this number needs signup.
     return { status: 'new_user' };
   } catch (err: any) {
-    // Unregistered numbers may also surface as a 4xx (e.g. 404). Route to signup;
-    // re-throw anything else.
-    const status = err?.statusCode;
-    if (status && status >= 400 && status < 500) return { status: 'new_user' };
+    // Some servers signal an unregistered number with a 4xx. Only that explicit
+    // case advances to signup; invalid/expired OTP and other errors stay on OTP.
+    if (isUnregisteredUserError(err)) return { status: 'new_user' };
     throw err;
   }
 }
