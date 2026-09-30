@@ -20,10 +20,11 @@ export async function getCategoryProducts(
   categoryId: string,
   skip = 0,
   limit = 24,
+  signal?: AbortSignal,
 ): Promise<CategoryProductsResult> {
   const data = await apiClient.getWithoutAuth<any>(
     `${WebService.villageBaseURL}/app/category/flattened/all-products/${categoryId}?skip=${skip}&limit=${limit}`,
-    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+    { headers: { Accept: '*/*', 'x-store-id': storeId }, signal },
   );
 
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];

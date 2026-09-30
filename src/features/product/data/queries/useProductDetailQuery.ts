@@ -10,7 +10,7 @@ export const useProductDetailQuery = (id?: string) => {
 
   return useQuery({
     queryKey: [...queryKeys.products.detail(id ?? ''), { storeId }],
-    queryFn: () => getProductDetail(storeId, id || ''),
+    queryFn: ({ signal }) => getProductDetail(storeId, id || '', signal),
     enabled: !!id && !!storeId,
     staleTime: 5 * 60 * 1000,
   });

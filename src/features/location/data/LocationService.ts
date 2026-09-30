@@ -6,21 +6,35 @@ import { logger } from '@/src/base/services/logger';
 
 export type PermissionState = 'granted' | 'denied' | 'undetermined';
 
+function throwIfCancelled(signal?: AbortSignal) {
+  if (signal?.aborted) throw Object.assign(new Error('Location request cancelled'), { name: 'AbortError' });
+}
+
 /**
  * One-shot read of the current position, rejected after `ms`. Uses
  * getCurrentPositionAsync (not a watch): it reads the CURRENT location, so a
  * static fix (e.g. an emulator-set location that never "changes", which a watch
  * would never emit) is returned immediately.
  */
-function firstFix(ms: number): Promise<LatLng> {
+function firstFix(ms: number, signal?: AbortSignal): Promise<LatLng> {
   return new Promise<LatLng>((resolve, reject) => {
+    throwIfCancelled(signal);
     let settled = false;
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(Object.assign(new Error('Location request cancelled'), { name: 'AbortError' }));
+    };
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
+      signal?.removeEventListener('abort', onAbort);
       logger.debug('[LOC] firstFix TIMEOUT after', ms, 'ms');
       reject(new Error('LOCATION_TIMEOUT'));
     }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
 
     logger.debug('[LOC] firstFix: calling getCurrentPositionAsync');
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
@@ -28,6 +42,7 @@ function firstFix(ms: number): Promise<LatLng> {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
         logger.debug('[LOC] firstFix: got', pos?.coords?.latitude, pos?.coords?.longitude);
         resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
       })
@@ -35,6 +50,7 @@ function firstFix(ms: number): Promise<LatLng> {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
         logger.debug('[LOC] firstFix: getCurrentPositionAsync ERROR', err?.message ?? err);
         reject(err);
       });
@@ -71,26 +87,30 @@ export const LocationService = {
    * Read the current position. Core Location can transiently fail to obtain a
    * fix (kCLErrorLocationUnknown / "Cannot obtain current location") on a cold
    * first request — common on the simulator and on devices right after launch.
-   * So: try a fresh fix, retry once, and fall back to the last known position
+   * So: try a fresh fix and fall back to the last known position
    * before giving up. Throws only when no position can be obtained at all.
    */
-  async getCurrentPosition(): Promise<LatLng> {
+  async getCurrentPosition(signal?: AbortSignal): Promise<LatLng> {
+    throwIfCancelled(signal);
     // Generous hang guard. A cold GPS fix right after the user enables location
     // can take 15-25s, so don't fail too early.
     const FIX_TIMEOUT_MS = 20000;
 
     logger.debug('[LOC] getCurrentPosition: start');
     const servicesOn = await Location.hasServicesEnabledAsync().catch(() => null);
+    throwIfCancelled(signal);
     logger.debug('[LOC] hasServicesEnabled =', servicesOn);
 
     // Fast path: a recent cached fix returns instantly (no GPS warm-up).
     try {
       const cached = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000 });
+      throwIfCancelled(signal);
       logger.debug('[LOC] cached last-known =', cached?.coords?.latitude, cached?.coords?.longitude);
       if (cached) {
         return { latitude: cached.coords.latitude, longitude: cached.coords.longitude };
       }
     } catch (e: any) {
+      throwIfCancelled(signal);
       logger.debug('[LOC] getLastKnownPositionAsync(maxAge) ERROR', e?.message ?? e);
       // ignore — fall through to a fresh fix
     }
@@ -101,23 +121,26 @@ export const LocationService = {
     try {
       logger.debug('[LOC] enableNetworkProviderAsync: calling');
       await Location.enableNetworkProviderAsync();
+      throwIfCancelled(signal);
       logger.debug('[LOC] enableNetworkProviderAsync: resolved (enabled)');
     } catch (e: any) {
+      throwIfCancelled(signal);
       logger.debug('[LOC] enableNetworkProviderAsync ERROR', e?.message ?? e);
       // ignore — not available on iOS / user dismissed; we still try for a fix
     }
 
-    // Resolve on the FIRST position emission. watchPositionAsync surfaces an
-    // initial (possibly coarse) fix much faster than getCurrentPositionAsync,
-    // which waits for a fix that fully satisfies the requested accuracy.
+    // Expo's native one-shot request cannot be cancelled. The signal releases
+    // our deadline/listener and prevents late results or fallback work.
     try {
-      const fix = await firstFix(FIX_TIMEOUT_MS);
+      const fix = await firstFix(FIX_TIMEOUT_MS, signal);
       logger.debug('[LOC] getCurrentPosition: GOT FIX', fix.latitude, fix.longitude);
       return fix;
     } catch (firstErr: any) {
+      throwIfCancelled(signal);
       logger.debug('[LOC] firstFix failed:', firstErr?.message ?? firstErr, '→ trying last-known');
       // Last resort: any cached fix the OS still holds.
       const last = await Location.getLastKnownPositionAsync();
+      throwIfCancelled(signal);
       logger.debug('[LOC] fallback last-known =', last?.coords?.latitude, last?.coords?.longitude);
       if (last) {
         return { latitude: last.coords.latitude, longitude: last.coords.longitude };

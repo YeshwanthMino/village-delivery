@@ -61,12 +61,12 @@ function hasTitle(raw: any): boolean {
  * the body contains a `title`. A 2xx without `title` → not serviceable; a 4xx →
  * not serviceable; network/5xx throws so the caller can surface a retryable error.
  */
-export async function findByLocation(coords: LatLng): Promise<ServiceabilityResult> {
+export async function findByLocation(coords: LatLng, signal?: AbortSignal): Promise<ServiceabilityResult> {
   try {
     const data = await apiClient.postWithoutAuth<any>(`${BASE}/villages/find-by-location`, {
       latitude: coords.latitude,
       longitude: coords.longitude,
-    });
+    }, { signal });
     if (hasTitle(data)) {
       return { serviceable: true, village: mapVillage(data) };
     }
@@ -92,18 +92,19 @@ export async function findByLocation(coords: LatLng): Promise<ServiceabilityResu
 export async function searchVillages(
   query: string,
   opts: { skip?: number; limit?: number; storeId?: string } = {},
+  signal?: AbortSignal,
 ): Promise<Village[]> {
   const { skip = 0, limit = 24, storeId } = opts;
   const qs = `search=${encodeURIComponent(query)}&sort=_id%3Adesc&skip=${skip}&limit=${limit}`;
   const data = await apiClient.getWithoutAuth<any>(
     `${BASE}/app/villages?${qs}`,
-    storeId ? { headers: { 'x-store-id': storeId } } : undefined,
+    { ...(storeId ? { headers: { 'x-store-id': storeId } } : {}), signal },
   );
   return mapVillageList(data);
 }
 
-export async function listAddresses(): Promise<Address[]> {
-  const data = await apiClient.get<any>(`${BASE}/app/addresses`);
+export async function listAddresses(signal?: AbortSignal): Promise<Address[]> {
+  const data = await apiClient.get<any>(`${BASE}/app/addresses`, { signal });
   return mapAddressList(data);
 }
 

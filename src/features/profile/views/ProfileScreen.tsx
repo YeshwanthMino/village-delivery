@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Info, LogOut, MapPin, MessageCircle, Package, Share2, User } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, Share, Text, TouchableOpacity, View } from 'react-native';
@@ -30,7 +30,7 @@ export const ProfileScreen = () => {
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
   const { bottom } = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const bottomPad = TAB_BAR_CONTENT_HEIGHT + bottom + 24;
 

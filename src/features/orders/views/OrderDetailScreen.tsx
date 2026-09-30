@@ -11,7 +11,8 @@ import {
 import React from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { Order } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { interpolate } from '@/src/base/constants/translations';
@@ -110,7 +111,8 @@ function StatusTimeline({ status }: { status: ViewStatus }) {
 
 export const OrderDetailScreen = () => {
   const { t, locale } = useTranslation();
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/orders'));
   const insets = useSafeAreaInsets();
   const { order, isLoading, refetch, isRefetching } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
@@ -119,7 +121,7 @@ export const OrderDetailScreen = () => {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
         <View className="px-4" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
-          <Pressable onPress={() => router.back()} className="p-1 self-start">
+          <Pressable onPress={goBack} className="p-1 self-start">
             <ArrowLeft size={22} color="#0f172a" />
           </Pressable>
         </View>
@@ -135,7 +137,7 @@ export const OrderDetailScreen = () => {
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
         <View className="px-4" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
           <Pressable
-            onPress={() => router.replace('/(dashboard)/orders')}
+            onPress={() => router.dismissTo('/(dashboard)/orders')}
             className="p-1 self-start"
           >
             <ArrowLeft size={22} color="#0f172a" />
@@ -148,7 +150,7 @@ export const OrderDetailScreen = () => {
             This order does not exist or may have been removed.
           </Text>
           <Pressable
-            onPress={() => router.replace('/(dashboard)/orders')}
+            onPress={() => router.dismissTo('/(dashboard)/orders')}
             className="bg-green-500 rounded-2xl px-8 py-3"
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           >
@@ -171,7 +173,7 @@ export const OrderDetailScreen = () => {
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
       {/* Header */}
       <View className="flex-row items-center px-4 gap-3" style={{ paddingTop: insets.top + 8, paddingBottom: 12 }}>
-        <Pressable onPress={() => router.back()} className="p-1">
+        <Pressable onPress={goBack} className="p-1">
           <ArrowLeft size={22} color="#0f172a" />
         </Pressable>
         <View className="flex-1">

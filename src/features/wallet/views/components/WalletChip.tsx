@@ -4,7 +4,8 @@
 // lines up. Signed-in only — the caller gates on auth. Tapping opens Profile,
 // where the full WalletCard (expiry, Retry) lives.
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import React, { useCallback } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Svg, { G, Path } from 'react-native-svg';
@@ -33,7 +34,7 @@ const WalletGlyph = () => (
 );
 
 export const WalletChip = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const { data: wallet, isPending, refetch } = useWalletQuery();
 

@@ -18,7 +18,7 @@ export const useWalletQuery = (opts?: UseWalletQueryOptions) => {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: queryKeys.wallet.detail(),
-    queryFn: () => getWallet(),
+    queryFn: ({ signal }) => getWallet(signal),
     enabled: isAuthenticated,
     refetchOnMount: opts?.alwaysFresh ? 'always' : undefined,
   });

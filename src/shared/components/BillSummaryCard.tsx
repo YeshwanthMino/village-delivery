@@ -1,4 +1,4 @@
-import { Receipt } from 'lucide-react-native';
+import { Gift, Receipt } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Bill } from '@/src/base/types/village.types';
@@ -72,8 +72,9 @@ export const BillSummaryCard = ({ bill, couponApplied, walletApplied, cashbackRe
       {/* Cashback is earned, not a discount — it never touches grandTotal
        *  above. Shown only once a tier is actually unlocked. */}
       {cashbackReward && (
-        <View className="bg-emerald-50 rounded-xl px-3 py-2 mt-2">
-          <Text className="text-emerald-700 text-xs font-medium text-center">
+        <View className="flex-row items-center justify-center bg-amber-100 border border-[#e0a800] rounded-xl px-3 py-3 mt-2">
+          <Gift size={16} color="#b45309" />
+          <Text className="text-amber-800 text-sm font-bold text-center ml-2">
             {interpolateVars(t('bill_cashback_earn'), { r: cashbackReward })}
           </Text>
         </View>

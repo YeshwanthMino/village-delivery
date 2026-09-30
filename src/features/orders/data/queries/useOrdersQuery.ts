@@ -8,7 +8,7 @@ export const useOrdersQuery = () => {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: queryKeys.orders.list(),
-    queryFn: () => listOrders(),
+    queryFn: ({ signal }) => listOrders(0, 24, signal),
     enabled: isAuthenticated,
   });
 };

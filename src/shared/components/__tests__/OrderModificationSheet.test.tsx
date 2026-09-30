@@ -1,6 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { Modal, ScrollView } from 'react-native';
 import { OrderModificationSheet } from '../OrderModificationSheet';
+import { VillageBottomSheet } from '../VillageBottomSheet';
 import { rupees } from '@/src/shared/utils/currency';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 
@@ -195,7 +197,7 @@ describe('OrderModificationSheet', () => {
       expect(screen.getByText('కొన్ని విషయాలు మారాయి')).toBeTruthy();
       expect(screen.getByText('ఉప మొత్తం')).toBeTruthy();
     } finally {
-      useVillageStore.setState({ locale: originalLocale });
+      act(() => { useVillageStore.setState({ locale: originalLocale }); });
     }
   });
 
@@ -230,6 +232,128 @@ describe('OrderModificationSheet', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Network error/)).toBeTruthy();
+    });
+  });
+
+  it('uses the shared sheet scroll view for rows and footer', () => {
+    const view = render(<OrderModificationSheet {...mockProps} />);
+    expect(view.UNSAFE_getAllByType(ScrollView)).toHaveLength(1);
+  });
+
+  it('keeps the sheet open and rejects repeated taps and dismissals while retrying', async () => {
+    let finishRetry!: () => void;
+    const onRetryCheckout = jest.fn(() => new Promise<void>(resolve => {
+      finishRetry = resolve;
+    }));
+    const onClose = jest.fn();
+    const onManualAdjustment = jest.fn();
+    const view = render(
+      <OrderModificationSheet
+        {...mockProps}
+        onClose={onClose}
+        onManualAdjustment={onManualAdjustment}
+        onRetryCheckout={onRetryCheckout}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('Update all'));
+    fireEvent.press(screen.getByText('...'));
+    fireEvent.press(screen.getByTestId('stepper-dec-prod2'));
+    fireEvent.press(screen.getByTestId('close-button-conflicts'));
+    fireEvent.press(screen.getByText('Cancel'));
+    // Also exercise the shared sheet's backdrop dismissal callback.
+    view.UNSAFE_getByType(VillageBottomSheet).props.onClose();
+
+    expect(onManualAdjustment).toHaveBeenCalledTimes(1);
+    expect(onRetryCheckout).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId('stepper-count-prod2')).toHaveTextContent('1');
+    expect(view.UNSAFE_getByType(VillageBottomSheet).props.dismissable).toBe(false);
+
+    await act(async () => { finishRetry(); });
+    expect(view.UNSAFE_getByType(VillageBottomSheet).props.dismissable).toBe(true);
+    fireEvent.press(screen.getByText('Cancel'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let an old retry change a reopened sheet', async () => {
+    let failOldRetry!: (error: Error) => void;
+    const onRetryCheckout = jest.fn(() => new Promise<void>((_resolve, reject) => {
+      failOldRetry = reject;
+    }));
+    const onClose = jest.fn();
+    const view = render(
+      <OrderModificationSheet {...mockProps} onClose={onClose} onRetryCheckout={onRetryCheckout} />,
+    );
+    fireEvent.press(screen.getByText('Update all'));
+    view.rerender(
+      <OrderModificationSheet {...mockProps} visible={false} onClose={onClose} onRetryCheckout={onRetryCheckout} />,
+    );
+    // UIKit finishes dismissing the old native modal before the queued reopen.
+    act(() => { view.UNSAFE_getByType(Modal).props.onDismiss(); });
+    view.rerender(
+      <OrderModificationSheet {...mockProps} onClose={onClose} onRetryCheckout={onRetryCheckout} />,
+    );
+
+    await act(async () => { failOldRetry(new Error('Old request failed')); });
+    expect(screen.queryByText('Old request failed')).toBeNull();
+    expect(screen.getByText('Update all')).toBeTruthy();
+    fireEvent.press(screen.getByText('Cancel'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes a fully unavailable cart without submitting an empty order', () => {
+    const onRetryCheckout = jest.fn();
+    const onClose = jest.fn();
+    const onManualAdjustment = jest.fn();
+    render(
+      <OrderModificationSheet
+        {...mockProps}
+        stockInfo={[mockStockInfo[0]]}
+        cartItems={[mockCartItems[0]]}
+        onClose={onClose}
+        onManualAdjustment={onManualAdjustment}
+        onRetryCheckout={onRetryCheckout}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('Update all'));
+    expect(onManualAdjustment).toHaveBeenCalledWith({ prod1: 0 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onRetryCheckout).not.toHaveBeenCalled();
+  });
+
+  it('keeps two variants of one product separate when applying stock caps', async () => {
+    const stockInfo = [
+      { productId: 'dal', variantId: 'small', availableStock: 2 },
+      { productId: 'dal', variantId: 'large', availableStock: 1 },
+    ];
+    const cartItems = [
+      { key: 'dal-v0', productId: 'dal', variantId: 'small', name: 'Dal 500 g', weight: '500 g', price: 40, image: '', count: 4 },
+      { key: 'dal-v1', productId: 'dal', variantId: 'large', name: 'Dal 1 kg', weight: '1 kg', price: 70, image: '', count: 3 },
+    ];
+    const onManualAdjustment = jest.fn();
+    render(
+      <OrderModificationSheet
+        {...mockProps}
+        stockInfo={stockInfo}
+        cartItems={cartItems}
+        onManualAdjustment={onManualAdjustment}
+        onRetryCheckout={jest.fn().mockResolvedValue(undefined)}
+      />,
+    );
+
+    expect(screen.getByText('Dal 500 g')).toBeTruthy();
+    expect(screen.getByText('Dal 1 kg')).toBeTruthy();
+    expect(screen.getByTestId('stepper-count-dal-v0')).toHaveTextContent('2');
+    expect(screen.getByTestId('stepper-count-dal-v1')).toHaveTextContent('1');
+    fireEvent.press(screen.getByTestId('stepper-dec-dal-v0'));
+    expect(screen.getByTestId('stepper-count-dal-v0')).toHaveTextContent('1');
+    expect(screen.getByTestId('stepper-count-dal-v1')).toHaveTextContent('1');
+    fireEvent.press(screen.getByText('Update all'));
+
+    await waitFor(() => {
+      expect(onManualAdjustment).toHaveBeenCalledWith({ 'dal-v0': 1, 'dal-v1': 1 });
     });
   });
 });

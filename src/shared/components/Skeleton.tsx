@@ -6,11 +6,13 @@
 import React, { useEffect } from 'react';
 import { ViewStyle } from 'react-native';
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useScreenActive } from '@/src/shared/hooks/useScreenActive';
 
 interface Props {
   width?: number | string;
@@ -21,10 +23,13 @@ interface Props {
 
 export const Skeleton = ({ width = '100%', height = 16, radius = 12, style }: Props) => {
   const opacity = useSharedValue(0.4);
+  const active = useScreenActive();
 
   useEffect(() => {
+    if (!active) return;
     opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
-  }, [opacity]);
+    return () => cancelAnimation(opacity);
+  }, [active, opacity]);
 
   const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
 

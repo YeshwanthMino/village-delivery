@@ -1,5 +1,8 @@
-import { ArrowLeft, AlertCircle, Loader, ShieldCheck, RotateCcw } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react-native';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
+import { useScreenFocused } from '@/src/shared/hooks/useScreenActive';
+import { useSingleFlight } from '@/src/shared/hooks/useSingleFlight';
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -20,18 +23,19 @@ import {
 import type { PaymentMethod, StockInfo } from '@/src/shared/components';
 import { deriveCheckoutState } from '@/src/features/cart/domain/checkoutState';
 import { buildStockCheckItems } from '@/src/features/cart/domain/stockCheckItems';
-import { buildStockConflicts, isEveryLineOutOfStock } from '@/src/features/cart/domain/stockConflicts';
+import { buildStockConflicts } from '@/src/features/cart/domain/stockConflicts';
 import { stockKey } from '@/src/core/store/useCartStockStore';
 import { useCartViewModel } from '../viewmodel/useCartViewModel';
 import { useCartCashback } from '@/src/features/cart/domain/useCartCashback';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
-import { useAuthStore, useCartStockStore } from '@/src/core/store';
+import { getStoreTimings, useAuthStore, useCartStockStore, useVillageStore } from '@/src/core/store';
+import { getCartItems } from '@/src/features/cart/domain/bill';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { useCreateOrderMutation } from '../data/mutations/useCreateOrderMutation';
 import { logger } from '@/src/base/services/logger';
-import { getStoreTimings } from '@/src/core/store';
 import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
 import {
   getStoreStatus,
@@ -43,7 +47,8 @@ import {
 const EMPTY_STOCK_INFO: StockInfo[] = [];
 
 export const CartScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/home'));
   const vm = useCartViewModel();
   // Independent from CashbackProgressBanner's own useCartCashback call — the
   // same accepted-duplication pattern used elsewhere in this screen. Needed
@@ -56,6 +61,8 @@ export const CartScreen = () => {
   // Three independent booleans previously allowed contradictory combinations.
   type SheetKind = 'checkout' | 'address-gate' | 'login';
   const [sheet, setSheet] = React.useState<SheetKind | null>(null);
+  const sheetRef = React.useRef(sheet);
+  sheetRef.current = sheet;
   const closeSheet = () => setSheet(null);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -63,6 +70,8 @@ export const CartScreen = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const addr = useCartAddressViewModel();
   const [stockConflictInfo, setStockConflictInfo] = React.useState<StockInfo[] | null>(null);
+  const stockConflictAfterLogin = React.useRef<StockInfo[] | null>(null);
+  const afterLogin = React.useRef<'address' | 'orders' | null>(null);
   // Measured height of the CheckoutBar (fixed at the true bottom of the screen)
   // so the stock-limit snackbar, which floats at `bottom: 0` of each stepper's
   // nearest positioned ancestor, can be offset above it instead of covering it.
@@ -82,16 +91,27 @@ export const CartScreen = () => {
   // Depend on the *contents*, not the array identity or just its length. Keying
   // on length meant changing an existing line's quantity never re-verified it,
   // so an over-quantity conflict only surfaced after Place Order failed.
+  // Inventory is per store (x-store-id), so a changed delivery address can change
+  // availability even when the cart is untouched. The address id is included
+  // because selectAddress sets it only after the new store is persisted, which is
+  // what apiClient reads for the header; the storeId alone can fire too early.
+  const activeStoreId = useLocationStore(state => state.serviceableVillage?.storeId);
   const stockCheckSignature = React.useMemo(
-    () => stockCheckItems.map(i => `${i.variantId ?? i.productId}:${i.quantity}`).join('|'),
-    [stockCheckItems],
+    () => [
+      stockCheckItems.map(i => `${i.variantId ?? i.productId}:${i.quantity}`).join('|'),
+      activeStoreId ?? '',
+      addr.selectedAddress?.id ?? '',
+    ].join('@'),
+    [stockCheckItems, activeStoreId, addr.selectedAddress?.id],
   );
 
   // Memoised so the sheet's reset effect is not handed a fresh array identity on
   // every CartScreen render (see OrderModificationSheet's signature comment).
   const sheetCartItems = React.useMemo(
     () => vm.cartItems.map(item => ({
+      key: item.key,
       productId: item.productId,
+      variantId: item.variantId,
       name: item.name,
       weight: item.weight,
       price: item.price,
@@ -118,16 +138,16 @@ export const CartScreen = () => {
   // Lines the proactive stock check says cannot be fulfilled as quantified —
   // no stock at all, or less than the cart already holds.
   const stockConflicts = buildStockConflicts(vm.cartItems, stockStatus);
-  // Stricter than "every line conflicts": true only once every line has been
-  // checked and every one of them has zero stock (see stockConflicts.ts).
-  const allOutOfStock = isEveryLineOutOfStock(vm.cartItems, stockStatus);
+  // Any conflicting line blocks Place Order until the customer removes it or
+  // lowers its quantity. Unchecked/failed checks are never conflicts (fail open).
+  const hasStockConflict = stockConflicts.length > 0;
 
   const hasAddress = addr.selectedAddress != null;
   const checkoutState = deriveCheckoutState({
     isAuthenticated: addr.isAuthenticated,
     hasAddress,
     belowMinimum: vm.bill.belowMinimum,
-    outOfStock: allOutOfStock,
+    outOfStock: hasStockConflict,
   });
   const addressLine = addr.selectedAddress
     ? [addr.selectedAddress.addressLine1, addr.selectedAddress.villageName].filter(Boolean).join(', ')
@@ -139,7 +159,7 @@ export const CartScreen = () => {
     else setSheet('address-gate');
   };
 
-  const goToHome = () => router.push('/(dashboard)/home');
+  const goToHome = () => router.dismissTo('/(dashboard)/home');
 
   const handleRetryStockVerification = () => {
     clearStockError(null);
@@ -150,11 +170,22 @@ export const CartScreen = () => {
   // value captured when the cart rendered — so a cart left open across opening
   // or closing time still gets the right message.
   const [storeNotice, setStoreNotice] = React.useState<StoreStatus | null>(null);
+  const focused = useScreenFocused();
+  const focusedRef = React.useRef(focused);
+  focusedRef.current = focused;
+  const checkoutAfterNotice = React.useRef(false);
+  React.useEffect(() => {
+    if (!focused) {
+      checkoutAfterNotice.current = false;
+      stockConflictAfterLogin.current = null;
+      afterLogin.current = null;
+      setStoreNotice(null);
+      setStockConflictInfo(null);
+    }
+  }, [focused]);
   const handleCheckout = () => {
-    // Some lines can't be fulfilled as quantified (this button isn't even
-    // reachable when every line is — that disables checkout entirely, see
-    // checkoutState): ask the customer to remove or adjust them first, rather
-    // than letting the order be attempted and rejected by the server.
+    // Defensive: the bar is already blocked while any line conflicts (see
+    // checkoutState), so this only fires if a check lands between render and tap.
     if (stockConflicts.length > 0) {
       setStockConflictInfo(stockConflicts);
       return;
@@ -164,8 +195,29 @@ export const CartScreen = () => {
     else setSheet('checkout');
   };
   const confirmClosedStoreCheckout = () => {
+    checkoutAfterNotice.current = true;
     setStoreNotice(null);
-    setSheet('checkout');
+  };
+  const finishStoreNoticeDismissal = () => {
+    if (!checkoutAfterNotice.current) return;
+    checkoutAfterNotice.current = false;
+    if (focused) setSheet('checkout');
+  };
+  const finishLoginDismissal = () => {
+    const destination = afterLogin.current;
+    afterLogin.current = null;
+    if (destination && focused) {
+      if (destination === 'orders') {
+        vm.clearCart();
+        router.dismissTo('/(dashboard)/orders');
+      } else {
+        openAddressScreen();
+      }
+      return;
+    }
+    const pending = stockConflictAfterLogin.current;
+    stockConflictAfterLogin.current = null;
+    if (pending && focused) setStockConflictInfo(pending);
   };
 
   const createOrderMutation = useCreateOrderMutation();
@@ -173,14 +225,22 @@ export const CartScreen = () => {
   // Places the real order once the checkout sheet reaches its 'placing' step.
   // Rejecting here surfaces the retryable error inside the sheet and keeps the
   // cart intact (clearing only happens on the success → onComplete path).
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = useSingleFlight(async () => {
+    const startedInLogin = sheetRef.current === 'checkout';
     const addressId = addr.selectedAddress?.id;
     if (!addressId) throw new Error('Select a delivery address first.');
+
+    // The conflict sheet writes capped quantities immediately before calling
+    // this function. Read the live store here: vm.cartItems belongs to the
+    // previous render and would otherwise submit the old quantities again.
+    const currentCart = useVillageStore.getState();
+    const currentItems = getCartItems(currentCart.cart, currentCart.cartSnapshots);
+    if (currentItems.length === 0) throw new Error('Your cart is empty.');
 
     try {
       logger.debug('[handlePlaceOrder] Starting order placement');
       const result = await createOrderMutation.mutateAsync({
-        products: vm.cartItems.map(item => ({
+        products: currentItems.map(item => ({
           productId: item.productId,
           ...(item.variantId ? { variantId: item.variantId } : {}),
           quantity: item.count,
@@ -197,41 +257,53 @@ export const CartScreen = () => {
       // Check for stock conflicts
       if (result.stockInfo && result.stockInfo.length > 0) {
         logger.debug('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
-        setStockConflictInfo(result.stockInfo);
-        // Close the login sheet so OrderModificationSheet shows exclusively
-        closeSheet();
+        if (sheetRef.current !== null) {
+          // iOS cannot safely present the conflict Modal while the login Modal
+          // is still dismissing. The native onDismiss handoff opens it later.
+          stockConflictAfterLogin.current = result.stockInfo;
+          closeSheet();
+        } else {
+          setStockConflictInfo(result.stockInfo);
+        }
         throw new Error('Stock conflicts detected');
       }
 
       // Success path
       if (result.orderId) {
         logger.debug('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
-        vm.clearCart();
-        router.replace('/(dashboard)/orders');
+        // The login flow owns its success step. It will close first, then
+        // navigate from the native dismissal callback. Conflict-sheet retries
+        // have no login flow and can finish immediately.
+        if (!startedInLogin || sheetRef.current !== 'checkout') {
+          vm.clearCart();
+          setStockConflictInfo(null);
+          if (focusedRef.current) router.dismissTo('/(dashboard)/orders');
+        }
+      } else {
+        throw new Error('Order could not be confirmed. Please try again.');
       }
     } catch (error) {
       logger.debug('[handlePlaceOrder] Error:', error);
       throw error;
     }
-  };
+  });
 
   const handleLoginComplete = () => {
+    afterLogin.current = 'orders';
     closeSheet();
-    vm.clearCart();
-    router.replace('/(dashboard)/orders');
   };
 
   const handleManualAdjustment = (adjustedQuantities: Record<string, number>) => {
     // One store write per line. The previous loop called addToCart/decFromCart
     // once per *unit*, so adjusting an item by 10 fired ten notifications and
     // ten render passes — and bypassed addToCart's maxQuantity guard.
-    for (const [productId, newQuantity] of Object.entries(adjustedQuantities)) {
-      const cartItem = vm.cartItems.find(i => i.productId === productId);
+    for (const [key, newQuantity] of Object.entries(adjustedQuantities)) {
+      const cartItem = vm.cartItems.find(i => i.key === key);
       if (!cartItem) continue;
       vm.setQuantity(cartItem.key, newQuantity);
     }
-    // Clear the conflict state so the sheet closes
-    setStockConflictInfo(null);
+    // Keep the conflict sheet visible while checkout retries. It closes on
+    // success/navigation or an explicit cancel, and shows any retry error.
   };
 
   if (vm.cartCount === 0) {
@@ -239,7 +311,7 @@ export const CartScreen = () => {
       <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
         <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+            <TouchableOpacity onPress={goBack} className="w-8 h-8 items-center justify-center">
               <ArrowLeft size={22} color="#0f172a" />
             </TouchableOpacity>
             <Text className="text-slate-900 font-black text-xl">{t('my_cart')}</Text>
@@ -255,7 +327,7 @@ export const CartScreen = () => {
       {/* Sticky Header */}
       <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16 }}>
         <View className="flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+          <TouchableOpacity onPress={goBack} className="w-8 h-8 items-center justify-center">
             <ArrowLeft size={22} color="#0f172a" />
           </TouchableOpacity>
           <View>
@@ -387,6 +459,7 @@ export const CartScreen = () => {
       <LoginBottomSheet
         visible={sheet !== null}
         onClose={closeSheet}
+        onDismiss={finishLoginDismissal}
         {...(sheet === 'checkout'
           ? {
               onComplete: handleLoginComplete,
@@ -401,8 +474,8 @@ export const CartScreen = () => {
               // login just closes, and the bar advances on its own as
               // isAuthenticated flips.
               onComplete: () => {
+                if (sheet === 'address-gate') afterLogin.current = 'address';
                 closeSheet();
-                if (sheet === 'address-gate') openAddressScreen();
               },
             })}
       />
@@ -412,7 +485,8 @@ export const CartScreen = () => {
         status={storeNotice ?? { kind: 'unknown' }}
         timings={getStoreTimings()}
         context="checkout"
-        onClose={() => setStoreNotice(null)}
+        onClose={() => { checkoutAfterNotice.current = false; setStoreNotice(null); }}
+        onDismiss={finishStoreNoticeDismissal}
         onPlaceOrder={confirmClosedStoreCheckout}
       />
 

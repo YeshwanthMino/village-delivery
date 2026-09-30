@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { ArrowLeft } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -10,13 +11,14 @@ export const AboutScreen = () => {
   const { t, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const teRegular = locale === 'te' ? { fontFamily: 'NotoSansTelugu_400Regular' } : undefined;
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/profile'));
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
       <View className="flex-row items-center gap-3 px-4 py-3 bg-white border-b border-slate-100">
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8} className="w-9 h-9 items-center justify-center">
+        <TouchableOpacity onPress={goBack} hitSlop={8} className="w-9 h-9 items-center justify-center">
           <ArrowLeft size={22} color="#0f172a" />
         </TouchableOpacity>
         <Text className="text-slate-900 font-black text-xl" style={teFont}>{t('about_title')}</Text>

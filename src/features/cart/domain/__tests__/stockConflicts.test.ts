@@ -45,7 +45,7 @@ describe('buildStockConflicts', () => {
       v1kg: { inStock: true, availableQuantity: 1 },
     };
     expect(buildStockConflicts(items, status)).toEqual([
-      { productId: 'p1', availableStock: 1 },
+      { productId: 'p1', variantId: 'v500g', availableStock: 1 },
     ]);
   });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { StockSnackbar } from '../StockSnackbar';
+import { Modal, Platform, Pressable, Text } from 'react-native';
+import { StockSnackbar, StockSnackbarModalPresenter } from '../StockSnackbar';
 import { useSnackbarStore } from '@/src/core/store/useSnackbarStore';
 
 const reset = () => useSnackbarStore.setState({ message: null, key: 0, bottomOffset: 0 });
@@ -82,5 +83,58 @@ describe('StockSnackbar', () => {
 
     act(() => jest.advanceTimersByTime(500)); // now 2500ms since the repeat show()
     expect(screen.queryByTestId('stock-snackbar')).toBeNull();
+  });
+
+  it.each(['ios', 'android'] as const)('does not create a blocking native Modal on %s', (platform) => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: platform });
+    try {
+      render(<StockSnackbar />);
+      act(() => useSnackbarStore.getState().show('Capped out'));
+
+      expect(screen.UNSAFE_queryAllByType(Modal)).toHaveLength(0);
+      expect(screen.getByTestId('stock-snackbar-overlay').props.pointerEvents).toBe('box-none');
+      expect(screen.getByText('Ok')).toBeTruthy();
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+    }
+  });
+
+  it('moves into the active sheet and restores the root surface after dismissal', () => {
+    const TestHost = () => {
+      const [modalVisible, setModalVisible] = React.useState(false);
+      return (
+        <>
+          <StockSnackbar />
+          <Pressable testID="toggle-modal" onPress={() => setModalVisible((value) => !value)}>
+            <Text>Toggle modal</Text>
+          </Pressable>
+          {modalVisible ? <StockSnackbarModalPresenter /> : null}
+        </>
+      );
+    };
+    render(<TestHost />);
+    act(() => useSnackbarStore.getState().show('Capped out'));
+
+    fireEvent.press(screen.getByTestId('toggle-modal'));
+    expect(screen.getAllByTestId('stock-snackbar')).toHaveLength(1);
+    expect(screen.getByTestId('stock-snackbar-overlay').props.pointerEvents).toBe('box-none');
+
+    fireEvent.press(screen.getByTestId('toggle-modal'));
+    expect(screen.getAllByTestId('stock-snackbar')).toHaveLength(1);
+
+    act(() => jest.advanceTimersByTime(2500));
+    expect(screen.queryByTestId('stock-snackbar')).toBeNull();
+  });
+
+  it('renders on only the top sheet while multiple modal presenters overlap', () => {
+    const { rerender } = render(
+      <><StockSnackbar /><StockSnackbarModalPresenter /><StockSnackbarModalPresenter /></>,
+    );
+    act(() => useSnackbarStore.getState().show('Capped out'));
+    expect(screen.getAllByTestId('stock-snackbar')).toHaveLength(1);
+
+    rerender(<><StockSnackbar /><StockSnackbarModalPresenter /></>);
+    expect(screen.getAllByTestId('stock-snackbar')).toHaveLength(1);
   });
 });

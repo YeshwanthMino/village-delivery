@@ -1,9 +1,10 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Search } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CartSummaryCard } from '@/src/shared/components';
+import { CartSummaryCard, VariantBottomSheet } from '@/src/shared/components';
+import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useCategoriesViewModel } from '../../viewmodel/categories/useCategoriesViewModel';
 import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
@@ -11,10 +12,11 @@ import { HomeSections } from '../home/components/HomeSections';
 import { HomeSkeleton } from '../home/components/HomeSkeleton';
 
 export const CategoriesScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const { t } = useTranslation();
   const vm = useCategoriesViewModel();
   const layout = useHomeLayoutViewModel('app-category-page-layout');
+  const variantSheet = useVariantSheet();
   const insets = useSafeAreaInsets();
 
   const TAB_BAR_H = 64;
@@ -26,15 +28,6 @@ export const CategoriesScreen = () => {
     try { await layout.refresh(); } finally { setRefreshing(false); }
   }, [layout.refresh]);
 
-  // Tabs stay mounted, so refresh the layout on every focus after the first
-  // (the first focus coincides with the mount-time load).
-  const firstFocus = React.useRef(true);
-  useFocusEffect(
-    React.useCallback(() => {
-      if (firstFocus.current) { firstFocus.current = false; return; }
-      void layout.refresh();
-    }, [layout.refresh]),
-  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['bottom', 'left', 'right']}>
@@ -76,13 +69,14 @@ export const CategoriesScreen = () => {
             </TouchableOpacity>
           </View>
         ) : (
-          <HomeSections sections={layout.sections} />
+          <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} />
         )}
       </ScrollView>
 
       {vm.cartCount > 0 && (
         <CartSummaryCard onPress={() => router.push('/cart')} />
       )}
+      <VariantBottomSheet product={variantSheet.product} onClose={variantSheet.close} />
     </SafeAreaView>
   );
 };

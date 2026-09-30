@@ -9,7 +9,8 @@ import {
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import {
   CartSummaryCard,
   ProductCard,
@@ -23,7 +24,8 @@ import { interpolate } from '@/src/base/constants/translations';
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export const TopPicksScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/home'));
   const vm = useTopPicksViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
@@ -41,12 +43,14 @@ export const TopPicksScreen = () => {
 
   useEffect(() => {
     slideAnim.setValue(390);
-    Animated.timing(slideAnim, {
+    const animation = Animated.timing(slideAnim, {
       toValue: 0,
       duration: 280,
       useNativeDriver: true,
-    }).start();
-  }, []);
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [slideAnim]);
 
   const goToCart = () => router.push('/cart');
 
@@ -62,7 +66,7 @@ export const TopPicksScreen = () => {
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={goBack}
                 className="w-8 h-8 items-center justify-center mr-1"
               >
                 <ArrowLeft size={20} color="#0f172a" />

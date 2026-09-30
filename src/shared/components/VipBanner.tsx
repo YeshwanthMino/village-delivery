@@ -4,7 +4,7 @@
 // cashback, linking into the VIP membership screen. Self-gated like
 // VipMembershipCard / VipStatusCard — the caller renders it unconditionally.
 
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { ChevronRight, Crown } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
@@ -13,7 +13,7 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 
 export const VipBanner = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const { t } = useTranslation();
   const isVip = Boolean(useAuthStore(state => state.user?.isVip));
   const cashbackSettings = useCashbackSettings();

@@ -63,7 +63,7 @@ export function GluestackUIProvider({
     media.addListener(handleMediaQuery);
 
     return () => media.removeListener(handleMediaQuery);
-  }, [handleMediaQuery]);
+  }, [handleMediaQuery, mode]);
 
   useSafeLayoutEffect(() => {
     if (typeof window !== 'undefined') {

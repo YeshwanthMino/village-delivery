@@ -40,7 +40,11 @@ export function buildStockConflicts(
       !status.inStock ||
       (status.availableQuantity !== undefined && status.availableQuantity < item.count);
     if (!shortOfStock) continue;
-    conflicts.push({ productId: item.productId, availableStock: status.availableQuantity ?? 0 });
+    conflicts.push({
+      productId: item.productId,
+      ...(item.variantId ? { variantId: item.variantId } : {}),
+      availableStock: status.availableQuantity ?? 0,
+    });
   }
   return conflicts;
 }

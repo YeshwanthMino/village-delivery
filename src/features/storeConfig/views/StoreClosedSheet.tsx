@@ -27,6 +27,7 @@ interface Props {
   /** 'home' just informs; 'checkout' asks to confirm placing the order. */
   context: 'home' | 'checkout';
   onClose: () => void;
+  onDismiss?: () => void;
   /** Checkout only: the customer accepts the delay and places the order. */
   onPlaceOrder?: () => void;
 }
@@ -39,7 +40,7 @@ interface Copy {
   hours: string[];
 }
 
-export const StoreClosedSheet = ({ visible, status, timings, context, onClose, onPlaceOrder }: Props) => {
+export const StoreClosedSheet = ({ visible, status, timings, context, onClose, onDismiss, onPlaceOrder }: Props) => {
   const { t } = useTranslation();
 
   const when = (next: NextOpening): string => {
@@ -96,10 +97,9 @@ export const StoreClosedSheet = ({ visible, status, timings, context, onClose, o
     }
   })();
 
-  if (!copy) return null;
-
   return (
-    <VillageBottomSheet visible={visible} onClose={onClose}>
+    <VillageBottomSheet visible={visible && !!copy} onClose={onClose} onDismiss={onDismiss}>
+      {copy ? (
       <View className="px-5 pb-4">
         <View className="items-center py-3">
           <View className="w-16 h-16 rounded-full bg-amber-50 items-center justify-center">
@@ -135,6 +135,7 @@ export const StoreClosedSheet = ({ visible, status, timings, context, onClose, o
           </TouchableOpacity>
         )}
       </View>
+      ) : null}
     </VillageBottomSheet>
   );
 };

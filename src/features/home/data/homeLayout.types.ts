@@ -6,11 +6,22 @@
 
 import { Variant } from '@/src/base/types/village.types';
 
+/** Populated document a banner slide points at (`docId` in the API). */
+export interface BannerDoc {
+  id: string;
+  title?: string;
+  slug?: string;
+}
+
 export interface BannerSlide {
   id: string;
   title: string;
   imageUrl: string;
   link?: string;
+  /** Backend collection the slide points at, e.g. "Sale". */
+  collectionName?: string;
+  /** Linked document; undefined when `docId` is null or not populated. */
+  doc?: BannerDoc;
 }
 
 export interface CategoryItem {

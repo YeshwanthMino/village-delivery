@@ -5,15 +5,15 @@
 // address-details form fields and the save sequence.
 
 import { useCallback, useState } from 'react';
-import { useMapPickerViewModel, DEFAULT_REGION } from './useMapPickerViewModel';
+import { useMapPickerViewModel } from './useMapPickerViewModel';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { createAddress, listAddresses, updateAddress, type CreateAddressInput } from '../data/locationApi';
 import { saveNewAddress, updateExistingAddress } from '../data/saveNewAddress';
 import type { AddressTag, Address } from '../domain/models';
 
-export function useAddAddressViewModel() {
-  const map = useMapPickerViewModel();
+export function useAddAddressViewModel(mapEnabled = true) {
+  const map = useMapPickerViewModel(mapEnabled);
   const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
   const setSelectedAddress = useLocationStore((s) => s.setSelectedAddress);
   const mobileNumber = useAuthStore((s) => s.mobileNumber ?? s.user?.mobileNumber ?? '');
@@ -41,11 +41,9 @@ export function useAddAddressViewModel() {
     setIsDefault(address.isDefault);
     setError(null);
     if (address.latitude != null && address.longitude != null) {
-      map.onRegionSettled({
+      map.moveTo({
         latitude: address.latitude,
         longitude: address.longitude,
-        latitudeDelta: DEFAULT_REGION.latitudeDelta,
-        longitudeDelta: DEFAULT_REGION.longitudeDelta,
       });
     }
   }, [map]);
@@ -60,7 +58,7 @@ export function useAddAddressViewModel() {
   }, []);
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (map.pinState !== 'serviceable' || !map.village || !map.region) return false;
+    if (!map.isCurrentPin() || map.pinState !== 'serviceable' || !map.village || !map.region) return false;
     if (!addressLine1.trim()) return false;
     setSaving(true);
     setError(null);
@@ -97,7 +95,7 @@ export function useAddAddressViewModel() {
     } finally {
       setSaving(false);
     }
-  }, [map.pinState, map.village, map.region, addressLine1, landmark, tag, isDefault, mobileNumber, setSelectedAddress, setSavedAddresses, editingId]);
+  }, [map, addressLine1, landmark, tag, isDefault, mobileNumber, setSelectedAddress, setSavedAddresses, editingId]);
 
   return {
     map,

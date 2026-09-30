@@ -4,6 +4,7 @@ module.exports = {
     '/node_modules/',
     '/android/',
     '/ios/',
+    '/\\.worktrees/',
   ],
   moduleNameMapper: {
     '^test-renderer$': 'react-test-renderer',

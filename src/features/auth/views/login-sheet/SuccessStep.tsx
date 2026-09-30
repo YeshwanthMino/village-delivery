@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { Check, Phone } from 'lucide-react-native';
 import Animated, {
@@ -25,6 +25,8 @@ export const SuccessStep = ({ phone, onDone, grandTotal, itemCount }: SuccessSte
   const opacity = useSharedValue(0);
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0.6);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
     scale.value = withSpring(1, { damping: 12, stiffness: 200 });
@@ -32,14 +34,15 @@ export const SuccessStep = ({ phone, onDone, grandTotal, itemCount }: SuccessSte
     ringScale.value = withRepeat(withTiming(1.5, { duration: 900 }), -1, false);
     ringOpacity.value = withRepeat(withTiming(0, { duration: 900 }), -1, false);
 
-    const t = setTimeout(onDone, 1800);
+    const t = setTimeout(() => onDoneRef.current(), 1800);
     return () => {
       clearTimeout(t);
       cancelAnimation(scale);
+      cancelAnimation(opacity);
       cancelAnimation(ringScale);
       cancelAnimation(ringOpacity);
     };
-  }, []);
+  }, [opacity, scale, ringScale, ringOpacity]);
 
   const checkStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

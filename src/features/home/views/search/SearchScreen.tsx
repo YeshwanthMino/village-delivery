@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { CartSummaryCard } from '@/src/shared/components';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
@@ -19,7 +20,8 @@ import { interpolate } from '@/src/base/constants/translations';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const SearchScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/home'));
   const insets = useSafeAreaInsets();
   const vm = useSearchViewModel();
   const inputRef = useRef<TextInput>(null);
@@ -40,7 +42,7 @@ export const SearchScreen = () => {
         {/* Back + input row */}
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={goBack}
             className="w-9 h-9 items-center justify-center"
           >
             <ArrowLeft size={22} color="#0f172a" />

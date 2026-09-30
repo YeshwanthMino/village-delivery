@@ -29,11 +29,9 @@ export const CompactStepper = ({
   const handleAdd = () => {
     if (!canAdd) {
       // Callers that don't know what's beneath them (e.g. a stepper inside a
-      // bottom sheet) get no explicit bottomOffset. Since StockSnackbar
-      // renders full-screen (it's a Modal, so it isn't clipped to the
-      // sheet's own bounds), a literal 0 would sit it behind the OS's
-      // home-indicator/gesture-nav area — fall back to the safe-area inset
-      // instead so it always clears that at minimum.
+      // bottom sheet) get no explicit bottomOffset. The snackbar paints in
+      // the current screen or sheet surface, so keep it above the OS home
+      // indicator at minimum.
       useSnackbarStore.getState().show(interpolate(t('stock_limit_reached'), maxQuantity!), bottomOffset ?? bottom);
       return;
     }

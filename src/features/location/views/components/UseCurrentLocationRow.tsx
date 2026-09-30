@@ -1,9 +1,9 @@
 // src/features/location/views/components/UseCurrentLocationRow.tsx
 //
 // "Use my Current Location" control (Zepto / Blinkit style).
-// - Permission NOT granted (undetermined/denied) → shows an "Enable" button;
-//   tapping it triggers the OS permission dialog.
-// - Permission granted → no Enable button; the whole row detects directly.
+// - Permission NOT granted (undetermined/denied) → shows an "Enable" label;
+//   tapping anywhere on the row triggers the OS permission dialog.
+// - Permission granted → the same row detects directly.
 
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
@@ -24,9 +24,11 @@ export const UseCurrentLocationRow = ({ permission, loading, onPress }: Props) =
 
   return (
     <TouchableOpacity
-      activeOpacity={granted ? 0.7 : 1}
-      onPress={granted ? onPress : undefined}
+      activeOpacity={0.7}
+      onPress={onPress}
       disabled={loading}
+      accessibilityRole="button"
+      accessibilityLabel={granted ? t('use_current_location') : t(denied ? 'try_again' : 'enable')}
       className="flex-row items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5"
     >
       <View className="w-9 h-9 rounded-full bg-green-50 items-center justify-center">
@@ -44,14 +46,11 @@ export const UseCurrentLocationRow = ({ permission, loading, onPress }: Props) =
       ) : granted ? (
         <Navigation size={20} color="#16a34a" />
       ) : (
-        <TouchableOpacity
-          onPress={onPress}
-          className="border border-green-600 bg-white px-4 py-2 rounded-xl"
-        >
+        <View className="border border-green-600 bg-white px-4 py-2 rounded-xl">
           <Text className="text-green-700 font-extrabold text-xs tracking-wide">
             {denied ? t('try_again') : t('enable')}
           </Text>
-        </TouchableOpacity>
+        </View>
       )}
     </TouchableOpacity>
   );

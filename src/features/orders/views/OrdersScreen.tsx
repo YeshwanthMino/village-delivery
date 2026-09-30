@@ -2,7 +2,8 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { LogIn, CheckCircle2, Package, Truck, XCircle } from 'lucide-react-native';
 import { Order, OrderItem, OrderStatus } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
@@ -201,7 +202,7 @@ function OrderIllustration() {
 
 function EmptyOrders() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useGuardedRouter();
 
   return (
     <View className="flex-1 items-center justify-center px-8">
@@ -255,7 +256,7 @@ function OrdersSignedOut({ onLogin }: { onLogin: () => void }) {
 export const OrdersScreen = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const { allOrders, activeOrders, pastOrders, isLoading, isError, refetch, isRefetching } = useOrdersViewModel();
   const [loginVisible, setLoginVisible] = useState(false);

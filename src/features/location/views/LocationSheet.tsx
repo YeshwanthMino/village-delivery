@@ -5,38 +5,50 @@
 
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useSingleFlight } from '@/src/shared/hooks/useSingleFlight';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Check, MapPin, Search, X } from 'lucide-react-native';
 import { VillageBottomSheet } from '@/src/shared/components';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
-import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
+import { PermissionDeniedContent } from './components/PermissionDeniedSheet';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
+  onDismiss?: () => void;
 }
 
-export const LocationSheet = ({ visible, onClose }: Props) => {
+export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
   const { t } = useTranslation();
-  const router = useRouter();
-  const vm = useLocationViewModel();
+  const router = useGuardedRouter();
+  const vm = useLocationViewModel(visible);
   const activeStoreId = vm.village?.storeId;
 
-  const run = async (p: Promise<boolean> | Promise<void>) => {
-    const ok = await p;
+  const run = useSingleFlight(async (action: () => Promise<boolean> | Promise<void>) => {
+    const ok = await action();
     if (ok !== false) onClose();
-  };
+  });
 
   const openSearch = () => {
     onClose();
     router.push('/location');
   };
 
+  const closeCurrentView = vm.blocked ? vm.dismissBlocked : onClose;
+
   return (
-    <>
-      <VillageBottomSheet visible={visible} onClose={onClose}>
+    <VillageBottomSheet
+      visible={visible}
+      onClose={closeCurrentView}
+      onBlur={onClose}
+      onDismiss={onDismiss}
+      dismissalKey={vm.blocked ? 'blocked' : 'picker'}
+    >
+      {vm.blocked ? (
+        <PermissionDeniedContent onClose={vm.dismissBlocked} onGoToSettings={vm.openSettings} />
+      ) : (
         <View className="px-5 pb-6">
           <View className="flex-row items-center justify-between pb-4">
             <Text className="text-slate-900 font-extrabold text-[17px]">{t('change_delivery_location')}</Text>
@@ -50,7 +62,7 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
             <UseCurrentLocationRow
               permission={vm.permission}
               loading={vm.detecting}
-              onPress={() => run(vm.detectCurrentLocation())}
+              onPress={() => run(() => vm.detectCurrentLocation())}
             />
           </View>
 
@@ -74,8 +86,8 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
                   const active = r.storeId === activeStoreId;
                   return (
                     <TouchableOpacity
-                      key={r.storeId}
-                      onPress={() => run(vm.selectRecent(r))}
+                      key={r.villageId ?? `${r.storeId}-${r.label}`}
+                      onPress={() => run(() => vm.selectRecent(r))}
                       className={`flex-row items-center gap-3 p-3 rounded-2xl border ${active ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white'}`}
                     >
                       <View className={`w-9 h-9 rounded-xl items-center justify-center ${active ? 'bg-green-600' : 'bg-slate-100'}`}>
@@ -95,13 +107,7 @@ export const LocationSheet = ({ visible, onClose }: Props) => {
             </>
           ) : null}
         </View>
-      </VillageBottomSheet>
-
-      <PermissionDeniedSheet
-        visible={vm.blocked}
-        onClose={vm.dismissBlocked}
-        onGoToSettings={vm.openSettings}
-      />
-    </>
+      )}
+    </VillageBottomSheet>
   );
 };

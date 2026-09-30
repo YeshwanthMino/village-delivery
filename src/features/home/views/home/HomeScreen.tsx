@@ -1,4 +1,5 @@
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Bell, Search, ShoppingCart } from 'lucide-react-native';
 import React from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -22,10 +23,12 @@ import { LocationService } from '@/src/features/location/data/LocationService';
 import { LocationSheet } from '@/src/features/location/views/LocationSheet';
 import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
 import { useStoreClosedOnOpen } from '@/src/features/storeConfig/viewmodel/useStoreClosedOnOpen';
+import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const HomeScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const vm = useHomeViewModel();
+  const variantSheet = useVariantSheet();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
@@ -38,25 +41,23 @@ export const HomeScreen = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const layout = useHomeLayoutViewModel();
   const detectCurrentLocation = useLocationStore((s) => s.detectCurrentLocation);
-  const storeClosed = useStoreClosedOnOpen();
 
   const [permSheetOpen, setPermSheetOpen] = React.useState(false);
   const [changeSheetOpen, setChangeSheetOpen] = React.useState(false);
+  const [locationSheetPresented, setLocationSheetPresented] = React.useState(false);
+  React.useEffect(() => {
+    if (permSheetOpen || changeSheetOpen) setLocationSheetPresented(true);
+  }, [permSheetOpen, changeSheetOpen]);
+  const storeClosed = useStoreClosedOnOpen(
+    hydrated && !!village && !permSheetOpen && !changeSheetOpen && !locationSheetPresented && !variantSheet.product && !variantSheet.loading,
+  );
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try { await layout.refresh(); } finally { setRefreshing(false); }
   }, [layout.refresh]);
 
-  // Tabs stay mounted, so refresh the home layout on every focus after the
-  // first (the first focus coincides with the mount-time load).
-  const firstHomeFocus = React.useRef(true);
-  useFocusEffect(
-    React.useCallback(() => {
-      if (firstHomeFocus.current) { firstHomeFocus.current = false; return; }
-      void layout.refresh();
-    }, [layout.refresh]),
-  );
+  // The layout view model owns loading and cancellation on focus changes.
   // Auto-GPS-detect fires at most once per session. Re-focusing must NOT re-fire
   // it — that re-shows the OS "Location Accuracy" dialog every time. After the
   // first attempt the permission sheet handles manual retry.
@@ -74,6 +75,11 @@ export const HomeScreen = () => {
   }, [village]);
   const TAB_BAR_CONTENT_HEIGHT = 64;
   const scrollPadding = TAB_BAR_CONTENT_HEIGHT + insets.bottom + 16;
+
+  const bootstrapRequest = React.useRef<AbortController | null>(null);
+  useFocusEffect(React.useCallback(() => () => {
+    bootstrapRequest.current?.abort();
+  }, []));
 
   // Location bootstrap (Zepto/Blinkit). With no saved village:
   //   • permission already granted → auto-detect (GPS → find-by-location), no sheet
@@ -104,11 +110,14 @@ export const HomeScreen = () => {
         // user retries manually (avoids re-prompting the OS location dialog).
         if (perm === 'granted' && !autoDetectedRef.current) {
           autoDetectedRef.current = true;
-          void detectCurrentLocation();
+          bootstrapRequest.current = new AbortController();
+          void detectCurrentLocation(bootstrapRequest.current.signal);
         } else {
           setPermSheetOpen(true);
         }
-      })();
+      })().catch(() => {
+        if (!cancelled) setPermSheetOpen(true);
+      });
       return () => {
         cancelled = true;
       };
@@ -201,24 +210,26 @@ export const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            <HomeSections sections={layout.sections} />
+            <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} />
           )}
         </ScrollView>
       )}
 
       {/* Overlays */}
       {vm.cartCount > 0 && <CartSummaryCard onPress={goToCart} />}
-      <VariantBottomSheet product={vm.variantProduct} onClose={vm.closeVariants} />
+      <VariantBottomSheet product={variantSheet.product} onClose={variantSheet.close} />
 
       <LocationPermissionSheet
         visible={permSheetOpen}
         onClose={() => setPermSheetOpen(false)}
+        onDismiss={() => setLocationSheetPresented(false)}
         dismissable={!!village}
       />
-      <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} />
-      {/* Held back while the location permission sheet is up so two sheets never stack. */}
+      <LocationSheet visible={changeSheetOpen} onClose={() => setChangeSheetOpen(false)} onDismiss={() => setLocationSheetPresented(false)} />
+      {/* Eligibility is checked before opening; don't silently hide an already
+          visible notice when a delayed bootstrap state changes. */}
       <StoreClosedSheet
-        visible={storeClosed.visible && !permSheetOpen}
+        visible={storeClosed.visible}
         status={storeClosed.status}
         timings={storeClosed.timings}
         context="home"

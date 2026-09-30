@@ -5,6 +5,7 @@ export type Locale = 'te' | 'en';
 type TranslationMap = Record<string, Record<Locale, string>>;
 
 export const TRANSLATIONS: TranslationMap = {
+  back:             { te: 'వెనుకకు', en: 'Back' },
   add:              { te: 'జోడించు +', en: 'ADD' },
   added:            { te: 'జోడించారు', en: 'ADDED' },
   see_all:          { te: 'అన్నీ చూడు', en: 'See all' },
@@ -24,6 +25,7 @@ export const TRANSLATIONS: TranslationMap = {
   out_of_stock:     { te: 'స్టాక్‌లో లేదు',       en: 'Out of Stock' },
   product_unavailable: { te: 'ఈ ఉత్పత్తి ఇకపై అందుబాటులో లేదు', en: 'This product is no longer available' },
   cart_all_out_of_stock: { te: 'మీ కార్ట్‌లోని అన్ని వస్తువులు స్టాక్‌లో లేవు', en: 'All items in your cart are out of stock' },
+  cart_stock_blocked: { te: 'ఆర్డర్ చేయడానికి స్టాక్‌లో లేని వస్తువులను తీసివేయండి', en: 'Remove out-of-stock items to place order' },
   nav_home:         { te: 'హోమ్', en: 'Home' },
   nav_categories:   { te: 'వర్గాలు', en: 'Categories' },
   nav_cart:         { te: 'కార్ట్', en: 'Cart' },

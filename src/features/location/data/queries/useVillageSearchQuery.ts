@@ -12,7 +12,7 @@ export const useVillageSearchQuery = (term: string, limit = 24) => {
 
   return useQuery({
     queryKey: [...queryKeys.villages.search(trimmed), { limit, storeId }],
-    queryFn: () => searchVillages(trimmed, { limit, storeId }),
+    queryFn: ({ signal }) => searchVillages(trimmed, { limit, storeId }, signal),
     enabled: trimmed.length >= 3,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,

@@ -81,8 +81,8 @@ export function mapWallet(raw: unknown): Wallet | null {
   };
 }
 
-export async function getWallet(): Promise<Wallet | null> {
-  const resp = await apiClient.get<unknown>(`${BASE}/app/wallet`);
+export async function getWallet(signal?: AbortSignal): Promise<Wallet | null> {
+  const resp = await apiClient.get<unknown>(`${BASE}/app/wallet`, { signal });
   const wallet = mapWallet(resp);
   // Loud on the failure path: an unreadable payload is why the profile card
   // would come up empty, and that is exactly when the raw shape is worth having.

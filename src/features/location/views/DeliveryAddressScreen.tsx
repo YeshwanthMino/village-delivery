@@ -8,7 +8,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useSingleFlight } from '@/src/shared/hooks/useSingleFlight';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
+import { useScreenFocused } from '@/src/shared/hooks/useScreenActive';
+import { AddressBackGuard } from './AddressBackGuard';
 import { ArrowLeft, Briefcase, Check, Home, LocateFixed, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
@@ -30,9 +35,7 @@ const TAGS: AddressTag[] = ['home', 'work', 'other'];
 
 export const DeliveryAddressScreen = () => {
   const { t } = useTranslation();
-  const router = useRouter();
-  const vm = useAddAddressViewModel();
-  const map = vm.map;
+  const router = useGuardedRouter();
 
   // "Manage" mode is reached from the profile address book: rows are read-only
   // (edit/delete only), with no tap-to-select and no selected highlight. The
@@ -53,22 +56,36 @@ export const DeliveryAddressScreen = () => {
   // Land straight on the map when there is nothing to pick from (e.g. right
   // after first login); returning users with saved addresses see the list.
   const [mode, setMode] = useState<'list' | 'add'>(savedAddresses.length === 0 ? 'add' : 'list');
+  const enteredFromList = useRef(savedAddresses.length > 0);
+  const leaving = useRef(false);
+  const interaction = useRef(0);
+  const focused = useScreenFocused();
+  useEffect(() => () => { interaction.current++; }, [focused]);
   const [showForm, setShowForm] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Address | null>(null);
+  const vm = useAddAddressViewModel(mode === 'add');
+  const map = vm.map;
 
   const mapRef = useRef<MapView | null>(null);
-  const suppressSettle = useRef(false);
+  const initialDetectStarted = useRef(false);
 
-  // Initialize the camera once when entering add mode.
+  // Initialize once per add-mode entry, after navigation focuses the screen.
+  // iOS can mount this screen before focus; an earlier attempt would return
+  // without requesting permission and never retry on focus.
   useEffect(() => {
-    if (mode === 'add' && !vm.editingId) void map.initialDetect();
+    if (mode !== 'add') {
+      initialDetectStarted.current = false;
+      return;
+    }
+    if (!focused || vm.editingId || initialDetectStarted.current) return;
+    initialDetectStarted.current = true;
+    void map.initialDetect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, focused, vm.editingId]);
 
-  // Point the camera at the VM region; suppress the resulting settle.
+  // Point the camera at the VM region; native non-gesture events are ignored.
   useEffect(() => {
     if (mode === 'add' && map.region && mapRef.current) {
-      suppressSettle.current = true;
       mapRef.current.animateToRegion(map.region, 350);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,44 +103,65 @@ export const DeliveryAddressScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, at]);
 
-  const openSearch = () => router.push({ pathname: '/location/search', params: { returnTo: '/address/add' } });
+  const openSearch = () => router.push({
+    pathname: '/location/search',
+    params: { returnTo: '/address/add', ...(manageMode ? { manage: '1' } : {}) },
+  });
 
-  useRecenterOnFocus(mapRef, map.region, () => { suppressSettle.current = true; }, mode === 'add');
+  const cancelRecenter = useRecenterOnFocus(mapRef, map.region, mode === 'add');
+
+  const handleRegionChange = (_next: Region, details?: { isGesture?: boolean }) => {
+    if (!details?.isGesture) return;
+    cancelRecenter();
+    map.onRegionMoving();
+    setShowForm(false);
+  };
 
   const handleRegionChangeComplete = useCallback(
-    (next: Region) => {
-      if (suppressSettle.current) { suppressSettle.current = false; return; }
+    (next: Region, details?: { isGesture?: boolean }) => {
+      if (details?.isGesture === false) return;
+      cancelRecenter();
       map.onRegionSettled(next);
       setShowForm(false); // pin moved → require re-confirm
     },
-    [map],
+    [map, cancelRecenter],
   );
 
-  const backToCart = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/cart');
+  const leaveScreen = () => {
+    leaving.current = true;
+    router.back(manageMode ? '/(dashboard)/profile' : '/cart');
   };
 
-  const goBack = () => {
-    if (mode === 'add') { setMode('list'); setShowForm(false); vm.reset(); return; }
-    backToCart();
-  };
+  const goBack = useBackAction(() => {
+    if (vm.saving) return;
+    interaction.current++;
+    if (mode === 'add' && showForm) { setShowForm(false); return; }
+    if (mode === 'add' && enteredFromList.current) { setMode('list'); vm.reset(); return; }
+    leaveScreen();
+  });
+  const backGuard = <AddressBackGuard
+    enabled={focused && (vm.saving || (mode === 'add' && (showForm || enteredFromList.current)))}
+    leaving={leaving}
+    onBack={goBack}
+  />;
 
-  const onSelectExisting = async (id: string) => {
+  const onSelectExisting = useSingleFlight(async (id: string) => {
     const a = savedAddresses.find((x) => x.id === id);
     if (!a) return;
+    const token = interaction.current;
     await setSelectedAddress(a);
-    backToCart();
-  };
+    if (token === interaction.current) leaveScreen();
+  });
 
   const onUseCurrent = async () => {
-    const region = await map.useCurrentLocation();
-    if (region && mapRef.current) mapRef.current.animateToRegion(region, 350);
+    await map.useCurrentLocation();
   };
 
-  const onConfirmPin = () => { if (map.pinState === 'serviceable') setShowForm(true); };
+  const onConfirmPin = () => { if (map.isCurrentPin() && map.pinState === 'serviceable') setShowForm(true); };
 
   const onEdit = (a: Address) => {
+    enteredFromList.current = true;
+    interaction.current++;
     vm.beginEdit(a);
     setShowForm(true);
     setMode('add');
@@ -131,32 +169,34 @@ export const DeliveryAddressScreen = () => {
 
   const onDelete = (a: Address) => setPendingDelete(a);
 
-  const onConfirmDelete = async () => {
+  const onConfirmDelete = useSingleFlight(async () => {
     const a = pendingDelete;
     setPendingDelete(null);
     if (!a) return;
     try {
       await deleteAddress(a.id);
-      setSavedAddresses(savedAddresses.filter((x) => x.id !== a.id));
+      setSavedAddresses(useLocationStore.getState().savedAddresses.filter((x) => x.id !== a.id));
     } catch {
       Alert.alert('Error', 'Could not delete address.');
     }
-  };
+  });
 
-  const onSave = async () => {
+  const onSave = useSingleFlight(async () => {
+    const token = interaction.current;
     const editing = !!vm.editingId;
-    if (await vm.save()) {
+    if (await vm.save() && token === interaction.current) {
       if (editing) { setMode('list'); setShowForm(false); vm.reset(); }
-      else backToCart();
+      else leaveScreen();
     }
-  };
+  });
 
   // ── List mode ──────────────────────────────────────────────────────────────
   if (mode === 'list') {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'left', 'right']}>
+        {backGuard}
         <View className="flex-row items-center gap-3 px-4 py-3 bg-white border-b border-slate-100">
-          <TouchableOpacity onPress={goBack} hitSlop={8} className="w-9 h-9 items-center justify-center">
+          <TouchableOpacity onPress={goBack} accessibilityLabel={t('back')} hitSlop={8} className="w-9 h-9 items-center justify-center">
             <ArrowLeft size={22} color="#0f172a" />
           </TouchableOpacity>
           <Text className="text-slate-900 font-black text-xl">{t('select_delivery_address')}</Text>
@@ -164,7 +204,7 @@ export const DeliveryAddressScreen = () => {
 
         <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ padding: 16 }}>
           <TouchableOpacity
-            onPress={() => setMode('add')}
+            onPress={() => { enteredFromList.current = true; interaction.current++; setMode('add'); }}
             activeOpacity={0.85}
             accessibilityRole="button"
             className="flex-row items-center gap-3 bg-white border border-green-200 rounded-2xl px-4 py-4 mb-4"
@@ -248,14 +288,17 @@ export const DeliveryAddressScreen = () => {
 
   return (
     <View className="flex-1 bg-slate-100">
+      {backGuard}
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
         initialRegion={initialRegion}
+        onRegionChange={handleRegionChange}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsMyLocationButton={false}
-        showsUserLocation
+        // showsUserLocation is deliberately off: on Fabric its native
+        // `topUserLocationChange` events are unregistered and throw app-wide.
       />
       <MapPinMarker />
 
@@ -263,6 +306,7 @@ export const DeliveryAddressScreen = () => {
         <View className="flex-row items-center gap-3 px-4 py-3">
           <TouchableOpacity
             onPress={goBack}
+            accessibilityLabel={t('back')}
             hitSlop={8}
             className="w-10 h-10 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
@@ -282,6 +326,7 @@ export const DeliveryAddressScreen = () => {
 
           <TouchableOpacity
             onPress={openSearch}
+            disabled={vm.saving}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={t('search_location')}
@@ -296,6 +341,7 @@ export const DeliveryAddressScreen = () => {
       {!showForm ? (
         <TouchableOpacity
           onPress={onUseCurrent}
+          disabled={map.detectingGps}
           activeOpacity={0.85}
           accessibilityRole="button"
           className="absolute right-4 bottom-48 bg-white rounded-full px-4 py-2.5 flex-row items-center gap-2"

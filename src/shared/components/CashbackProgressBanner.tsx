@@ -22,7 +22,7 @@ interface CashbackProgressBannerProps {
   grandTotal: number;
 }
 
-const BOLD_STYLE = { fontWeight: '800' as const, color: '#166534' };
+const BOLD_STYLE = { fontWeight: '800' as const, color: '#92400e' };
 
 export const CashbackProgressBanner = ({ grandTotal }: CashbackProgressBannerProps) => {
   const cashback = useCartCashback(grandTotal);
@@ -31,16 +31,16 @@ export const CashbackProgressBanner = ({ grandTotal }: CashbackProgressBannerPro
   if (cashback.phase === 'disabled' || cashback.phase === 'below_minimum') return null;
 
   return (
-    <View className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 gap-2">
+    <View className="bg-amber-50 border border-[#e0a800] rounded-xl px-3 py-2.5 gap-2">
       <View className="flex-row items-center gap-2">
-        <Gift size={16} color="#16a34a" />
-        <Text className="text-emerald-800 text-sm font-medium flex-1">
+        <Gift size={16} color="#b45309" />
+        <Text className="text-amber-800 text-sm font-medium flex-1">
           {renderTemplateWithBold(t(cashback.primary.key), cashback.primary.vars, BOLD_STYLE)}
         </Text>
       </View>
-      <View className="h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+      <View className="h-1.5 bg-amber-100 rounded-full overflow-hidden">
         <View
-          className="h-full bg-emerald-500 rounded-full"
+          className="h-full bg-amber-500 rounded-full"
           style={{ width: `${cashback.progress * 100}%` }}
         />
       </View>

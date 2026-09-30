@@ -73,6 +73,12 @@ describe('mapProductDetail', () => {
     expect(d.active).toBe(true);
   });
 
+  it('is out of stock when the record has neither stock nor a price', () => {
+    const d = mapProductDetail({ _id: 'x', title: 'Unpriced', landingImage: 'https://img/x.png' });
+    expect(d.price).toBe(0);
+    expect(d.inStock).toBe(false);
+  });
+
   it('maps inStock from stock count', () => {
     expect(mapProductDetail({ ...RAW, stock: 0 }).inStock).toBe(false);
     expect(mapProductDetail({ ...RAW, stock: 3 }).inStock).toBe(true);

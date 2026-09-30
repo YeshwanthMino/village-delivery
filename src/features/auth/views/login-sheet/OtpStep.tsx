@@ -43,7 +43,8 @@ export const OtpStep = ({ phone, onBack, onVerified, onRetryStart, onResend, res
     // Reset boxes on new error
     if (error) {
       setDigits(Array(OTP_LEN).fill(''));
-      setTimeout(() => refs.current[0]?.focus(), 100);
+      const timer = setTimeout(() => refs.current[0]?.focus(), 100);
+      return () => clearTimeout(timer);
     }
   }, [error]);
 

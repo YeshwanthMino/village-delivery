@@ -25,13 +25,12 @@ export const AppAuthRoutes = {
   refresh: '/app/auth/refresh',
 };
 
-// Endpoints that are scoped to the active branch: apiClient adds `x-branch-id`
-// to these (matched against the request URL, query string ignored).
-export const BranchScopedRoutes: RegExp[] = [
-  /\/app\/orders(\/check-stock)?$/,
-  /\/app\/store-config$/,
-  /\/app\/products$/,
-  /\/app\/category\/flattened\/all-products(\/|$)/,
+// Every API call carries `x-branch-id` except these: the village directory
+// (find-by-location / search) is what resolves the branch, and the branch
+// lookup itself waits on it, so tagging them would deadlock or send a stale one.
+// Matched against the request URL, query string ignored.
+export const BranchExcludedRoutes: RegExp[] = [
+  /\/villages(\/|$)/,
 ];
 
 // App configuration

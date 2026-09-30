@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Address, LatLng, RecentLocation, ServiceabilityStatus, Village } from '@/src/features/location/domain/models';
-import { LocationService, PermissionState } from '@/src/features/location/data/LocationService';
+import { LocationService, PermissionResult, PermissionState } from '@/src/features/location/data/LocationService';
 import { findByLocation } from '@/src/features/location/data/locationApi';
 import { apiClient } from '@/src/base/services/remote/apiClient';
 import { reconcileSelectedId, villageFromAddress } from '@/src/features/location/domain/addressSelection';
@@ -17,6 +17,7 @@ interface LocationState {
   status: ServiceabilityStatus;
   permission: PermissionState;
   blocked: boolean; // permanently denied ("Don't ask again")
+  blockedPromptDismissed: boolean;
   detecting: boolean;
   lastError: LocationErrorKind | null;
   serviceableVillage: Village | null;
@@ -39,7 +40,10 @@ interface LocationActions {
   addRecent: (recent: RecentLocation) => Promise<void>;
   clearLocation: () => Promise<void>;
   refreshPermission: () => Promise<PermissionState>;
-  detectCurrentLocation: () => Promise<boolean>;
+  recordPermissionResult: (result: PermissionResult) => void;
+  dismissBlockedPrompt: () => void;
+  showBlockedPrompt: () => void;
+  detectCurrentLocation: (signal?: AbortSignal) => Promise<boolean>;
   searchLocation: (query: string) => Promise<boolean>;
   selectAddress: (address: Address) => Promise<boolean>;
   selectRecent: (recent: RecentLocation) => Promise<void>;
@@ -55,6 +59,7 @@ const initialState: LocationState = {
   status: 'idle',
   permission: 'undetermined',
   blocked: false,
+  blockedPromptDismissed: false,
   detecting: false,
   lastError: null,
   serviceableVillage: null,
@@ -69,6 +74,31 @@ let inflight: Promise<boolean> | null = null;
 let seq = 0;
 let backfillInflight: Promise<void> | null = null;
 let hydrateInflight: Promise<void> | null = null;
+let locationController: AbortController | null = null;
+
+function invalidateLocationRequest(): number {
+  seq++;
+  locationController?.abort();
+  locationController = null;
+  inflight = null;
+  return seq;
+}
+
+async function commitServiceable(
+  set: SetState,
+  village: Village,
+  token: number,
+  keepSelectedAddress = false,
+): Promise<void> {
+  if (token !== seq) return;
+  set({ serviceableVillage: village, status: 'serviceable', detecting: false, lastError: null, blocked: false, blockedPromptDismissed: false });
+  if (!keepSelectedAddress) {
+    set({ selectedAddressId: null });
+    await StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID);
+  }
+  if (token !== seq) return;
+  await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
+}
 
 /**
  * Coords → serviceability. Drops its result if a newer detect/search started.
@@ -83,13 +113,15 @@ async function resolveCoords(
   token: number,
   opts?: { addToRecents?: boolean },
 ): Promise<boolean> {
+  if (token !== seq) return false;
   set({ status: 'checking' });
   try {
-    const result = await findByLocation(coords);
+    const result = await findByLocation(coords, locationController?.signal);
     if (token !== seq) return false; // stale — a newer request won
     if (result.serviceable && result.village) {
       const v = result.village;
-      await get().setServiceable(v);
+      await commitServiceable(set, v, token);
+      if (token !== seq) return false;
       if (v.storeId && opts?.addToRecents !== false) {
         await get().addRecent({
           villageId: v.id,
@@ -102,8 +134,7 @@ async function resolveCoords(
           savedAt: Date.now(),
         });
       }
-      set({ status: 'serviceable', detecting: false, lastError: null });
-      return true;
+      return token === seq;
     }
     set({ status: 'not_serviceable', detecting: false });
     return false;
@@ -115,50 +146,63 @@ async function resolveCoords(
 }
 
 /** Permission → GPS fix → resolve. */
-async function runDetect(set: SetState, get: GetState): Promise<boolean> {
-  const token = ++seq;
+async function runDetect(set: SetState, get: GetState, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return false;
+  const token = invalidateLocationRequest();
+  const controller = new AbortController();
+  locationController = controller;
   set({ status: 'locating', detecting: true, lastError: null });
+  const cancel = () => {
+    if (token !== seq) return;
+    invalidateLocationRequest();
+    set({ status: get().serviceableVillage ? 'serviceable' : 'idle', detecting: false, lastError: null });
+  };
+  signal?.addEventListener('abort', cancel, { once: true });
 
-  const current = await LocationService.getPermissionState();
-  if (current !== 'granted') {
+  try {
+    // A GPS action is an explicit permission request. The native API returns
+    // immediately when already granted, and asks on first use. Reading status
+    // first can fail transiently and leave the Enable tap with no OS prompt.
     const res = await LocationService.requestPermission();
-    set({
-      permission: res.granted ? 'granted' : 'denied',
-      blocked: !res.granted && !res.canAskAgain,
-    });
+    if (token !== seq) return false;
+    get().recordPermissionResult(res);
     if (!res.granted) {
       set({ status: 'idle', detecting: false });
       return false;
     }
-  } else {
-    set({ permission: 'granted', blocked: false });
-  }
 
-  let coords: LatLng;
-  try {
-    coords = await LocationService.getCurrentPosition();
+    const coords = await LocationService.getCurrentPosition(controller.signal);
+    if (token !== seq) return false;
+    return await resolveCoords(set, get, coords, undefined, token);
   } catch (e: any) {
+    if (token !== seq) return false;
     set({
       status: 'error',
       lastError: e?.message === 'LOCATION_TIMEOUT' ? 'timeout' : 'no_fix',
       detecting: false,
     });
     return false;
+  } finally {
+    signal?.removeEventListener('abort', cancel);
   }
-
-  return resolveCoords(set, get, coords, undefined, token);
 }
 
 export const useLocationStore = create<LocationStore>((set, get) => ({
   ...initialState,
 
   hydrate: () => {
+    if (hydrateInflight) return hydrateInflight;
+    const token = seq;
     hydrateInflight = (async () => {
       const [village, recents, selectedAddressId] = await Promise.all([
         StoredPrefs.getCustomData<Village>(StorageKeys.SERVICEABLE_VILLAGE),
         StoredPrefs.getCustomData<RecentLocation[]>(StorageKeys.RECENT_LOCATIONS),
         StoredPrefs.getCustomData<string>(StorageKeys.SELECTED_ADDRESS_ID),
       ]);
+      if (token !== seq) {
+        set({ hydrated: true });
+        return;
+      }
       set({
         serviceableVillage: village ?? null,
         recentLocations: Array.isArray(recents) ? recents : [],
@@ -193,7 +237,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         // switched village while the request was in flight.
         if (fresh.storeId !== cached.storeId) return;
         const current = get().serviceableVillage;
-        if (!current || current.storeId !== cached.storeId || current.branchId) return;
+        if (current !== cached || current.branchId) return;
         const updated = { ...current, branchId: fresh.branchId };
         set({ serviceableVillage: updated });
         await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, updated);
@@ -218,15 +262,11 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   setStatus: (status) => set({ status }),
 
   setServiceable: async (village, opts) => {
-    set({ serviceableVillage: village, status: 'serviceable' });
+    const token = invalidateLocationRequest();
     // Switching the active store from a non-address source (GPS, search, recent,
     // map picker) deselects the saved delivery address, so the toolbar shows the
     // new village name. selectAddress passes keepSelectedAddress to re-select.
-    if (!opts?.keepSelectedAddress) {
-      set({ selectedAddressId: null });
-      await StoredPrefs.removeCustomData(StorageKeys.SELECTED_ADDRESS_ID);
-    }
-    await StoredPrefs.setCustomData(StorageKeys.SERVICEABLE_VILLAGE, village);
+    await commitServiceable(set, village, token, opts?.keepSelectedAddress);
   },
 
   setNotServiceable: () => set({ status: 'not_serviceable' }),
@@ -261,38 +301,55 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   },
 
   clearLocation: async () => {
-    set({ serviceableVillage: null, status: 'idle' });
+    invalidateLocationRequest();
+    set({ serviceableVillage: null, status: 'idle', detecting: false, lastError: null, blockedPromptDismissed: false });
     await StoredPrefs.removeCustomData(StorageKeys.SERVICEABLE_VILLAGE);
   },
 
   refreshPermission: async () => {
     const permission = await LocationService.getPermissionState();
-    set({ permission });
+    set(permission === 'granted'
+      ? { permission, blocked: false, blockedPromptDismissed: false }
+      : { permission });
     return permission;
   },
 
-  detectCurrentLocation: async () => {
+  recordPermissionResult: (result) => set({
+    permission: result.granted ? 'granted' : 'denied',
+    blocked: !result.granted && !result.canAskAgain,
+    blockedPromptDismissed: false,
+  }),
+
+  dismissBlockedPrompt: () => set({ blockedPromptDismissed: true }),
+  showBlockedPrompt: () => set({ blockedPromptDismissed: false }),
+
+  detectCurrentLocation: async (signal) => {
+    if (signal?.aborted) return false;
     if (inflight) return inflight; // dedupe concurrent callers
-    inflight = runDetect(set, get);
+    const request = runDetect(set, get, signal);
+    inflight = request;
     try {
-      return await inflight;
+      return await request;
     } finally {
-      inflight = null;
+      if (inflight === request) inflight = null;
     }
   },
 
   searchLocation: async (query) => {
     const q = query.trim();
     if (!q) return false;
-    const token = ++seq;
+    const token = invalidateLocationRequest();
+    locationController = new AbortController();
     set({ status: 'locating', detecting: true, lastError: null });
     let coords: LatLng | null;
     try {
       coords = await LocationService.geocode(q);
     } catch {
+      if (token !== seq) return false;
       set({ status: 'error', lastError: 'network', detecting: false });
       return false;
     }
+    if (token !== seq) return false;
     if (!coords) {
       set({ status: 'idle', detecting: false });
       return false;
@@ -306,15 +363,21 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     // address never adds a recent location (recents are for ad-hoc GPS/search).
     const village = villageFromAddress(address);
     if (village) {
-      await get().setServiceable(village, { keepSelectedAddress: true });
+      const commit = get().setServiceable(village, { keepSelectedAddress: true });
+      const token = seq;
+      await commit;
+      if (token !== seq) return false;
+      // Publish the address after its store is persisted: API headers still
+      // read that persisted store, and cart stock checks react to this id.
       set({ selectedAddressId: address.id });
       await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
-      return true;
+      return token === seq;
     }
     // Legacy fallback: an address without a storeId — resolve serviceability
     // from its coords, but skip the recents write.
     if (address.latitude == null || address.longitude == null) return false;
-    const token = ++seq;
+    const token = invalidateLocationRequest();
+    locationController = new AbortController();
     const label = [address.addressLine1, address.villageName].filter(Boolean).join(', ');
     set({ status: 'locating', detecting: true, lastError: null });
     const ok = await resolveCoords(
@@ -325,19 +388,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       token,
       { addToRecents: false },
     );
-    if (ok) {
+    if (ok && token === seq) {
       set({ selectedAddressId: address.id });
       await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
     }
-    return ok;
+    return ok && token === seq;
   },
 
   setSelectedAddress: async (address) => {
-    // Record the selection so the cart reflects it instantly, then switch the
-    // active store. selectAddress handles the store switch without find-by-
-    // location (when the address has a storeId) and never adds a recent.
-    set({ selectedAddressId: address.id });
-    await StoredPrefs.setCustomData(StorageKeys.SELECTED_ADDRESS_ID, address.id);
+    // Invalidate older GPS/search work before persisting the new choice.
     await get().selectAddress(address);
   },
 
@@ -350,14 +409,20 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       latitude: r.latitude,
       longitude: r.longitude,
     };
-    await get().setServiceable(v);
+    const commit = get().setServiceable(v);
+    const token = seq;
+    await commit;
+    if (token !== seq) return;
     await get().addRecent({ ...r, savedAt: Date.now() });
   },
 
   selectVillage: async (village) => {
     // Search results already carry storeId + defaultLocation, so switch the
     // active store directly — no find-by-location round-trip (like selectRecent).
-    await get().setServiceable(village);
+    const commit = get().setServiceable(village);
+    const token = seq;
+    await commit;
+    if (token !== seq) return false;
     if (village.storeId) {
       await get().addRecent({
         villageId: village.id,
@@ -370,7 +435,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         savedAt: Date.now(),
       });
     }
-    return true;
+    return token === seq;
   },
 }));
 

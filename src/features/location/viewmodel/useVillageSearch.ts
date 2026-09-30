@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import type { Village } from '../domain/models';
 import { useVillageSearchQuery } from '../data/queries/useVillageSearchQuery';
+import { useScreenFocused } from '@/src/shared/hooks/useScreenActive';
 
 /** Typing must settle for this long before the request fires. */
 const DEBOUNCE_MS = 500;
@@ -36,15 +37,19 @@ export interface VillageSearch<T extends Village = Village> {
 export function useVillageSearch<T extends Village = Village>(
   filter?: (villages: Village[]) => T[],
 ): VillageSearch<T> {
+  const focused = useScreenFocused();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
   useEffect(() => {
+    if (!focused) return;
     const id = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [query]);
+  }, [query, focused]);
 
-  const search = useVillageSearchQuery(debouncedQuery);
+  // Release the old query observer while covered so consumed request signals
+  // cancel. Keep the text/debounce state for a normal return to this screen.
+  const search = useVillageSearchQuery(focused ? debouncedQuery : '');
   const raw = search.data ?? EMPTY;
 
   return {

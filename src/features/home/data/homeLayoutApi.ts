@@ -12,12 +12,13 @@ import { mapHomeLayout } from './homeLayoutMapper';
 export async function getHomeLayout(
   storeId: string,
   slug = 'app-home-page-layout',
+  signal?: AbortSignal,
 ): Promise<HomeLayout> {
   // Fetch the layout directly by slug. Public endpoint keyed by x-store-id;
   // no auth token required.
   const data = await apiClient.getWithoutAuth<any>(
     `${WebService.villageBaseURL}/app/page-layout/slug/${slug}`,
-    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+    { headers: { Accept: '*/*', 'x-store-id': storeId }, signal },
   );
 
   // Endpoint returns a single layout; tolerate common wrappers and a list

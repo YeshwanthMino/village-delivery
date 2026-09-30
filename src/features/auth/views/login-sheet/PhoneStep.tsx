@@ -19,19 +19,21 @@ export const PhoneStep = ({ phone, setPhone, onSubmit, onClose, busy, onSimPick,
   const valid = phone.length === 10;
   const inputRef = useRef<TextInput>(null);
   const [simBusy, setSimBusy] = useState(false);
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const t = setTimeout(() => inputRef.current?.focus(), 300);
-    return () => clearTimeout(t);
+    return () => { mounted.current = false; clearTimeout(t); };
   }, []);
 
   const handleSimPick = async () => {
     setSimBusy(true);
     try {
       const num = await requestPhoneNumber();
-      if (num) onSimPick(num);
+      if (mounted.current && num) onSimPick(num);
     } finally {
-      setSimBusy(false);
+      if (mounted.current) setSimBusy(false);
     }
   };
 

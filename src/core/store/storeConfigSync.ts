@@ -9,10 +9,11 @@
 
 import { useLocationStore } from './useLocationStore';
 import { useStoreConfigStore } from './useStoreConfigStore';
+import { queryClient } from '@/src/base/query/queryClient';
 import type { Village } from '@/src/features/location/domain/models';
 
 const keyOf = (village: Village | null): string =>
-  village ? `${village.storeId ?? ''}|${village.branchId ?? ''}` : '';
+  village?.branchId ?? '';
 
 let stop: (() => void) | null = null;
 
@@ -25,6 +26,9 @@ export function startStoreConfigSync(): () => void {
     // The previous village's hours must never be judged for the new one, so
     // drop them until the new config lands (or the fetch fails → no notice).
     useStoreConfigStore.setState({ store: null });
+    // Every cached API response belongs to the previous branch. Reset the whole
+    // cache (active queries refetch, inactive ones start empty).
+    void queryClient.resetQueries();
     void useStoreConfigStore.getState().refresh();
   });
   stop = () => {

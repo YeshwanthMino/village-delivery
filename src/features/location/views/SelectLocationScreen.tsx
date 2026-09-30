@@ -7,7 +7,9 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useSingleFlight } from '@/src/shared/hooks/useSingleFlight';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { ArrowLeft, Clock, MapPin } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { AddressTag } from '../domain/models';
@@ -23,7 +25,7 @@ const TAG_EMOJI: Record<AddressTag, string> = { home: '🏠', work: '🏢', othe
 
 export const SelectLocationScreen = () => {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const vm = useLocationViewModel();
   const book = useAddressBookViewModel();
 
@@ -31,14 +33,11 @@ export const SelectLocationScreen = () => {
   // the village directly, so it never needs a lat/lng to recenter a map.
   const search = useVillageSearch();
 
-  const goHome = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/(dashboard)/home');
-  };
+  const goBack = useBackAction(() => router.back());
 
-  const run = async (p: Promise<boolean>) => {
-    if (await p) goHome();
-  };
+  const run = useSingleFlight(async (action: () => Promise<boolean>) => {
+    if (await action()) router.dismissTo('/(dashboard)/home');
+  });
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
@@ -47,7 +46,8 @@ export const SelectLocationScreen = () => {
         <View className="bg-white px-5 pt-2 pb-5">
           <View className="flex-row items-center gap-3 mb-5">
             <TouchableOpacity
-              onPress={goHome}
+              onPress={goBack}
+              accessibilityLabel={t('back')}
               hitSlop={8}
               className="w-10 h-10 -ml-2 rounded-full items-center justify-center"
             >
@@ -62,13 +62,13 @@ export const SelectLocationScreen = () => {
 
         <View className="px-5 pt-4">
           {/* Search results (village directory) */}
-          <VillageSearchResults search={search} onSelect={(v) => run(vm.selectVillage(v))} />
+          <VillageSearchResults search={search} onSelect={(v) => run(() => vm.selectVillage(v))} />
 
           {/* Use my Current Location */}
           <UseCurrentLocationRow
             permission={vm.permission}
             loading={vm.detecting}
-            onPress={() => run(vm.detectCurrentLocation())}
+            onPress={() => run(() => vm.detectCurrentLocation())}
           />
 
           {/* Set location on map */}
@@ -94,7 +94,7 @@ export const SelectLocationScreen = () => {
               {book.addresses.map((a) => (
                 <TouchableOpacity
                   key={a.id}
-                  onPress={() => run(vm.selectAddress(a))}
+                  onPress={() => run(() => vm.selectAddress(a))}
                   className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
                 >
                   <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
@@ -116,8 +116,8 @@ export const SelectLocationScreen = () => {
               </Text>
               {vm.recentLocations.map((r) => (
                 <TouchableOpacity
-                  key={r.storeId}
-                  onPress={() => run(vm.selectRecent(r).then(() => true))}
+                  key={r.villageId ?? `${r.storeId}-${r.label}`}
+                  onPress={() => run(() => vm.selectRecent(r).then(() => true))}
                   className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
                 >
                   <Clock size={20} color="#64748b" />

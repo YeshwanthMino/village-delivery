@@ -1,6 +1,8 @@
 // src/features/product/viewmodel/useProductDetailViewModel.ts
 
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailQuery } from '../data/queries/useProductDetailQuery';
 import { ProductDetail } from '../data/productDetail.types';
@@ -8,7 +10,8 @@ import { CartSnapshot } from '@/src/base/types/village.types';
 import { orderLimit } from '@/src/shared/utils/orderLimit';
 
 export function useProductDetailViewModel(selectedVariantIndex?: number | null) {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/home'));
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const query = useProductDetailQuery(id);
@@ -101,7 +104,7 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
     onAdd,
     onDec,
     onViewCart: () => router.push('/cart'),
-    onBack: () => router.back(),
+    onBack: goBack,
     onSearch: () => router.push('/search'),
   };
 }

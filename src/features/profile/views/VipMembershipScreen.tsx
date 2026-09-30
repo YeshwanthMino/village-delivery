@@ -7,7 +7,8 @@
 // 2026-09-29 after checking Zepto Pass / Blinkit membership screens for
 // reference — those lean on real benefit numbers rather than restating cost.
 
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { ArrowLeft, Crown, Percent } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -18,7 +19,8 @@ import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { rupees, toUnits } from '@/src/shared/utils/currency';
 
 export const VipMembershipScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/profile'));
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const isVip = Boolean(useAuthStore(state => state.user?.isVip));
@@ -31,7 +33,7 @@ export const VipMembershipScreen = () => {
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
       <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12 }}>
         <View className="px-4 pb-3 flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+          <TouchableOpacity onPress={goBack} className="w-8 h-8 items-center justify-center">
             <ArrowLeft size={20} color="#0f172a" />
           </TouchableOpacity>
           <Text className="text-slate-900 font-bold text-base">{t('vip_membership_title')}</Text>

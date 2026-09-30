@@ -12,8 +12,8 @@ export interface CheckoutInputs {
   isAuthenticated: boolean;
   hasAddress: boolean;
   belowMinimum: boolean;
-  /** True once every cart line has been stock-checked and none of them can be
-   *  fulfilled — an unchecked or failed stock check must never set this: the
+  /** True when any checked cart line is out of stock or has less available than
+   *  the cart holds — an unchecked or failed stock check must never set this: the
    *  cart fails open, same as the stock check itself (see stockApi.ts). */
   outOfStock: boolean;
 }
@@ -24,8 +24,8 @@ export function deriveCheckoutState({
   belowMinimum,
   outOfStock,
 }: CheckoutInputs): CheckoutState {
-  // Checked first: nothing else about the cart matters when there is nothing
-  // in it that can actually be delivered.
+  // Checked first: nothing else matters while the cart holds a line that
+  // cannot be delivered as quantified.
   if (outOfStock) return 'out_of_stock';
   if (belowMinimum) return 'below_minimum';
   if (!isAuthenticated) return 'login';

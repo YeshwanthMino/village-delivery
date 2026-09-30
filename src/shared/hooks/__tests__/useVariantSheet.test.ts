@@ -1,5 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 
+let mockFocused = true;
+jest.mock('@/src/shared/hooks/useScreenActive', () => ({
+  useScreenFocused: () => mockFocused,
+}));
 jest.mock('@/src/features/product/data/productDetailApi', () => ({
   getProductDetail: jest.fn(),
 }));
@@ -70,6 +74,7 @@ const detailWithVariants = (variantList: Variant[]): ProductDetail => ({
 });
 
 beforeEach(() => {
+  mockFocused = true;
   mockGetProductDetail.mockReset();
 });
 
@@ -198,6 +203,7 @@ describe('useVariantSheet', () => {
     act(() => {
       result.current.close();
     });
+    expect(mockGetProductDetail.mock.calls[0][2]?.aborted).toBe(true);
 
     expect(result.current.product).toBeNull();
     expect(result.current.loading).toBe(false);
@@ -209,5 +215,27 @@ describe('useVariantSheet', () => {
 
     expect(result.current.product).toBeNull();
     expect(result.current.loading).toBe(false);
+  });
+
+  it('cancels fallback loading and clears the sheet when its screen loses focus', async () => {
+    const { promise, resolve } = deferred<ProductDetail>();
+    mockGetProductDetail.mockReturnValue(promise);
+    const { result, rerender } = renderHook(() => useVariantSheet());
+
+    act(() => { result.current.open(productWithoutVariants('p2', 'Product B')); });
+    expect(result.current.loading).toBe(true);
+    mockFocused = false;
+    rerender({});
+    expect(mockGetProductDetail.mock.calls[0][2]?.aborted).toBe(true);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.product).toBeNull();
+
+    await act(async () => {
+      resolve(detailWithVariants(variants));
+      await promise;
+    });
+    mockFocused = true;
+    rerender({});
+    expect(result.current.product).toBeNull();
   });
 });

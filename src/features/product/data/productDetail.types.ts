@@ -1,6 +1,6 @@
 // src/features/product/data/productDetail.types.ts
 //
-// View-model for the product detail page (GET /app/product/:id). Raw API
+// View-model for the product detail page (GET /app/products/:id). Raw API
 // objects are mapped into this by productDetailApi so the UI never touches
 // backend field shapes directly.
 

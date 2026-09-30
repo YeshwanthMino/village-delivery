@@ -73,7 +73,7 @@ describe('getWallet', () => {
   test('GETs /app/wallet and maps the response', async () => {
     mockGet.mockResolvedValue({ cashback: 75, cashbackExpiryDate: '2026-01-01', daysLeft: 10 });
     const wallet = await getWallet();
-    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('/app/wallet'));
+    expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('/app/wallet'), { signal: undefined });
     expect(rupees(wallet!.cashback)).toBe('₹75');
   });
 

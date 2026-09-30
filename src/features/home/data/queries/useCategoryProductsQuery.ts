@@ -10,7 +10,7 @@ export const useCategoryProductsQuery = (categoryId?: string, limit = 24) => {
 
   return useQuery({
     queryKey: [...queryKeys.products.byCategory(categoryId ?? ''), { storeId, limit }],
-    queryFn: () => getCategoryProducts(storeId, categoryId || '', 0, limit),
+    queryFn: ({ signal }) => getCategoryProducts(storeId, categoryId || '', 0, limit, signal),
     enabled: !!categoryId && !!storeId,
     staleTime: 5 * 60 * 1000,
   });

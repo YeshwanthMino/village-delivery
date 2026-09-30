@@ -6,6 +6,10 @@ export const queryKeys = {
     search: (term: string) => [...queryKeys.products.list(), 'search', { term }] as const,
     detail: (id: string) => [...queryKeys.products.list(), 'detail', { id }] as const,
   },
+  sales: {
+    all: ['sales'] as const,
+    bySlug: (slug: string) => [...queryKeys.sales.all, { slug }] as const,
+  },
   categories: {
     all: ['categories'] as const,
     list: () => [...queryKeys.categories.all, 'list'] as const,

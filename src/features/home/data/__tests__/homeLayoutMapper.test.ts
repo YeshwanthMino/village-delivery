@@ -432,7 +432,7 @@ describe('mapProductWithVariants image fallback', () => {
   });
 });
 
-// A real /app/product response, trimmed to three of its six variants (one
+// A real /app/products response, trimmed to three of its six variants (one
 // per stock condition: plentiful, plentiful, out of stock). Prices are the
 // payload's real rupee values, so every assertion goes through rupees().
 const KANDHI_PAPPU = {

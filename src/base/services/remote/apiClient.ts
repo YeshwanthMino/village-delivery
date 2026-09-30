@@ -1,5 +1,5 @@
 import { AuthTokens } from './apiTypes';
-import { WebService, AppConfig, StorageKeys, AppAuthRoutes, BranchScopedRoutes } from '../../constants/AppConstants';
+import { WebService, AppConfig, StorageKeys, AppAuthRoutes, BranchExcludedRoutes } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
 import { IS_WEB } from '@/src/core/utils/platform';
@@ -127,12 +127,12 @@ class ApiClient {
     }
   }
 
-  // Branch-scoped endpoints (see BranchScopedRoutes) carry `x-branch-id`, with or
+  // All endpoints except BranchExcludedRoutes carry `x-branch-id`, with or
   // without auth. The provider may wait on a pending branch lookup.
   private async getBranchHeaders(url: string): Promise<Record<string, string>> {
     if (!this.branchIdProvider) return {};
     const path = url.split('?')[0];
-    if (!BranchScopedRoutes.some((re) => re.test(path))) return {};
+    if (BranchExcludedRoutes.some((re) => re.test(path))) return {};
     try {
       const branchId = await this.branchIdProvider();
       return branchId ? { 'x-branch-id': branchId } : {};
@@ -156,7 +156,9 @@ class ApiClient {
   }
 
   private async request<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    const { withAuth = true, _retry = false, timeout = AppConfig.timeout, ...fetchOptions } = options;
+    const { withAuth = true, _retry = false, timeout = AppConfig.timeout, signal, ...fetchOptions } = options;
+    const cancellationError = () => Object.assign(new Error('Request cancelled'), { name: 'AbortError' });
+    if (signal?.aborted) throw cancellationError();
 
     const authHeaders = withAuth ? await this.getAuthHeaders() : {};
     // Authed requests carry the active store's id by default; a per-call
@@ -172,9 +174,14 @@ class ApiClient {
     };
 
     const controller = new AbortController();
+    // Keep the timeout while also honoring a screen/query owner's cancellation.
+    const onAbort = () => controller.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) controller.abort();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
+      if (signal?.aborted) throw cancellationError();
       const response = await fetch(url, {
         ...fetchOptions,
         headers,
@@ -221,6 +228,7 @@ class ApiClient {
         throw ErrorMapper.createNetworkError('DECODE_FAILED');
       }
     } catch (error: any) {
+      if (signal?.aborted) throw cancellationError();
       if (error?.name === 'AbortError') {
         throw ErrorMapper.createNetworkError('REQUEST_TIMED_OUT');
       }
@@ -230,6 +238,7 @@ class ApiClient {
       throw ErrorMapper.createNetworkError('NO_INTERNET', error?.message);
     } finally {
       clearTimeout(timeoutId);
+      signal?.removeEventListener('abort', onAbort);
     }
   }
 

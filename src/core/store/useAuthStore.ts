@@ -10,6 +10,8 @@ import * as appAuth from '@/src/features/auth/data/appAuthApi';
 import { AuthTokens } from '@/src/base/services/remote/apiTypes';
 import { create } from 'zustand';
 import { logger } from '@/src/base/services/logger';
+import { queryClient } from '@/src/base/query/queryClient';
+import { queryKeys } from '@/src/base/query/queryKeys';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -93,6 +95,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   // hydrated location); if none yet, or the call fails, the cached value is
   // kept silently — never throws.
   const refreshProfile = async () => {
+    const sessionToken = get().accessToken;
     let storeId: string;
     try {
       storeId = requireStoreId();
@@ -101,7 +104,9 @@ export const useAuthStore = create<AuthStore>((set, get) => {
     }
     try {
       const profile = await appAuth.getMe(storeId);
+      if (!get().isAuthenticated || get().accessToken !== sessionToken) return;
       await StoredPrefs.setUserProfile(profile);
+      if (!get().isAuthenticated || get().accessToken !== sessionToken) return;
       set({ user: profile });
     } catch (e) {
       logger.warn('Background profile refresh failed:', e);
@@ -205,7 +210,12 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   },
 
   logout: async () => {
-    set({ isLoading: true, error: null });
+    // Disable account queries immediately, then discard their cache and saved
+    // addresses. Profile and session-expiry both call this store action.
+    set({ ...initialState, isLoading: true });
+    queryClient.removeQueries({ queryKey: queryKeys.orders.all });
+    queryClient.removeQueries({ queryKey: queryKeys.wallet.all });
+    useLocationStore.getState().setSavedAddresses([]);
 
     try {
       // Clear only auth data (tokens + cached profile). Locale and the selected

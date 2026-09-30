@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { useScreenActive } from '@/src/shared/hooks/useScreenActive';
 import { useVillageStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { computeBill, getCartItems } from '@/src/features/cart/domain/bill';
@@ -46,13 +47,17 @@ export const CartSummaryCard = ({ onPress, bottomOffset }: CartSummaryCardProps)
   // The glowing dot at the progress bar's leading edge blinks continuously —
   // a breathing opacity loop, not a one-shot animation.
   const glowPulse = useSharedValue(1);
+  const active = useScreenActive();
+  const hasItems = Object.values(cart).some((quantity) => quantity > 0);
   React.useEffect(() => {
+    if (!active || !hasItems) return;
     glowPulse.value = withRepeat(
       withTiming(0.35, { duration: 650, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, [glowPulse]);
+    return () => cancelAnimation(glowPulse);
+  }, [active, hasItems, glowPulse]);
   const glowStyle = useAnimatedStyle(() => ({ opacity: glowPulse.value }));
 
   const cartItems = React.useMemo(() => getCartItems(cart, cartSnapshots), [cart, cartSnapshots]);

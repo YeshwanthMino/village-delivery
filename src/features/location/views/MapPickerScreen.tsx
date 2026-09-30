@@ -7,7 +7,11 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useSingleFlight } from '@/src/shared/hooks/useSingleFlight';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
+import { useScreenFocused } from '@/src/shared/hooks/useScreenActive';
 import { ArrowLeft, LocateFixed, Search } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { DEFAULT_REGION, useMapPickerViewModel } from '../viewmodel/useMapPickerViewModel';
@@ -18,19 +22,24 @@ import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 
 export const MapPickerScreen = () => {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const vm = useMapPickerViewModel();
   const mapRef = useRef<MapView | null>(null);
-  const suppressSettle = useRef(false);
+  const focused = useScreenFocused();
+  const initialDetectStarted = useRef(false);
 
   // Set by the search screen when it pops back here with a chosen village.
   // `at` is a per-pick nonce so re-picking the same village still recenters.
   const { lat, lng, at } = useLocalSearchParams<{ lat?: string; lng?: string; at?: string }>();
 
   useEffect(() => {
+    // A pushed screen can mount before navigation marks it focused. Starting
+    // only on mount can skip the first iOS permission prompt entirely.
+    if (!focused || initialDetectStarted.current) return;
+    initialDetectStarted.current = true;
     void vm.initialDetect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [focused]);
 
   // A village picked in the search screen arrives as route params. Recenter on
   // it and re-resolve; the pin's Confirm sheet still does the committing.
@@ -43,39 +52,40 @@ export const MapPickerScreen = () => {
   }, [lat, lng, at]);
 
   // Once the VM produces a region (GPS or fallback), point the camera at it.
-  // Suppress the resulting onRegionChangeComplete so programmatic moves don't
-  // trigger a redundant resolve (initialDetect / fallbackRegion resolve directly).
+  // Google Maps identifies these camera events as non-gestures below.
   useEffect(() => {
     if (vm.region && mapRef.current) {
-      suppressSettle.current = true;
       mapRef.current.animateToRegion(vm.region, 350);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vm.region?.latitude, vm.region?.longitude]);
 
-  useRecenterOnFocus(mapRef, vm.region, () => { suppressSettle.current = true; });
+  const cancelRecenter = useRecenterOnFocus(mapRef, vm.region);
+
+  const handleRegionChange = (_next: Region, details?: { isGesture?: boolean }) => {
+    if (!details?.isGesture) return;
+    cancelRecenter();
+    vm.onRegionMoving();
+  };
 
   const handleRegionChangeComplete = useCallback(
-    (next: Region) => {
-      if (suppressSettle.current) {
-        suppressSettle.current = false;
-        return;
-      }
+    (next: Region, details?: { isGesture?: boolean }) => {
+      // A sticky "ignore next event" flag can swallow the next real drag when
+      // animateToRegion emits no event. Use the native event's origin instead.
+      if (details?.isGesture === false) return;
+      cancelRecenter();
       vm.onRegionSettled(next);
     },
-    [vm],
+    [vm, cancelRecenter],
   );
 
-  const goHome = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/(dashboard)/home');
-  };
+  const goBack = useBackAction(() => router.back());
 
   const openSearch = () => router.push('/location/search');
 
-  const onConfirm = async () => {
-    if (await vm.confirm()) router.replace('/(dashboard)/home');
-  };
+  const onConfirm = useSingleFlight(async () => {
+    if (await vm.confirm()) router.dismissTo('/(dashboard)/home');
+  });
 
   const onUseCurrent = async () => {
     // Recenter + serviceability are handled inside useCurrentLocation: setRegion
@@ -93,9 +103,11 @@ export const MapPickerScreen = () => {
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
         initialRegion={initialRegion}
+        onRegionChange={handleRegionChange}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsMyLocationButton={false}
-        showsUserLocation
+        // showsUserLocation is deliberately off: on Fabric its native
+        // `topUserLocationChange` events are unregistered and throw app-wide.
       />
 
       {/* Fixed center pin overlay */}
@@ -106,7 +118,8 @@ export const MapPickerScreen = () => {
       <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0">
         <View className="flex-row items-center gap-3 px-4 py-3">
           <TouchableOpacity
-            onPress={goHome}
+            onPress={goBack}
+            accessibilityLabel={t('back')}
             hitSlop={8}
             className="w-10 h-10 rounded-full bg-white items-center justify-center"
             style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}
@@ -138,6 +151,7 @@ export const MapPickerScreen = () => {
       {/* Use current location pill */}
       <TouchableOpacity
         onPress={onUseCurrent}
+        disabled={vm.detectingGps}
         activeOpacity={0.85}
         className="absolute right-4 bottom-48 bg-white rounded-full px-4 py-2.5 flex-row items-center gap-2"
         style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 }}

@@ -12,6 +12,7 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 
 let mockParams: Record<string, string> = {};
+let mockCanGoBack = true;
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
@@ -19,7 +20,7 @@ jest.mock('expo-router', () => ({
     dismissTo: (...args: unknown[]) => mockDismissTo(...args),
     back: () => mockBack(),
     replace: (...args: unknown[]) => mockReplace(...args),
-    canGoBack: () => true,
+    canGoBack: () => mockCanGoBack,
   }),
 }));
 
@@ -54,6 +55,7 @@ beforeEach(() => {
   mockBack.mockClear();
   mockReplace.mockClear();
   mockParams = {};
+  mockCanGoBack = true;
 });
 
 afterEach(() => jest.useRealTimers());
@@ -118,6 +120,22 @@ describe('MapSearchScreen', () => {
     expect(href.pathname).toBe('/address/add');
   });
 
+  it('preserves profile address-management mode on selection and Back without history', () => {
+    mockParams = { returnTo: '/address/add', manage: '1' };
+    mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02)]));
+    const view = render(<MapSearchScreen />);
+    search('kan');
+    fireEvent.press(screen.getByText('Village a'));
+    expect(mockDismissTo).toHaveBeenCalledWith(expect.objectContaining({
+      pathname: '/address/add', params: expect.objectContaining({ manage: '1' }),
+    }));
+    view.unmount();
+    mockCanGoBack = false;
+    render(<MapSearchScreen />);
+    fireEvent.press(screen.getByLabelText('Back'));
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/address/add', params: { manage: '1' } });
+  });
+
   it('ignores an unknown returnTo and falls back to the home map', () => {
     mockParams = { returnTo: '/somewhere/else' };
     mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02)]));
@@ -132,18 +150,31 @@ describe('MapSearchScreen', () => {
 
   it('makes each pick distinct so re-picking the same village still recenters', () => {
     mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02)]));
-    render(<MapSearchScreen />);
+    const view = render(<MapSearchScreen />);
 
     search('kan');
     fireEvent.press(screen.getByText('Village a'));
+    view.unmount(); // Return to the map, then open a new search screen.
     act(() => {
       jest.advanceTimersByTime(5);
     });
+    render(<MapSearchScreen />);
+    search('kan');
     fireEvent.press(screen.getByText('Village a'));
 
     const [first] = mockDismissTo.mock.calls[0] as [{ params: Record<string, string> }];
     const [second] = mockDismissTo.mock.calls[1] as [{ params: Record<string, string> }];
     expect(second.params.at).not.toBe(first.params.at);
+  });
+
+  it('navigates only once when results are tapped repeatedly', () => {
+    mockedQuery.mockReturnValue(queryResult([village('a', 13.36, 79.02), village('b', 12, 78)]));
+    render(<MapSearchScreen />);
+    search('kan');
+    fireEvent.press(screen.getByText('Village a'));
+    fireEvent.press(screen.getByText('Village a'));
+    fireEvent.press(screen.getByText('Village b'));
+    expect(mockDismissTo).toHaveBeenCalledTimes(1);
   });
 
   it('does not search until the query is long enough', () => {

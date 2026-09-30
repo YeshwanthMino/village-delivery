@@ -2,7 +2,8 @@ import { ArrowLeft, Search } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
+import { useBackAction } from '@/src/shared/hooks/useBackAction';
 import { CartSummaryCard } from '@/src/shared/components';
 import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
@@ -11,7 +12,8 @@ import { useCategoryDetailsViewModel } from '../../viewmodel/categories/useCateg
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
 
 export const CategoryDetailsScreen = () => {
-  const router = useRouter();
+  const router = useGuardedRouter();
+  const goBack = useBackAction(() => router.back('/(dashboard)/categories'));
   const vm = useCategoryDetailsViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
@@ -19,8 +21,10 @@ export const CategoryDetailsScreen = () => {
 
   useEffect(() => {
     slideAnim.setValue(390);
-    Animated.timing(slideAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start();
-  }, []);
+    const animation = Animated.timing(slideAnim, { toValue: 0, duration: 280, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [slideAnim]);
 
   const headerTitle = vm.title || vm.selectedItem?.title || 'Category';
 
@@ -30,7 +34,7 @@ export const CategoryDetailsScreen = () => {
       <View className="bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12 }}>
         <View className="px-4 pb-3 flex-row items-center justify-between">
           <View className="flex-row items-center gap-2 flex-1">
-            <TouchableOpacity onPress={() => router.back()} className="w-8 h-8 items-center justify-center">
+            <TouchableOpacity onPress={goBack} className="w-8 h-8 items-center justify-center">
               <ArrowLeft size={20} color="#0f172a" />
             </TouchableOpacity>
             <View className="flex-1">

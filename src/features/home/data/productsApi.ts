@@ -12,10 +12,10 @@ import { mapProductWithVariants, isProductActive } from './homeLayoutMapper';
  * Fetch all products for a store. Each product includes variants
  * extracted from variants (or legacy variantIds). Returns empty array on failure.
  */
-export async function getAllProducts(storeId: string): Promise<Product[]> {
+export async function getAllProducts(storeId: string, signal?: AbortSignal): Promise<Product[]> {
   const data = await apiClient.getWithoutAuth<any>(
     `${WebService.villageBaseURL}/app/products`,
-    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+    { headers: { Accept: '*/*', 'x-store-id': storeId }, signal },
   );
 
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];
@@ -29,7 +29,7 @@ export async function getAllProducts(storeId: string): Promise<Product[]> {
  */
 export async function getProductById(storeId: string, id: string): Promise<Product | null> {
   const data = await apiClient.getWithoutAuth<any>(
-    `${WebService.villageBaseURL}/app/product/${id}`,
+    `${WebService.villageBaseURL}/app/products/${id}`,
     { headers: { Accept: '*/*', 'x-store-id': storeId } },
   );
 

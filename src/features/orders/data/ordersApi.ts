@@ -149,9 +149,10 @@ export function mapOrder(raw: unknown): Order | null {
   };
 }
 
-export async function listOrders(skip = 0, limit = 24): Promise<Order[]> {
+export async function listOrders(skip = 0, limit = 24, signal?: AbortSignal): Promise<Order[]> {
   const resp = await apiClient.get<unknown>(
     `${BASE}/app/orders?sort=_id%3Adesc&skip=${skip}&limit=${limit}`,
+    { signal },
   );
   logger.debug('[orders] list raw:', JSON.stringify(resp)?.slice(0, 1000));
   const list = pick(resp, ['data', 'orders', 'results']) ?? resp;
@@ -159,8 +160,8 @@ export async function listOrders(skip = 0, limit = 24): Promise<Order[]> {
   return list.map(mapOrder).filter((o): o is Order => o !== null);
 }
 
-export async function getOrderDetail(id: string): Promise<Order | null> {
-  const resp = await apiClient.get<unknown>(`${BASE}/app/orders/${id}`);
+export async function getOrderDetail(id: string, signal?: AbortSignal): Promise<Order | null> {
+  const resp = await apiClient.get<unknown>(`${BASE}/app/orders/${id}`, { signal });
   logger.debug('[orders] detail raw:', JSON.stringify(resp)?.slice(0, 1000));
   return mapOrder(pick(resp, ['data']) ?? resp);
 }

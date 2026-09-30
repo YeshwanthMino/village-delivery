@@ -15,7 +15,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
   const setLocale = useVillageStore((s) => s.setLocale);
   const hydrateLocation = useLocationStore((s) => s.hydrate);
-  useLocationLifecycle();
+  useLocationLifecycle(segments[0] !== 'location' && segments[0] !== 'address');
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -25,11 +25,12 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
+    let disposed = false;
+    const stopStoreConfigSync = startStoreConfigSync();
     const init = async () => {
       // Store timings + cashback settings for the session. Deliberately not
       // awaited: the app runs on bundled defaults until it lands, so a slow
       // network must not hold the first paint behind it.
-      startStoreConfigSync();
       void loadStoreConfig();
       await Promise.all([checkExistingAuth(), hydrateLocation()]);
       // MVP: only English is shipped. On first launch default to English and
@@ -39,9 +40,13 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
         await setLocale('en');
         await StoredPrefs.setIsFirstLaunch(false);
       }
-      setReady(true);
+      if (!disposed) setReady(true);
     };
-    init();
+    void init();
+    return () => {
+      disposed = true;
+      stopStoreConfigSync();
+    };
   }, [checkExistingAuth, hydrateLocation, setLocale]);
 
   useEffect(() => {
@@ -53,7 +58,7 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
     const allowed = [
       '(dashboard)', 'auth', 'search', 'location', 'address',
       'category-details', 'cart', 'top-picks', 'order-detail',
-      'product', 'about', 'vip-membership',
+      'product', 'about', 'vip-membership', 'sale-products',
     ];
     if (!root || !allowed.includes(root)) {
       router.replace('/(dashboard)/home');

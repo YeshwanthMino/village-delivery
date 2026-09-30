@@ -15,6 +15,7 @@ const BASE = WebService.villageBaseURL;
 
 export interface StockInfo {
   productId: string;
+  variantId?: string;
   availableStock: number;
 }
 

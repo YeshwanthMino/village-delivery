@@ -2,46 +2,69 @@
 //
 // Loads the signed-in user's saved delivery addresses.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/src/core/store';
 import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { listAddresses, deleteAddress } from '../data/locationApi';
+import { useScreenActive } from '@/src/shared/hooks/useScreenActive';
 
-export function useAddressBookViewModel() {
+export function useAddressBookViewModel(enabled = true) {
+  const screenActive = useScreenActive();
+  const active = enabled && screenActive;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const addresses = useLocationStore((s) => s.savedAddresses);
   const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pending = useRef<AbortController | null>(null);
+  const alive = useRef(true);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
 
   const refresh = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !active) return;
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    const token = useAuthStore.getState().accessToken;
     setLoading(true);
     setError(null);
     try {
-      setSavedAddresses(await listAddresses());
+      const next = await listAddresses(controller.signal);
+      const auth = useAuthStore.getState();
+      if (!controller.signal.aborted && auth.isAuthenticated && auth.accessToken === token) setSavedAddresses(next);
     } catch {
-      setError('failed');
+      if (!controller.signal.aborted) setError('failed');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  }, [isAuthenticated, setSavedAddresses]);
+  }, [isAuthenticated, active, setSavedAddresses]);
 
   useEffect(() => {
+    if (!active || !isAuthenticated) setLoading(false);
     void refresh();
-  }, [refresh]);
+    return () => pending.current?.abort();
+  }, [refresh, active, isAuthenticated]);
 
   const remove = useCallback(
     async (id: string) => {
+      const token = useAuthStore.getState().accessToken;
       try {
         await deleteAddress(id);
-        setSavedAddresses(addresses.filter((a) => a.id !== id));
+        const auth = useAuthStore.getState();
+        if (!auth.isAuthenticated || auth.accessToken !== token) return;
+        pending.current?.abort();
+        setSavedAddresses(useLocationStore.getState().savedAddresses.filter((a) => a.id !== id));
+        if (alive.current) setLoading(false);
       } catch {
-        setError('failed');
+        if (alive.current) setError('failed');
       }
     },
-    [addresses, setSavedAddresses],
+    [setSavedAddresses],
   );
 
   return { isAuthenticated, addresses, loading, error, refresh, remove };

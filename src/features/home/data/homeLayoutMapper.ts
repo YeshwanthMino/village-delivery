@@ -5,6 +5,7 @@
 // resolved against bannerCarousels / featuredMenus / productCarousels by _id.
 
 import {
+  BannerDoc,
   BannerSection,
   CategorySection,
   HomeLayout,
@@ -30,6 +31,8 @@ interface RawBannerSlide {
   title?: unknown;
   imageUrl?: unknown;
   link?: unknown;
+  collectionName?: unknown;
+  docId?: unknown;
 }
 
 interface RawBanner {
@@ -203,6 +206,15 @@ export function mapProduct(p: RawApiProduct): HomeProduct {
   };
 }
 
+/** docId may be null, a bare id string, or a populated object. A bare id yields
+ *  a doc with only `id` (enough for Category slides); null yields none. */
+function mapBannerDoc(raw: unknown): BannerDoc | undefined {
+  if (typeof raw === 'string') return raw.trim() ? { id: raw.trim() } : undefined;
+  if (!raw || typeof raw !== 'object') return undefined;
+  const d = raw as Record<string, unknown>;
+  return { id: String(d._id ?? d.id ?? ''), title: str(d.title), slug: str(d.slug) };
+}
+
 function mapBanner(b: RawBanner): BannerSection {
   const slides: RawBannerSlide[] = Array.isArray(b?.slides) ? b.slides : [];
   return {
@@ -215,6 +227,8 @@ function mapBanner(b: RawBanner): BannerSection {
       title: String(s?.title ?? ''),
       imageUrl: String(s?.imageUrl ?? ''),
       link: str(s?.link),
+      collectionName: str(s?.collectionName),
+      doc: mapBannerDoc(s?.docId),
     })),
     height: num(b?.height) || 200,
     autoScroll: Boolean(b?.autoScroll),

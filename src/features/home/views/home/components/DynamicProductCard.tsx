@@ -1,7 +1,7 @@
 // src/features/home/views/home/components/DynamicProductCard.tsx
 
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Minus, Plus } from 'lucide-react-native';
 import React from 'react';
 import { DimensionValue, Text, TouchableOpacity, View } from 'react-native';
@@ -73,7 +73,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
   // card's, so a product classified "plain" here can still carry a variant line).
   const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
   const { t, tDiscount, tVariantCartLabel, tOptionCount, locale } = useTranslation();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
 
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;

@@ -23,7 +23,7 @@ export const PlacingStep = () => {
       false,
     );
     return () => cancelAnimation(rotation);
-  }, []);
+  }, [rotation]);
 
   const spinStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],

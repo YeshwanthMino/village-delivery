@@ -1,15 +1,15 @@
 // src/features/home/views/home/components/ProductCarouselRow.tsx
 
 import React from 'react';
-import { ScrollView, Text, View, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductCarouselSection } from '../../../data/homeLayout.types';
 import { DynamicProductCard } from './DynamicProductCard';
-import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
-import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
+import { Product } from '@/src/base/types/village.types';
 
 interface Props {
   section: ProductCarouselSection;
+  onOpenVariants: (product: Product) => void;
 }
 
 // Matches the (dashboard) tab bar's own height formula in
@@ -18,8 +18,7 @@ interface Props {
 // renders on the home tab, inside (dashboard), so a tab bar is always present.
 const TAB_BAR_CONTENT_HEIGHT = 64;
 
-export const ProductCarouselRow = ({ section }: Props) => {
-  const { product, open, close } = useVariantSheet();
+export const ProductCarouselRow = ({ section, onOpenVariants }: Props) => {
   const { bottom } = useSafeAreaInsets();
   const bottomOffset = TAB_BAR_CONTENT_HEIGHT + bottom;
 
@@ -40,16 +39,12 @@ export const ProductCarouselRow = ({ section }: Props) => {
           <DynamicProductCard
             key={p.id}
             product={p}
-            onOpenVariants={open}
+            onOpenVariants={onOpenVariants}
             bottomOffset={bottomOffset}
           />
         ))}
       </ScrollView>
 
-      <VariantBottomSheet
-        product={product}
-        onClose={close}
-      />
     </View>
   );
 };

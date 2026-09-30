@@ -86,7 +86,7 @@ describe('CheckoutBar', () => {
       />
     );
 
-    expect(screen.getByText('cart_all_out_of_stock')).toBeTruthy();
+    expect(screen.getByText('cart_stock_blocked')).toBeTruthy();
     expect(screen.queryByText('place_order')).toBeNull();
   });
 });

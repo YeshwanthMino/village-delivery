@@ -1,6 +1,6 @@
 // src/features/product/data/productDetailApi.ts
 //
-// Product detail via GET /app/product/:id, keyed by the x-store-id header.
+// Product detail via GET /app/products/:id, keyed by the x-store-id header.
 // mapProductDetail is a pure transform (unit-tested); getProductDetail wraps
 // it with the network call.
 
@@ -65,7 +65,9 @@ export function mapProductDetail(p: any): ProductDetail {
     mrp,
     price,
     discountPct,
-    inStock: stock == null ? true : stock > 0,
+    // Absent stock keeps a priced product sellable, but a record with neither
+    // stock nor a price (not stocked at this branch) can't be bought.
+    inStock: stock == null ? price > 0 : stock > 0,
     stock,
     active: p?.active !== false,
     categoryTitle: str(p?.categoryId?.title) ?? str(p?.category),
@@ -74,10 +76,10 @@ export function mapProductDetail(p: any): ProductDetail {
   };
 }
 
-export async function getProductDetail(storeId: string, id: string): Promise<ProductDetail> {
+export async function getProductDetail(storeId: string, id: string, signal?: AbortSignal): Promise<ProductDetail> {
   const data = await apiClient.get<any>(
-    `${WebService.villageBaseURL}/app/product/${id}`,
-    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+    `${WebService.villageBaseURL}/app/products/${id}`,
+    { headers: { Accept: '*/*', 'x-store-id': storeId }, signal },
   );
   return mapProductDetail(data);
 }

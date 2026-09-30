@@ -13,7 +13,7 @@ interface CheckoutBarProps {
   amountToMinimum?: number;
   /** Minimum order value (internal units) — only used in the 'below_minimum' state, to compute progress. */
   minOrderValue?: number;
-  /** Selected address tag + one-line summary — shown in the 'place' state. */
+  /** Selected address tag + one-line summary — shown in the 'place' and blocked states. */
   addressTag?: AddressTag;
   addressLine?: string;
   onLogin: () => void;
@@ -35,11 +35,44 @@ export const CheckoutBar = ({
   const { t, tShopMoreToPlaceOrder, locale } = useTranslation();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
+  // Delivery address strip, with Change. Also shown while checkout is blocked
+  // on stock or minimum order: the customer may pick an address served by a
+  // store that has the items, so the address must stay reachable.
+  const addressStrip = (
+    <View style={styles.addrRow}>
+      <View style={styles.addrIcon}>
+        <Home size={18} color="#f59e0b" />
+      </View>
+      <View style={styles.addrBody}>
+        <Text style={[styles.addrTitle, teFont]} numberOfLines={1}>
+          {addressTag ? t(`delivering_to_${addressTag}`) : t('delivering_to_home')}
+        </Text>
+        {!!addressLine && (
+          <Text style={styles.addrLine} numberOfLines={1}>
+            {addressLine}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity
+        onPress={onSelectAddress}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
+        <Text style={styles.change}>{t('change')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+  const showStripWhenBlocked = !!addressLine;
+
   if (state === 'out_of_stock') {
     return (
       <View style={styles.wrap}>
-        <View style={styles.blockedBar}>
-          <Text style={[styles.blockedText, teFont]}>{t('cart_all_out_of_stock')}</Text>
+        <View style={styles.card}>
+          {showStripWhenBlocked && addressStrip}
+          <View style={styles.placeRow}>
+            <View style={styles.blockedBar}>
+              <Text style={[styles.blockedText, teFont]}>{t('cart_stock_blocked')}</Text>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -51,12 +84,17 @@ export const CheckoutBar = ({
 
     return (
       <View style={styles.wrap}>
-        <View style={styles.blockedBar}>
-          <Text style={[styles.blockedText, teFont]}>
-            {tShopMoreToPlaceOrder(rupeesCeil(shortfall))}
-          </Text>
-          <View style={styles.blockedProgressTrack}>
-            <View style={[styles.blockedProgressFill, { width: `${progress * 100}%` }]} />
+        <View style={styles.card}>
+          {showStripWhenBlocked && addressStrip}
+          <View style={styles.placeRow}>
+            <View style={styles.blockedBar}>
+              <Text style={[styles.blockedText, teFont]}>
+                {tShopMoreToPlaceOrder(rupeesCeil(shortfall))}
+              </Text>
+              <View style={styles.blockedProgressTrack}>
+                <View style={[styles.blockedProgressFill, { width: `${progress * 100}%` }]} />
+              </View>
+            </View>
           </View>
         </View>
       </View>
@@ -82,28 +120,7 @@ export const CheckoutBar = ({
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        {/* Delivery address strip */}
-        <View style={styles.addrRow}>
-          <View style={styles.addrIcon}>
-            <Home size={18} color="#f59e0b" />
-          </View>
-          <View style={styles.addrBody}>
-            <Text style={[styles.addrTitle, teFont]} numberOfLines={1}>
-              {addressTag ? t(`delivering_to_${addressTag}`) : t('delivering_to_home')}
-            </Text>
-            {!!addressLine && (
-              <Text style={styles.addrLine} numberOfLines={1}>
-                {addressLine}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={onSelectAddress}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.change}>{t('change')}</Text>
-          </TouchableOpacity>
-        </View>
+        {addressStrip}
 
         {/* Place order */}
         <View style={styles.placeRow}>

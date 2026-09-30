@@ -15,7 +15,7 @@ export const useProductSearchQuery = (
 
   return useQuery({
     queryKey: [...queryKeys.products.search(trimmed), { storeId, categoryId, limit }],
-    queryFn: () => searchProducts(storeId, trimmed, { categoryId, limit }),
+    queryFn: ({ signal }) => searchProducts(storeId, trimmed, { categoryId, limit }, signal),
     enabled: !!storeId && (trimmed.length > 0 || !!categoryId),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,

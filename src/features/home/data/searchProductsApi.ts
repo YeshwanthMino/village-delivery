@@ -1,6 +1,6 @@
 // src/features/home/data/searchProductsApi.ts
 //
-// Full-text product search via the /app/product endpoint. Public-ish endpoint
+// Full-text product search via the /app/products endpoint. Public-ish endpoint
 // keyed by the x-store-id header. Maps to HomeProduct for display in search results.
 
 import { apiClient } from '@/src/base/services/remote/apiClient';
@@ -17,6 +17,7 @@ export async function searchProducts(
   storeId: string,
   term: string,
   opts: { categoryId?: string; skip?: number; limit?: number } = {},
+  signal?: AbortSignal,
 ): Promise<SearchProductsResult> {
   const { categoryId, skip = 0, limit = 24 } = opts;
 
@@ -30,8 +31,8 @@ export async function searchProducts(
   if (categoryId) query.set('categoryId', categoryId);
 
   const data = await apiClient.getWithoutAuth<any>(
-    `${WebService.villageBaseURL}/app/product?${query.toString()}`,
-    { headers: { Accept: '*/*', 'x-store-id': storeId } },
+    `${WebService.villageBaseURL}/app/products?${query.toString()}`,
+    { headers: { Accept: '*/*', 'x-store-id': storeId }, signal },
   );
 
   const rawProducts: any[] = Array.isArray(data?.products) ? data.products : [];

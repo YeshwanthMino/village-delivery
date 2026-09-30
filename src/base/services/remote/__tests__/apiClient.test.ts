@@ -43,6 +43,47 @@ beforeEach(() => {
   global.fetch = jest.fn();
 });
 
+describe('request lifecycle cancellation', () => {
+  let apiClient: typeof import('../apiClient').apiClient;
+  beforeAll(() => { apiClient = require('../apiClient').apiClient; });
+  it('does not start a fetch for an already cancelled screen', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(apiClient.getWithoutAuth('https://api.test/cancelled', { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('aborts the underlying fetch and removes the caller listener', async () => {
+    const controller = new AbortController();
+    const remove = jest.spyOn(controller.signal, 'removeEventListener');
+    let started!: () => void;
+    const entered = new Promise<void>(resolve => { started = resolve; });
+    let fetchSignal!: AbortSignal;
+    (global.fetch as jest.Mock).mockImplementation((_url, options) => new Promise((_resolve, reject) => {
+      fetchSignal = options.signal;
+      fetchSignal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+      started();
+    }));
+    const request = apiClient.getWithoutAuth('https://api.test/pending', { signal: controller.signal });
+    const rejection = expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    await entered;
+    controller.abort();
+    await rejection;
+    expect(fetchSignal.aborted).toBe(true);
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+  });
+
+  it('removes cancellation listeners after a successful response', async () => {
+    const controller = new AbortController();
+    const remove = jest.spyOn(controller.signal, 'removeEventListener');
+    (global.fetch as jest.Mock).mockResolvedValue(jsonResponse(200, { ok: true }));
+    await expect(apiClient.getWithoutAuth('https://api.test/ok', { signal: controller.signal }))
+      .resolves.toEqual({ ok: true });
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+  });
+});
+
 describe('apiClient 401 interceptor — refresh contract', () => {
   it('refreshes against /app/auth/refresh with X-Refresh-Token + X-Store-Id, no Authorization, no body', async () => {
     const { apiClient } = require('../apiClient');
@@ -156,17 +197,20 @@ describe('apiClient x-branch-id', () => {
     ['get', 'https://api.test/app/orders?sort=_id%3Adesc&skip=0&limit=24'],
     ['get', 'https://api.test/app/store-config'],
     ['getWithoutAuth', 'https://api.test/app/products?skip=0&limit=24'],
+    ['getWithoutAuth', 'https://api.test/app/products/abc123'],
     ['getWithoutAuth', 'https://api.test/app/category/flattened/all-products/c1?skip=0&limit=24'],
+    ['get', 'https://api.test/app/orders/abc123'],
+    ['get', 'https://api.test/app/auth/me'],
   ])('adds the header on %s %s', async (method, url) => {
     const apiClient = setup('branch-1');
     await apiClient[method](url);
     expect(sentHeaders()['x-branch-id']).toBe('branch-1');
   });
 
-  it('does not add it to other endpoints, including order detail', async () => {
+  it('does not add it to the village directory endpoints', async () => {
     const apiClient = setup('branch-1');
-    await apiClient.get('https://api.test/app/orders/abc123');
-    await apiClient.get('https://api.test/app/product/abc123');
+    await apiClient.postWithoutAuth('https://api.test/villages/find-by-location', {});
+    await apiClient.getWithoutAuth('https://api.test/villages/search?q=a');
     for (const call of (global.fetch as jest.Mock).mock.calls) {
       expect(call[1].headers['x-branch-id']).toBeUndefined();
     }
