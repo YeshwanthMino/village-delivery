@@ -193,7 +193,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
   return (
     <View
       className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
-      style={{ width, flex: fillsGridRow ? 1 : undefined }}
+      style={{ width, flex: fillsGridRow ? 1 : undefined, opacity: product.inStock ? 1 : 0.6 }}
     >
       <TouchableOpacity activeOpacity={0.9} onPress={openDetail} style={{ position: 'relative' }}>
         <Image
@@ -209,7 +209,12 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
         ) : null}
         {!product.inStock ? (
           <View className="absolute inset-0 bg-white/60 items-center justify-center">
-            <Text className="text-slate-700 font-bold text-xs">{t('out_of_stock')}</Text>
+            <View
+              className="border-2 border-red-600 rounded-md px-2 py-0.5 bg-white/70"
+              style={{ transform: [{ rotate: '-6deg' }] }}
+            >
+              <Text className="text-red-600 font-extrabold text-sm tracking-wide">{t('sold_out')}</Text>
+            </View>
           </View>
         ) : null}
       </TouchableOpacity>

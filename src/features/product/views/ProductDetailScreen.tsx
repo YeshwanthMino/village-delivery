@@ -1,6 +1,6 @@
 // src/features/product/views/ProductDetailScreen.tsx
 
-import { ArrowLeft, Search, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, Search, ChevronDown, Truck, Tag, LayoutGrid } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -154,7 +154,7 @@ export const ProductDetailScreen = () => {
       {header}
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
-        <ProductImageCarousel images={selectedVariant?.images || d.images} discountPct={displayDiscount} />
+        <ProductImageCarousel images={selectedVariant?.images || d.images} discountPct={displayDiscount} soldOut={!productInStock} />
 
         <View className="px-4 pt-4">
           {d.categoryTitle ? (
@@ -242,6 +242,25 @@ export const ProductDetailScreen = () => {
               <Text className="text-slate-600 text-sm leading-5">{d.description}</Text>
             </View>
           ) : null}
+
+          <View className="mt-6">
+            <Text className="text-slate-900 font-bold text-base mb-3">{t('why_shop_title')}</Text>
+            {[
+              { Icon: Truck, title: 'why_delivery_title', desc: 'why_delivery_desc' },
+              { Icon: Tag, title: 'why_prices_title', desc: 'why_prices_desc' },
+              { Icon: LayoutGrid, title: 'why_assortment_title', desc: 'why_assortment_desc' },
+            ].map(({ Icon, title, desc }) => (
+              <View key={title} className="flex-row items-center mb-4">
+                <View className="w-12 h-12 rounded-full bg-green-50 items-center justify-center mr-3">
+                  <Icon size={22} color="#16a34a" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-slate-900 text-sm font-semibold">{t(title)}</Text>
+                  <Text className="text-slate-500 text-xs leading-4 mt-0.5">{t(desc)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
 
         {d.similarProducts.length > 0 ? (

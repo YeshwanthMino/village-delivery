@@ -212,7 +212,7 @@ describe('DynamicProductCard, no variants', () => {
   it('hides the price row instead of showing a false "₹0" when no price data exists', () => {
     render(<DynamicProductCard product={noPriceData} onOpenVariants={jest.fn()} />);
     expect(screen.getByText('Pesala Pappu - 30 Kg')).toBeTruthy();
-    expect(screen.getByText('Out of Stock')).toBeTruthy();
+    expect(screen.getByText('SOLD OUT')).toBeTruthy();
     expect(screen.queryByText('₹0')).toBeNull();
   });
 
