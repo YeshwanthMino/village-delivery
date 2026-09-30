@@ -41,7 +41,7 @@ it('provides enough trailing space to snap every card and preserves navigation f
   const scroll = UNSAFE_getByType(ScrollView);
   expect(scroll.props.contentContainerStyle.paddingRight).toBe(40);
   expect(scroll.props.contentOffset.x).toBe(scroll.props.snapToInterval);
-  expect(scroll.props.disableIntervalMomentum).toBe(true);
+  expect(scroll.props.disableIntervalMomentum).toBeUndefined();
   const cards = UNSAFE_getAllByType(TouchableOpacity);
   fireEvent.press(cards[1]);
   fireEvent.press(cards[4]);

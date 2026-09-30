@@ -5,6 +5,7 @@ import { gradientColor } from '@/src/core/utils/gradientColors';
 import { HeroSlide } from '@/src/features/home/data/static/villageData';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { loopBannerSlides, useBannerCarousel } from '@/src/shared/hooks/useBannerCarousel';
+import { BannerCarouselIndicator } from './BannerCarouselIndicator';
 
 interface HeroCarouselProps {
   slides: HeroSlide[];
@@ -22,7 +23,7 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
   // Card width leaves RIGHT_PEEK + CARD_GAP px of space for adjacent card peek
   const cardWidth = Math.max(1, screenWidth - LEFT_PAD - (slides.length > 1 ? RIGHT_PEEK + CARD_GAP : LEFT_PAD));
   const snapInterval = cardWidth + CARD_GAP;
-  const { current, scrollRef, scrollHandlers } = useBannerCarousel({
+  const { scrollX, scrollRef, scrollHandlers } = useBannerCarousel({
     count: slides.length,
     snapInterval,
     autoPlay: true,
@@ -43,7 +44,6 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
         decelerationRate="fast"
         snapToInterval={snapInterval}
         snapToAlignment="start"
-        disableIntervalMomentum
         bounces={false}
         scrollEnabled={slides.length > 1}
         contentOffset={{ x: slides.length > 1 ? snapInterval : 0, y: 0 }}
@@ -92,21 +92,7 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
         ))}
       </ScrollView>
 
-      {/* Dot indicators — centered on full screen width */}
-      <View style={styles.dotsRow}>
-        {slides.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              {
-                width: i === current ? 24 : 6,
-                backgroundColor: i === current ? '#16a34a' : '#cbd5e1',
-              },
-            ]}
-          />
-        ))}
-      </View>
+      <BannerCarouselIndicator count={slides.length} snapInterval={snapInterval} scrollX={scrollX} activeWidth={24} marginTop={12} />
     </View>
   );
 };
@@ -176,16 +162,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'EuclidCircularA-Bold',
     fontSize: 14,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: {
-    height: 6,
-    borderRadius: 999,
   },
 });

@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { ScrollView, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { BannerSection, BannerSlide } from '../../../data/homeLayout.types';
 import { loopBannerSlides, useBannerCarousel } from '@/src/shared/hooks/useBannerCarousel';
+import { BannerCarouselIndicator } from '@/src/shared/components/BannerCarouselIndicator';
 
 interface Props {
   section: BannerSection;
@@ -22,7 +23,7 @@ export const HomeBannerCarousel = ({ section, onPressSlide }: Props) => {
   const cardWidth = Math.max(1, screenWidth - H_PAD - (slides.length > 1 ? GAP + PEEK : H_PAD));
   const snapInterval = cardWidth + GAP;
   const delay = Number.isFinite(section.autoPlayDelay) && section.autoPlayDelay > 0 ? section.autoPlayDelay : 4000;
-  const { current, scrollRef, scrollHandlers } = useBannerCarousel({
+  const { scrollX, scrollRef, scrollHandlers } = useBannerCarousel({
     count: slides.length,
     snapInterval,
     autoPlay: section.autoScroll,
@@ -48,7 +49,6 @@ export const HomeBannerCarousel = ({ section, onPressSlide }: Props) => {
         decelerationRate="fast"
         snapToInterval={snapInterval}
         snapToAlignment="start"
-        disableIntervalMomentum
         bounces={false}
         scrollEnabled={slides.length > 1}
         showsHorizontalScrollIndicator={false}
@@ -82,16 +82,7 @@ export const HomeBannerCarousel = ({ section, onPressSlide }: Props) => {
         ))}
       </ScrollView>
 
-      {slides.length > 1 ? (
-        <View className="flex-row justify-center mt-2 gap-1.5">
-          {slides.map((s, i) => (
-            <View
-              key={s.id}
-              className={`h-1.5 rounded-full ${i === current ? 'bg-green-600 w-4' : 'bg-slate-300 w-1.5'}`}
-            />
-          ))}
-        </View>
-      ) : null}
+      <BannerCarouselIndicator count={slides.length} snapInterval={snapInterval} scrollX={scrollX} />
     </View>
   );
 };
