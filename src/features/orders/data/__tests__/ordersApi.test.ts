@@ -54,11 +54,8 @@ describe('mapOrder', () => {
       _id: 'o1',
       products: [{ product: { _id: 'p1', title: 'Rice', price: 45 }, quantity: 1 }],
     });
-    // Pre-existing quirk, not touched by this pass: `pick(raw, ['productId',
-    // 'product'])` treats 'product' as a candidate *value* for productId, so
-    // when raw.product exists it wins over falling through to product._id, and
-    // productId ends up stringified from the object rather than its id.
-    expect(order?.items[0].productId).toBe('[object Object]');
+    // Populated product objects must resolve to their id for outcome events.
+    expect(order?.items[0].productId).toBe('p1');
     expect(order?.items[0].name).toBe('Rice');
     expect(rupees(order!.items[0].price)).toBe('₹45');
   });
@@ -101,7 +98,13 @@ describe('mapOrder', () => {
     expect(statusOf('OUT_FOR_DELIVERY')).toBe('out_for_delivery');
     expect(statusOf('Delivered')).toBe('delivered');
     expect(statusOf('cancelled')).toBe('cancelled');
+    expect(statusOf('refund_processed')).toBe('refunded');
     expect(statusOf('totally-unknown-status')).toBe('placed');
+  });
+
+  test('reads a populated product id for outcome attribution', () => {
+    const order = mapOrder({ _id: 'o1', products: [{ product: { _id: 'p1', title: 'Rice' }, quantity: 2 }] });
+    expect(order?.items[0].productId).toBe('p1');
   });
 
   test('maps a payment method mentioning upi/online/prepaid to upi, else cod', () => {

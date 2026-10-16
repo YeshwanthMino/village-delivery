@@ -19,6 +19,7 @@ import { MapPinMarker } from './components/MapPinMarker';
 import { useRecenterOnFocus } from './useRecenterOnFocus';
 import { LocationInfoSheet } from './components/LocationInfoSheet';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
+import { trackActiveLocationSelection } from './trackLocationSelection';
 
 export const MapPickerScreen = () => {
   const { t } = useTranslation();
@@ -84,7 +85,10 @@ export const MapPickerScreen = () => {
   const openSearch = () => router.push('/location/search');
 
   const onConfirm = useSingleFlight(async () => {
-    if (await vm.confirm()) router.dismissTo('/(dashboard)/home');
+    if (await vm.confirm()) {
+      trackActiveLocationSelection('map');
+      router.dismissTo('/(dashboard)/home');
+    }
   });
 
   const onUseCurrent = async () => {

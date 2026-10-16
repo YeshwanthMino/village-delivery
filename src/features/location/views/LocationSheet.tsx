@@ -14,6 +14,8 @@ import { isActiveRecentLocation, recentLocationKey } from '../domain/recentLocat
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedContent } from './components/PermissionDeniedSheet';
+import { trackActiveLocationSelection, type LocationSelectionMethod } from './trackLocationSelection';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
 
 interface Props {
   visible: boolean;
@@ -26,9 +28,12 @@ export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
   const router = useGuardedRouter();
   const vm = useLocationViewModel(visible);
 
-  const run = useSingleFlight(async (action: () => Promise<boolean> | Promise<void>) => {
+  const run = useSingleFlight(async (method: LocationSelectionMethod, action: () => Promise<boolean> | Promise<void>) => {
     const ok = await action();
-    if (ok !== false) onClose();
+    if (ok !== false) {
+      trackActiveLocationSelection(method);
+      onClose();
+    }
   });
 
   const openSearch = () => {
@@ -62,7 +67,7 @@ export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
             <UseCurrentLocationRow
               permission={vm.permission}
               loading={vm.detecting}
-              onPress={() => run(() => vm.detectCurrentLocation())}
+              onPress={() => run('gps', () => vm.detectCurrentLocation())}
             />
           </View>
 
@@ -87,7 +92,10 @@ export const LocationSheet = ({ visible, onClose, onDismiss }: Props) => {
                   return (
                     <TouchableOpacity
                       key={recentLocationKey(r)}
-                      onPress={() => run(() => vm.selectRecent(r))}
+                      onPress={() => run('recent', async () => {
+                        await vm.selectRecent(r);
+                        return isActiveRecentLocation(r, useLocationStore.getState().serviceableVillage);
+                      })}
                       className={`flex-row items-center gap-3 p-3 rounded-2xl border ${active ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white'}`}
                     >
                       <View className={`w-9 h-9 rounded-xl items-center justify-center ${active ? 'bg-green-600' : 'bg-slate-100'}`}>

@@ -4,10 +4,13 @@ import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
 import { StorageKeys } from '@/src/base/constants/AppConstants';
 import { Locale } from '@/src/base/constants/translations';
 import { parseCartKey } from '@/src/features/cart/domain/cartKey';
+import { analytics } from '@/src/base/services/analytics';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 interface VillageState {
   cart: CartRecord;
   cartSnapshots: CartSnapshotRecord;
+  cartAttribution: Record<string, AnalyticsProductContext>;
   /** Per product id, the cart key of the variant touched most recently. Cards
    *  mirror that line's price and pack size; the cart itself does not use it. */
   lastVariantKey: Record<string, string>;
@@ -21,7 +24,7 @@ interface VillageState {
 }
 
 interface VillageActions {
-  addToCart: (key: string, snapshot?: CartSnapshot, maxQuantity?: number) => void;
+  addToCart: (key: string, snapshot?: CartSnapshot, maxQuantity?: number, context?: AnalyticsProductContext) => void;
   decFromCart: (key: string) => void;
   /** Set a line to an exact quantity in a single write. Prefer this over looping
    *  addToCart/decFromCart: each of those is its own store notification, so
@@ -42,6 +45,7 @@ type VillageStore = VillageState & VillageActions;
 const initialState: VillageState = {
   cart: {},
   cartSnapshots: {},
+  cartAttribution: {},
   lastVariantKey: {},
   favs: {},
   vipAddedInCart: false,
@@ -51,6 +55,7 @@ const initialState: VillageState = {
 interface PersistedCart {
   cart: CartRecord;
   cartSnapshots: CartSnapshotRecord;
+  cartAttribution?: Record<string, AnalyticsProductContext>;
   lastVariantKey?: Record<string, string>;
 }
 
@@ -96,13 +101,14 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         const pointed = lastVariantKey[productId];
         if (!pointed || !(pointed in saved.cart)) lastVariantKey[productId] = key;
       }
-      set({ cart: saved.cart, cartSnapshots, lastVariantKey });
+      set({ cart: saved.cart, cartSnapshots, cartAttribution: saved.cartAttribution ?? {}, lastVariantKey });
     } catch {
       // A missing or unreadable cart is not worth failing app start over.
     }
   },
 
-  addToCart: (key, snapshot, maxQuantity) =>
+  addToCart: (key, snapshot, maxQuantity, context) => {
+    const before = get().cart[key] ?? 0;
     set((state) => {
       const current = state.cart[key] ?? 0;
       // Nothing changed, so nothing is touched: the pointer stays wherever it
@@ -120,11 +126,29 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
           snapshot && !state.cartSnapshots[key]
             ? { ...state.cartSnapshots, [key]: snapshot }
             : state.cartSnapshots,
+        cartAttribution: context
+          ? { ...state.cartAttribution, [key]: context }
+          : state.cartAttribution,
         lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
-    }),
+    });
+    const after = get().cart[key] ?? 0;
+    if (after > before) {
+      const { productId } = parseCartKey(key);
+      const line = get().cartSnapshots[key] ?? snapshot;
+      analytics.track('cart_item_added', {
+        product_id: productId,
+        ...(line?.variantId ? { variant_id: line.variantId } : {}),
+        quantity: after - before,
+        cart_quantity: after,
+        ...context,
+      });
+    }
+  },
 
-  decFromCart: (key) =>
+  decFromCart: (key) => {
+    const before = get().cart[key] ?? 0;
+    const line = get().cartSnapshots[key];
     set((state) => {
       const current = state.cart[key] ?? 0;
       // Nothing to remove — a no-op write would still fire a notification and
@@ -134,9 +158,11 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       if (current <= 1) {
         const { [key]: _removed, ...cart } = state.cart;
         const { [key]: _snap, ...cartSnapshots } = state.cartSnapshots;
+        const { [key]: _attribution, ...cartAttribution } = state.cartAttribution;
         return {
           cart,
           cartSnapshots,
+          cartAttribution,
           lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, productId, key),
         };
       }
@@ -144,9 +170,22 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         cart: { ...state.cart, [key]: current - 1 },
         lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
-    }),
+    });
+    const after = get().cart[key] ?? 0;
+    if (after < before) {
+      const { productId } = parseCartKey(key);
+      analytics.track('cart_item_removed', {
+        product_id: productId,
+        ...(line?.variantId ? { variant_id: line.variantId } : {}),
+        quantity: before - after,
+        cart_quantity: after,
+      });
+    }
+  },
 
-  setQuantity: (key, quantity, maxQuantity) =>
+  setQuantity: (key, quantity, maxQuantity) => {
+    const before = get().cart[key] ?? 0;
+    const line = get().cartSnapshots[key];
     set((state) => {
       const capped = maxQuantity !== undefined ? Math.min(quantity, maxQuantity) : quantity;
       const { productId } = parseCartKey(key);
@@ -154,9 +193,11 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
       if (capped <= 0) {
         const { [key]: _removed, ...cart } = state.cart;
         const { [key]: _snap, ...cartSnapshots } = state.cartSnapshots;
+        const { [key]: _attribution, ...cartAttribution } = state.cartAttribution;
         return {
           cart,
           cartSnapshots,
+          cartAttribution,
           lastVariantKey: releaseLastVariant(state.lastVariantKey, cart, productId, key),
         };
       }
@@ -165,20 +206,44 @@ export const useVillageStore = create<VillageStore>((set, get) => ({
         cart: { ...state.cart, [key]: capped },
         lastVariantKey: { ...state.lastVariantKey, [productId]: key },
       };
-    }),
+    });
+    const after = get().cart[key] ?? 0;
+    if (after !== before) {
+      const { productId } = parseCartKey(key);
+      analytics.track('cart_quantity_changed', {
+        product_id: productId,
+        ...(line?.variantId ? { variant_id: line.variantId } : {}),
+        quantity_before: before,
+        quantity_after: after,
+      });
+    }
+  },
 
-  toggleFav: (productId) =>
+  toggleFav: (productId) => {
     set((state) => ({
       favs: {
         ...state.favs,
         [productId]: !state.favs[productId],
       },
-    })),
+    }));
+    analytics.track('favorite_changed', {
+      product_id: productId,
+      is_favorite: !!get().favs[productId],
+    });
+  },
 
-  addVipMembership: () => set({ vipAddedInCart: true }),
-  removeVipMembership: () => set({ vipAddedInCart: false }),
+  addVipMembership: () => {
+    if (get().vipAddedInCart) return;
+    set({ vipAddedInCart: true });
+    analytics.track('vip_membership_selected', { action: 'added' });
+  },
+  removeVipMembership: () => {
+    if (!get().vipAddedInCart) return;
+    set({ vipAddedInCart: false });
+    analytics.track('vip_membership_selected', { action: 'removed' });
+  },
 
-  clearCart: () => set({ cart: {}, cartSnapshots: {}, lastVariantKey: {}, vipAddedInCart: false }),
+  clearCart: () => set({ cart: {}, cartSnapshots: {}, cartAttribution: {}, lastVariantKey: {}, vipAddedInCart: false }),
 
   setLocale: async (locale) => {
     set({ locale });
@@ -270,6 +335,7 @@ useVillageStore.subscribe((state, prev) => {
   void StoredPrefs.setCustomData(StorageKeys.CART, {
     cart: state.cart,
     cartSnapshots: state.cartSnapshots,
+    cartAttribution: state.cartAttribution,
     lastVariantKey: state.lastVariantKey,
   }).catch(() => {});
 });

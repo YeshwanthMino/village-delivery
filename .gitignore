@@ -45,6 +45,10 @@ app-example
 # env
 .env
 
+# Firebase project configuration supplied for local native builds
+/google-services.json
+/GoogleService-Info.plist
+
 # Superpowers visual-companion brainstorming
 .superpowers/
 

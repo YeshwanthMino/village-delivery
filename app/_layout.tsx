@@ -1,3 +1,4 @@
+import '@/src/shared/fontScaling';
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import '@/global.css';
 import { NotoSansTelugu_400Regular, NotoSansTelugu_700Bold, useFonts } from '@expo-google-fonts/noto-sans-telugu';

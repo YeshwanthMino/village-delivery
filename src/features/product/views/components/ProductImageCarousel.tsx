@@ -2,7 +2,7 @@
 
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { useTranslation } from '@/src/core/utils/useTranslation';
+import { SoldOutStamp } from '@/src/shared/components/SoldOutStamp';
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, Text, View } from 'react-native';
 
 interface Props {
@@ -14,7 +14,6 @@ interface Props {
 const { width: SCREEN_W } = Dimensions.get('window');
 
 export const ProductImageCarousel = ({ images, discountPct, soldOut = false }: Props) => {
-  const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const pics = images.length > 0 ? images : [''];
 
@@ -51,12 +50,7 @@ export const ProductImageCarousel = ({ images, discountPct, soldOut = false }: P
           className="absolute top-0 left-0 items-center justify-center"
           style={{ width: SCREEN_W, height: SCREEN_W }}
         >
-          <View
-            className="border-2 border-red-600 rounded-md px-4 py-1 bg-white/70"
-            style={{ transform: [{ rotate: '-6deg' }] }}
-          >
-            <Text className="text-red-600 font-extrabold text-2xl tracking-wide">{t('sold_out')}</Text>
-          </View>
+          <SoldOutStamp width={170} />
         </View>
       ) : null}
 

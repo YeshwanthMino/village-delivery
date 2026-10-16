@@ -17,6 +17,8 @@ import { useAddressBookViewModel } from '../viewmodel/useAddressBookViewModel';
 import { LocationPinGraphic } from './components/LocationPinGraphic';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { PermissionDeniedContent } from './components/PermissionDeniedSheet';
+import { analytics } from '@/src/base/services/analytics';
+import { trackActiveLocationSelection, type LocationSelectionMethod } from './trackLocationSelection';
 
 interface Props {
   visible: boolean;
@@ -37,8 +39,12 @@ export const LocationPermissionSheet = ({ visible, onClose, onDismiss, dismissab
   const granted = vm.permission === 'granted';
   const hasError = vm.lastError !== null;
 
-  const run = useSingleFlight(async (action: () => Promise<boolean>) => {
-    if (await action()) onClose();
+  const run = useSingleFlight(async (method: LocationSelectionMethod, action: () => Promise<boolean>, addressTag?: AddressTag) => {
+    if (await action()) {
+      trackActiveLocationSelection(method);
+      if (addressTag) analytics.track('address_selected', { tag: addressTag });
+      onClose();
+    }
   });
 
   const openSearch = () => {
@@ -88,7 +94,7 @@ export const LocationPermissionSheet = ({ visible, onClose, onDismiss, dismissab
               <UseCurrentLocationRow
                 permission={vm.permission}
                 loading={vm.detecting}
-                onPress={() => run(() => vm.detectCurrentLocation())}
+                onPress={() => run('gps', () => vm.detectCurrentLocation())}
               />
 
               {hasError && !vm.detecting ? (
@@ -97,7 +103,7 @@ export const LocationPermissionSheet = ({ visible, onClose, onDismiss, dismissab
                     {t('location_error_title')}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => run(() => vm.detectCurrentLocation())}
+                    onPress={() => run('gps', () => vm.detectCurrentLocation())}
                     className="border border-red-300 bg-white px-3 py-1.5 rounded-lg"
                   >
                     <Text className="text-red-700 font-extrabold text-[11px]">{t('retry')}</Text>
@@ -122,7 +128,7 @@ export const LocationPermissionSheet = ({ visible, onClose, onDismiss, dismissab
                   {book.addresses.map((a, i) => (
                     <TouchableOpacity
                       key={a.id}
-                      onPress={() => run(() => vm.selectAddress(a))}
+                      onPress={() => run('saved_address', () => vm.selectAddress(a), a.tag)}
                       className={`flex-row items-center gap-3 px-4 py-3.5 ${i > 0 ? 'border-t border-slate-100' : ''}`}
                     >
                       <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">

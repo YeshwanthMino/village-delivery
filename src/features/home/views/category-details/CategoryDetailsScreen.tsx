@@ -1,4 +1,6 @@
 import { ArrowLeft, Search } from 'lucide-react-native';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,14 +12,38 @@ import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { SubcategoryRail } from './components/SubcategoryRail';
 import { useCategoryDetailsViewModel } from '../../viewmodel/categories/useCategoryDetailsViewModel';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
+import { analytics } from '@/src/base/services/analytics';
+import { useProductListImpressions } from '@/src/shared/hooks/useProductListImpressions';
+import type { HomeProduct } from '../../data/homeLayout.types';
 
 export const CategoryDetailsScreen = () => {
   const router = useGuardedRouter();
   const goBack = useBackAction(() => router.back('/(dashboard)/categories'));
+  const { t } = useTranslation();
   const vm = useCategoryDetailsViewModel();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(390)).current;
   const sheet = useVariantSheet();
+  const listId = vm.selectedId ? `category:${vm.selectedId}` : '';
+  const impressions = useProductListImpressions<HomeProduct>(listId, 'category');
+  const lastViewedCategory = useRef<string | null>(null);
+  const lastViewedList = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!vm.selectedId || lastViewedCategory.current === vm.selectedId) return;
+    lastViewedCategory.current = vm.selectedId;
+    analytics.track('category_viewed', { category_id: vm.selectedId });
+  }, [vm.selectedId]);
+
+  useEffect(() => {
+    if (!vm.selectedId || vm.loading || vm.error || lastViewedList.current === vm.selectedId) return;
+    lastViewedList.current = vm.selectedId;
+    analytics.track('product_list_viewed', {
+      list_id: `category:${vm.selectedId}`,
+      category_id: vm.selectedId,
+      item_count: vm.products.length,
+    });
+  }, [vm.selectedId, vm.loading, vm.error, vm.products.length]);
 
   useEffect(() => {
     slideAnim.setValue(390);
@@ -65,12 +91,7 @@ export const CategoryDetailsScreen = () => {
               <ActivityIndicator color="#16a34a" />
             </View>
           ) : vm.error ? (
-            <View className="flex-1 items-center justify-center px-6">
-              <Text className="text-slate-500 text-sm text-center mb-4">{"Couldn't load products."}</Text>
-              <TouchableOpacity onPress={() => vm.refetch()} className="bg-green-600 rounded-xl px-5 py-2.5">
-                <Text className="text-white font-bold text-sm">Retry</Text>
-              </TouchableOpacity>
-            </View>
+            <LoadErrorState description={t('products_load_failed_desc')} onRetry={() => vm.refetch()} />
           ) : vm.products.length === 0 ? (
             <View className="flex-1 items-center justify-center px-6">
               <Text className="text-3xl mb-2">🧺</Text>
@@ -79,17 +100,22 @@ export const CategoryDetailsScreen = () => {
           ) : (
             <FlatList
               data={vm.products}
+              onViewableItemsChanged={impressions.onViewableItemsChanged}
+              viewabilityConfig={impressions.viewabilityConfig}
               keyExtractor={(p) => p.id}
               numColumns={2}
               showsVerticalScrollIndicator={false}
               columnWrapperStyle={{ gap: 10, paddingHorizontal: 10, justifyContent: 'flex-start' }}
               contentContainerStyle={{ paddingVertical: 10, gap: 10, paddingBottom: 96 }}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <View style={{ flex: 1, maxWidth: '50%' }}>
                   <DynamicProductCard
                     product={item}
                     width="100%"
                     onOpenVariants={sheet.open}
+                    source="category"
+                    listId={listId}
+                    position={index + 1}
                   />
                 </View>
               )}
@@ -121,6 +147,7 @@ export const CategoryDetailsScreen = () => {
 
       <VariantBottomSheet
         product={sheet.product}
+        context={sheet.context}
         onClose={sheet.close}
       />
     </SafeAreaView>

@@ -2,16 +2,21 @@
 
 import { ArrowLeft, Search, ChevronDown, Truck, Tag, LayoutGrid } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DynamicProductCard } from '@/src/features/home/views/home/components/DynamicProductCard';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { useProductDetailViewModel } from '../viewmodel/useProductDetailViewModel';
 import { ProductImageCarousel } from './components/ProductImageCarousel';
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import { ProductCartBar } from './components/ProductCartBar';
 import { rupees } from '@/src/shared/utils/currency';
 import { orderLimit } from '@/src/shared/utils/orderLimit';
+import { analytics } from '@/src/base/services/analytics';
+import { useProductRailImpressions } from '@/src/shared/hooks/useProductRailImpressions';
+import { useImpressionViewportRegistry } from '@/src/shared/hooks/useImpressionViewportRegistry';
+import type { HomeProduct } from '@/src/features/home/data/homeLayout.types';
 
 export const ProductDetailScreen = () => {
   const vm = useProductDetailViewModel();
@@ -21,6 +26,34 @@ export const ProductDetailScreen = () => {
   const cart = useVillageStore((s) => s.cart);
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
+  const lastViewedProduct = React.useRef<string | null>(null);
+  const lastViewedSimilar = React.useRef<string | null>(null);
+  const impressionViewport = useImpressionViewportRegistry();
+  const similarImpressions = useProductRailImpressions<HomeProduct>(
+    vm.detail ? `similar:${vm.detail.id}` : '',
+    'similar_products', impressionViewport.registerCheck,
+    vm.detail?.recommendationId, vm.detail?.recommendationModelVersion,
+  );
+
+  React.useEffect(() => {
+    const detail = vm.detail;
+    if (vm.loading || !detail?.active || lastViewedProduct.current === detail.id) return;
+    lastViewedProduct.current = detail.id;
+    analytics.track('product_viewed', { product_id: detail.id, price: detail.price, ...vm.context });
+  }, [vm.detail, vm.loading]);
+
+  React.useEffect(() => {
+    const detail = vm.detail;
+    if (!detail?.active || detail.similarProducts.length === 0 || lastViewedSimilar.current === detail.id) return;
+    lastViewedSimilar.current = detail.id;
+    analytics.track('recommendation_served', {
+      parent_product_id: detail.id,
+      list_id: `similar:${detail.id}`,
+      item_count: detail.similarProducts.length,
+      ...(detail.recommendationId ? { recommendation_id: detail.recommendationId } : {}),
+      ...(detail.recommendationModelVersion ? { model_version: detail.recommendationModelVersion } : {}),
+    });
+  }, [vm.detail]);
 
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
 
@@ -52,12 +85,7 @@ export const ProductDetailScreen = () => {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         {header}
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-slate-500 text-center mb-4">Couldn&apos;t load this product.</Text>
-          <TouchableOpacity onPress={() => vm.refetch()} className="border-2 border-green-600 rounded-xl px-6 py-3">
-            <Text className="text-green-700 font-bold">Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <LoadErrorState description={t('product_load_failed_desc')} onRetry={() => vm.refetch()} />
       </SafeAreaView>
     );
   }
@@ -131,7 +159,7 @@ export const ProductDetailScreen = () => {
         maxOrderQuantity: selectedVariant.maxOrderQuantity,
       };
       const maxQuantity = orderLimit(selectedVariant.stock, selectedVariant.maxOrderQuantity);
-      addToCart(`${d.id}-v${selectedVariantIndex}`, snapshot, maxQuantity);
+      addToCart(`${d.id}-v${selectedVariantIndex}`, snapshot, maxQuantity, vm.context);
     } else {
       // No variants - add as base product
       vm.onAdd();
@@ -153,7 +181,7 @@ export const ProductDetailScreen = () => {
     <SafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
       {header}
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }} onScroll={impressionViewport.checkVisible} scrollEventThrottle={16}>
         <ProductImageCarousel images={selectedVariant?.images || d.images} discountPct={displayDiscount} soldOut={!productInStock} />
 
         <View className="px-4 pt-4">
@@ -202,7 +230,13 @@ export const ProductDetailScreen = () => {
                   return (
                     <TouchableOpacity
                       key={idx}
-                      onPress={() => setSelectedVariantIndex(idx)}
+                      onPress={() => {
+                        if (idx === selectedVariantIndex) return;
+                        setSelectedVariantIndex(idx);
+                        if (variant.id) {
+                          analytics.track('product_variant_selected', { product_id: d.id, variant_id: variant.id });
+                        }
+                      }}
                       className={`border-2 rounded-xl p-3 flex-row items-center justify-between ${
                         isSelected ? 'border-green-600 bg-green-50' : 'border-slate-200'
                       }`}
@@ -266,15 +300,24 @@ export const ProductDetailScreen = () => {
         {d.similarProducts.length > 0 ? (
           <View className="mt-6">
             <Text className="text-slate-900 font-bold text-base px-4 mb-3">You might also like</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-            >
-              {d.similarProducts.map((p) => (
-                <DynamicProductCard key={p.id} product={p} />
-              ))}
-            </ScrollView>
+            <View ref={similarImpressions.railRef} collapsable={false} onLayout={similarImpressions.checkVisible}>
+              <FlatList
+                horizontal
+                data={d.similarProducts}
+                keyExtractor={(p) => p.id}
+                onViewableItemsChanged={similarImpressions.onViewableItemsChanged}
+                viewabilityConfig={similarImpressions.viewabilityConfig}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
+                ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                renderItem={({ item: p, index }) => (
+                  <DynamicProductCard
+                    product={p} source="similar_products" listId={`similar:${d.id}`} position={index + 1}
+                    recommendationId={d.recommendationId} modelVersion={d.recommendationModelVersion}
+                  />
+                )}
+              />
+            </View>
           </View>
         ) : null}
       </ScrollView>

@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Bell, Search, ShoppingCart } from 'lucide-react-native';
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import React from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,11 +25,14 @@ import { LocationSheet } from '@/src/features/location/views/LocationSheet';
 import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
 import { useStoreClosedOnOpen } from '@/src/features/storeConfig/viewmodel/useStoreClosedOnOpen';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
+import { trackActiveLocationSelection } from '@/src/features/location/views/trackLocationSelection';
+import { useImpressionViewportRegistry } from '@/src/shared/hooks/useImpressionViewportRegistry';
 
 export const HomeScreen = () => {
   const router = useGuardedRouter();
   const vm = useHomeViewModel();
   const variantSheet = useVariantSheet();
+  const impressionViewport = useImpressionViewportRegistry();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const locale = useVillageStore((s) => s.locale);
@@ -111,7 +115,9 @@ export const HomeScreen = () => {
         if (perm === 'granted' && !autoDetectedRef.current) {
           autoDetectedRef.current = true;
           bootstrapRequest.current = new AbortController();
-          void detectCurrentLocation(bootstrapRequest.current.signal);
+          void detectCurrentLocation(bootstrapRequest.current.signal).then((selected) => {
+            if (selected) trackActiveLocationSelection('auto_gps');
+          }).catch(() => {});
         } else {
           setPermSheetOpen(true);
         }
@@ -188,6 +194,7 @@ export const HomeScreen = () => {
         </View>
       ) : (
         <ScrollView
+          onScroll={impressionViewport.checkVisible}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: scrollPadding }}
@@ -203,21 +210,16 @@ export const HomeScreen = () => {
           {layout.loading && layout.sections.length === 0 ? (
             <HomeSkeleton />
           ) : layout.error && layout.sections.length === 0 ? (
-            <View className="py-16 items-center px-8">
-              <Text className="text-slate-500 text-base text-center mb-4">{t('location_error_title')}</Text>
-              <TouchableOpacity onPress={layout.refresh} className="bg-green-600 rounded-xl px-5 py-2.5">
-                <Text className="text-white font-bold text-sm">{t('retry')}</Text>
-              </TouchableOpacity>
-            </View>
+            <LoadErrorState className="py-12 items-center px-8" onRetry={layout.refresh} />
           ) : (
-            <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} />
+            <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} registerImpressionCheck={impressionViewport.registerCheck} />
           )}
         </ScrollView>
       )}
 
       {/* Overlays */}
       {vm.cartCount > 0 && <CartSummaryCard onPress={goToCart} />}
-      <VariantBottomSheet product={variantSheet.product} onClose={variantSheet.close} />
+      <VariantBottomSheet product={variantSheet.product} context={variantSheet.context} onClose={variantSheet.close} />
 
       <LocationPermissionSheet
         visible={permSheetOpen}

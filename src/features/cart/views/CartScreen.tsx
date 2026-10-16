@@ -36,6 +36,8 @@ import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { useCartAddressViewModel } from '../viewmodel/useCartAddressViewModel';
 import { useCreateOrderMutation } from '../data/mutations/useCreateOrderMutation';
 import { logger } from '@/src/base/services/logger';
+import { analytics } from '@/src/base/services/analytics';
+import { UNITS_PER_RUPEE } from '@/src/shared/utils/currency';
 import { StoreClosedSheet } from '@/src/features/storeConfig/views/StoreClosedSheet';
 import {
   getStoreStatus,
@@ -187,9 +189,16 @@ export const CartScreen = () => {
     // Defensive: the bar is already blocked while any line conflicts (see
     // checkoutState), so this only fires if a check lands between render and tap.
     if (stockConflicts.length > 0) {
+      analytics.track('checkout_blocked', { reason: 'stock_conflict' });
       setStockConflictInfo(stockConflicts);
       return;
     }
+    analytics.track('checkout_started', {
+      item_count: vm.bill.totalCount,
+      cart_value: vm.bill.grandTotal * UNITS_PER_RUPEE,
+      currency: 'INR',
+      payment_method: paymentMethod ?? 'cod',
+    });
     const status = getStoreStatus(getStoreTimings());
     if (needsStoreClosedNotice(status)) setStoreNotice(status);
     else setSheet('checkout');
@@ -256,6 +265,7 @@ export const CartScreen = () => {
 
       // Check for stock conflicts
       if (result.stockInfo && result.stockInfo.length > 0) {
+        analytics.track('checkout_blocked', { reason: 'stock_conflict' });
         logger.debug('[handlePlaceOrder] Stock conflicts detected:', result.stockInfo);
         if (sheetRef.current !== null) {
           // iOS cannot safely present the conflict Modal while the login Modal
@@ -270,6 +280,22 @@ export const CartScreen = () => {
 
       // Success path
       if (result.orderId) {
+        analytics.track('order_placed', {
+          order_id: result.orderId,
+          item_count: currentItems.reduce((count, item) => count + item.count, 0),
+          value: vm.bill.grandTotal * UNITS_PER_RUPEE,
+          currency: 'INR',
+          payment_method: paymentMethod ?? 'cod',
+        });
+        for (const item of currentItems) {
+          analytics.track('product_purchased', {
+            order_id: result.orderId,
+            product_id: item.productId,
+            ...(item.variantId ? { variant_id: item.variantId } : {}),
+            quantity: item.count,
+            ...currentCart.cartAttribution[item.key],
+          });
+        }
         logger.debug('[handlePlaceOrder] Order placed successfully. OrderId:', result.orderId);
         // The login flow owns its success step. It will close first, then
         // navigate from the native dismissal callback. Conflict-sheet retries
@@ -395,8 +421,14 @@ export const CartScreen = () => {
             balance={vm.walletBalance}
             appliedAmount={vm.bill.walletDiscount}
             applied={vm.walletApplied}
-            onApply={vm.applyWallet}
-            onRemove={vm.removeWallet}
+            onApply={() => {
+              vm.applyWallet();
+              analytics.track('wallet_application_changed', { applied: true });
+            }}
+            onRemove={() => {
+              vm.removeWallet();
+              analytics.track('wallet_application_changed', { applied: false });
+            }}
           />
 
           {/* Items */}
@@ -425,7 +457,12 @@ export const CartScreen = () => {
           />
 
           {/* Payment method — always shown (COD preselected) */}
-          <PaymentMethodSection selected={paymentMethod} onSelect={setPaymentMethod} />
+          <PaymentMethodSection selected={paymentMethod} onSelect={(method) => {
+            if (method !== paymentMethod) {
+              setPaymentMethod(method);
+              analytics.track('payment_method_selected', { payment_method: method });
+            }
+          }} />
 
           {/* Trust badge */}
           <View className="flex-row items-center gap-2 justify-center py-2">

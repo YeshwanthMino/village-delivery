@@ -20,6 +20,9 @@ import { useTranslation } from '@/src/core/utils/useTranslation';
 import { BillSummaryCard } from '@/src/shared/components/BillSummaryCard';
 import { openWhatsAppSupport } from '@/src/shared/utils/whatsappSupport';
 import { useOrderDetailViewModel } from '../viewmodel/useOrderDetailViewModel';
+import { analytics } from '@/src/base/services/analytics';
+import { observeOrderOutcomes } from '../data/observeOrderOutcomes';
+import { useAuthStore } from '@/src/core/store/useAuthStore';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,11 +37,12 @@ function formatDate(iso: string): string {
 // Orders use the server status directly: if the server says 'out_for_delivery',
 // show that; otherwise show 'preparing' until server marks as delivered/cancelled.
 
-type ViewStatus = 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+type ViewStatus = 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'refunded';
 
 function deriveViewStatus(order: Order): { status: ViewStatus; remainingMin: number } {
   if (order.status === 'delivered') return { status: 'delivered', remainingMin: 0 };
   if (order.status === 'cancelled') return { status: 'cancelled', remainingMin: 0 };
+  if (order.status === 'refunded') return { status: 'refunded', remainingMin: 0 };
   if (order.status === 'out_for_delivery') return { status: 'out_for_delivery', remainingMin: 0 };
   return { status: 'preparing', remainingMin: 0 };
 }
@@ -50,6 +54,7 @@ const VIEW_BANNER: Record<ViewStatus, { bg: string; text: string; label: string;
   out_for_delivery: { bg: 'bg-orange-50', text: 'text-orange-700', label: 'status_out_for_delivery', icon: <Truck size={28} color="#c2410c" /> },
   delivered:        { bg: 'bg-green-50',  text: 'text-green-700',  label: 'status_delivered',        icon: <CheckCircle2 size={28} color="#15803d" /> },
   cancelled:        { bg: 'bg-red-50',    text: 'text-red-700',    label: 'status_cancelled',        icon: <XCircle size={28} color="#b91c1c" /> },
+  refunded:         { bg: 'bg-slate-50',  text: 'text-slate-700',  label: 'status_refunded',         icon: <XCircle size={28} color="#64748b" /> },
 };
 
 // ── Status timeline ───────────────────────────────────────────────────────────
@@ -65,6 +70,7 @@ const VIEW_ORDER: Record<ViewStatus, number> = {
   out_for_delivery: 1,
   delivered:        2,
   cancelled:        -1,
+  refunded:         -1,
 };
 
 function StatusTimeline({ status }: { status: ViewStatus }) {
@@ -116,6 +122,20 @@ export const OrderDetailScreen = () => {
   const insets = useSafeAreaInsets();
   const { order, isLoading, refetch, isRefetching } = useOrderDetailViewModel();
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
+  const lastViewedOrder = React.useRef<string | null>(null);
+  const user = useAuthStore(s => s.user);
+
+  React.useEffect(() => {
+    if (!order || lastViewedOrder.current === order.id) return;
+    lastViewedOrder.current = order.id;
+    analytics.track('order_detail_viewed', { order_id: order.id, status: order.status });
+  }, [order]);
+
+  React.useEffect(() => {
+    if (!order) return;
+    const id = user?.uuid ?? user?.id;
+    void observeOrderOutcomes([order], id == null ? null : String(id));
+  }, [order, user?.uuid, user?.id]);
 
   if (isLoading) {
     return (
@@ -163,7 +183,7 @@ export const OrderDetailScreen = () => {
 
   const { status: viewStatus } = deriveViewStatus(order);
   const banner = VIEW_BANNER[viewStatus];
-  const isCancelled = viewStatus === 'cancelled';
+  const isCancelled = viewStatus === 'cancelled' || viewStatus === 'refunded';
   const bannerSub =
     viewStatus === 'preparing'        ? formatDate(order.placedAt)
     : viewStatus === 'out_for_delivery' ? t('on_the_way')
@@ -183,7 +203,10 @@ export const OrderDetailScreen = () => {
           <Text className="text-slate-400 text-xs mt-0.5">{formatDate(order.placedAt)}</Text>
         </View>
         <Pressable
-          onPress={() => openWhatsAppSupport(interpolate(t('order_help_msg'), order.id))}
+          onPress={() => {
+            analytics.track('order_help_selected', { order_id: order.id });
+            openWhatsAppSupport(interpolate(t('order_help_msg'), order.id));
+          }}
           className="flex-row items-center gap-1.5 border border-slate-200 rounded-full px-3 py-1.5 active:bg-slate-50"
         >
           <MessageCircle size={15} color="#16a34a" strokeWidth={2.4} />

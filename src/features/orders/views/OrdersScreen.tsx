@@ -1,3 +1,4 @@
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
@@ -12,6 +13,9 @@ import { interpolate } from '@/src/base/constants/translations';
 import { useOrdersViewModel } from '../viewmodel/useOrdersViewModel';
 import { useAuthStore } from '@/src/core/store/useAuthStore';
 import { LoginBottomSheet } from '@/src/features/auth/views/LoginBottomSheet';
+import { useScreenFocused } from '@/src/shared/hooks/useScreenActive';
+import { analytics } from '@/src/base/services/analytics';
+import { observeOrderOutcomes } from '../data/observeOrderOutcomes';
 
 // ── Status presentation ──────────────────────────────────────────────────────
 
@@ -24,6 +28,7 @@ const STATUS_CONFIG: Record<
   out_for_delivery: { labelKey: 'status_out_for_delivery', color: '#ea580c', Icon: Truck },        // orange-600
   delivered:        { labelKey: 'status_delivered',        color: '#16a34a', Icon: CheckCircle2 }, // green-600
   cancelled:        { labelKey: 'status_cancelled',        color: '#64748b', Icon: XCircle },       // slate-500
+  refunded:         { labelKey: 'status_refunded',         color: '#64748b', Icon: XCircle },
 };
 
 // ── Order card ────────────────────────────────────────────────────────────────
@@ -260,6 +265,25 @@ export const OrdersScreen = () => {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const { allOrders, activeOrders, pastOrders, isLoading, isError, refetch, isRefetching } = useOrdersViewModel();
   const [loginVisible, setLoginVisible] = useState(false);
+  const focused = useScreenFocused();
+  const trackedFocus = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!focused) {
+      trackedFocus.current = false;
+      return;
+    }
+    if (isLoading || trackedFocus.current) return;
+    trackedFocus.current = true;
+    analytics.track('orders_viewed', { order_count: allOrders.length });
+  }, [focused, isLoading, allOrders.length]);
+
+  const user = useAuthStore(s => s.user);
+  React.useEffect(() => {
+    if (!isAuthenticated || isLoading || isError) return;
+    const id = user?.uuid ?? user?.id;
+    void observeOrderOutcomes(allOrders, id == null ? null : String(id));
+  }, [isAuthenticated, isLoading, isError, allOrders, user?.uuid, user?.id]);
 
   // Tabs stay mounted, so a plain mount-time fetch never re-runs on return.
   // Refetch whenever the Orders tab regains focus (only while signed in, since
@@ -308,9 +332,7 @@ export const OrdersScreen = () => {
           <ActivityIndicator size="large" color="#16a34a" />
         </View>
       ) : isError ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-slate-500 text-sm text-center">{t('orders_load_error')}</Text>
-        </View>
+        <LoadErrorState description={t('orders_load_error')} onRetry={() => refetch()} />
       ) : !hasOrders ? (
         <EmptyOrders />
       ) : listData.length === 0 ? (

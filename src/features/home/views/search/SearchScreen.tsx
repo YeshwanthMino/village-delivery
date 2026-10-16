@@ -18,6 +18,9 @@ import { useSearchViewModel } from '../../viewmodel/search/useSearchViewModel';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
+import { analytics } from '@/src/base/services/analytics';
+import { useProductListImpressions } from '@/src/shared/hooks/useProductListImpressions';
+import type { HomeProduct } from '../../data/homeLayout.types';
 
 export const SearchScreen = () => {
   const router = useGuardedRouter();
@@ -27,10 +30,30 @@ export const SearchScreen = () => {
   const inputRef = useRef<TextInput>(null);
   const { t } = useTranslation();
   const sheet = useVariantSheet();
+  const listId = vm.activeCategoryId ? `search:${vm.activeCategoryId}` : 'search';
+  const impressions = useProductListImpressions<HomeProduct>(listId, 'search');
+  const lastTrackedSearch = useRef('');
   // Standalone route (no tab bar). Reserve only enough for the floating cart pill.
   const scrollPadding = 96;
 
   const goToCart = () => router.push('/cart');
+
+  React.useEffect(() => {
+    const query = vm.query.trim();
+    if (!query || vm.isFetching || vm.isLoading) return;
+    const timer = setTimeout(() => {
+      const signature = `${query}|${vm.activeCategoryId ?? ''}`;
+      if (lastTrackedSearch.current === signature) return;
+      lastTrackedSearch.current = signature;
+      analytics.track('search_performed', {
+        query_length: query.length,
+        result_count: vm.total,
+        search_scope: 'catalog',
+        ...(vm.activeCategoryId ? { category_id: vm.activeCategoryId } : {}),
+      });
+    }, 550);
+    return () => clearTimeout(timer);
+  }, [vm.query, vm.activeCategoryId, vm.total, vm.isFetching, vm.isLoading]);
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['bottom', 'left', 'right']}>
@@ -105,6 +128,8 @@ export const SearchScreen = () => {
         // every card, with its image, before the first frame could paint.
         <FlatList
           data={vm.results}
+          onViewableItemsChanged={impressions.onViewableItemsChanged}
+          viewabilityConfig={impressions.viewabilityConfig}
           keyExtractor={(product) => product.id}
           numColumns={2}
           style={{ flex: 1 }}
@@ -112,12 +137,15 @@ export const SearchScreen = () => {
           contentContainerStyle={{ padding: 16, paddingBottom: scrollPadding }}
           columnWrapperStyle={{ gap: 12, marginBottom: 12 }}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <View style={{ width: '47.5%' }}>
               <DynamicProductCard
                 product={item}
                 width="100%"
                 onOpenVariants={sheet.open}
+                source="search"
+                listId={listId}
+                position={index + 1}
               />
             </View>
           )}
@@ -131,6 +159,7 @@ export const SearchScreen = () => {
 
       <VariantBottomSheet
         product={sheet.product}
+        context={sheet.context}
         onClose={sheet.close}
       />
     </SafeAreaView>

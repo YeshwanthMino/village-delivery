@@ -23,4 +23,7 @@ export interface ProductDetail {
   categoryTitle?: string; // categoryId.title, falling back to the top-level category
   variants?: Variant[];   // available variants for the product
   similarProducts: HomeProduct[];
+  /** Optional metadata supplied by the recommendation API. */
+  recommendationId?: string;
+  recommendationModelVersion?: string;
 }

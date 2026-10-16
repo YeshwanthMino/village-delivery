@@ -17,6 +17,7 @@ import { useAuthStore } from '@/src/core/store';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useCashbackSettings } from '@/src/core/store/useStoreConfigStore';
 import { rupees, toUnits } from '@/src/shared/utils/currency';
+import { analytics } from '@/src/base/services/analytics';
 
 export const VipMembershipScreen = () => {
   const router = useGuardedRouter();
@@ -25,6 +26,13 @@ export const VipMembershipScreen = () => {
   const { t } = useTranslation();
   const isVip = Boolean(useAuthStore(state => state.user?.isVip));
   const cashbackSettings = useCashbackSettings();
+  const trackedView = React.useRef(false);
+
+  React.useEffect(() => {
+    if (trackedView.current) return;
+    trackedView.current = true;
+    analytics.track('vip_membership_viewed', { is_vip: isVip });
+  }, [isVip]);
 
   const bestTier = [...cashbackSettings.tiers].sort((a, b) => b.vipReward - a.vipReward)[0];
   const bestRewardText = bestTier ? rupees(toUnits(bestTier.vipReward)) : null;

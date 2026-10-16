@@ -16,11 +16,14 @@ import { AddressTag } from '../domain/models';
 import { useLocationViewModel } from '../viewmodel/useLocationViewModel';
 import { useAddressBookViewModel } from '../viewmodel/useAddressBookViewModel';
 import { useVillageSearch } from '../viewmodel/useVillageSearch';
-import { recentLocationKey } from '../domain/recentLocations';
+import { isActiveRecentLocation, recentLocationKey } from '../domain/recentLocations';
+import { useLocationStore } from '@/src/core/store/useLocationStore';
 import { UseCurrentLocationRow } from './components/UseCurrentLocationRow';
 import { VillageSearchField } from './components/VillageSearchField';
 import { VillageSearchResults } from './components/VillageSearchResults';
 import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
+import { analytics } from '@/src/base/services/analytics';
+import { trackActiveLocationSelection, type LocationSelectionMethod } from './trackLocationSelection';
 
 const TAG_EMOJI: Record<AddressTag, string> = { home: '🏠', work: '🏢', other: '📍' };
 
@@ -36,8 +39,12 @@ export const SelectLocationScreen = () => {
 
   const goBack = useBackAction(() => router.back());
 
-  const run = useSingleFlight(async (action: () => Promise<boolean>) => {
-    if (await action()) router.dismissTo('/(dashboard)/home');
+  const run = useSingleFlight(async (method: LocationSelectionMethod, action: () => Promise<boolean>, addressTag?: AddressTag) => {
+    if (await action()) {
+      trackActiveLocationSelection(method);
+      if (addressTag) analytics.track('address_selected', { tag: addressTag });
+      router.dismissTo('/(dashboard)/home');
+    }
   });
 
   return (
@@ -63,13 +70,13 @@ export const SelectLocationScreen = () => {
 
         <View className="px-5 pt-4">
           {/* Search results (village directory) */}
-          <VillageSearchResults search={search} onSelect={(v) => run(() => vm.selectVillage(v))} />
+          <VillageSearchResults search={search} onSelect={(v) => run('search', () => vm.selectVillage(v))} />
 
           {/* Use my Current Location */}
           <UseCurrentLocationRow
             permission={vm.permission}
             loading={vm.detecting}
-            onPress={() => run(() => vm.detectCurrentLocation())}
+            onPress={() => run('gps', () => vm.detectCurrentLocation())}
           />
 
           {/* Set location on map */}
@@ -95,7 +102,7 @@ export const SelectLocationScreen = () => {
               {book.addresses.map((a) => (
                 <TouchableOpacity
                   key={a.id}
-                  onPress={() => run(() => vm.selectAddress(a))}
+                  onPress={() => run('saved_address', () => vm.selectAddress(a), a.tag)}
                   className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
                 >
                   <View className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
@@ -118,7 +125,10 @@ export const SelectLocationScreen = () => {
               {vm.recentLocations.map((r) => (
                 <TouchableOpacity
                   key={recentLocationKey(r)}
-                  onPress={() => run(() => vm.selectRecent(r).then(() => true))}
+                  onPress={() => run('recent', async () => {
+                    await vm.selectRecent(r);
+                    return isActiveRecentLocation(r, useLocationStore.getState().serviceableVillage);
+                  })}
                   className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 py-4 mb-3"
                 >
                   <Clock size={20} color="#64748b" />

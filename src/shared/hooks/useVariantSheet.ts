@@ -14,9 +14,11 @@ import { useStoreId } from '@/src/core/utils/getStoreId';
 import { getProductDetail } from '@/src/features/product/data/productDetailApi';
 import { logger } from '@/src/base/services/logger';
 import { useScreenFocused } from './useScreenActive';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 export function useVariantSheet() {
   const [product, setProduct] = useState<Product | null>(null);
+  const [context, setContext] = useState<AnalyticsProductContext | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const storeId = useStoreId();
@@ -38,6 +40,7 @@ export function useVariantSheet() {
     pending.current?.abort();
     pending.current = null;
     setProduct(null);
+    setContext(undefined);
     setLoading(false);
     setError(null);
   }, []);
@@ -55,12 +58,13 @@ export function useVariantSheet() {
   }, []);
 
   const open = useCallback(
-    async (candidate: Product) => {
+    async (candidate: Product, origin?: AnalyticsProductContext) => {
       if (!focusedRef.current) return;
       const id = ++requestId.current;
       pending.current?.abort();
       pending.current = null;
       setError(null);
+      setContext(origin);
 
       if (candidate.variants?.length) {
         setProduct(candidate);
@@ -102,5 +106,5 @@ export function useVariantSheet() {
     [storeId],
   );
 
-  return { product, loading, error, open, close };
+  return { product, context, loading, error, open, close };
 }

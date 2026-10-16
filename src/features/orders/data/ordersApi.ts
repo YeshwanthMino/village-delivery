@@ -48,6 +48,7 @@ const STATUS_MAP: Record<string, OrderStatus> = {
   outfordelivery: 'out_for_delivery', shipped: 'out_for_delivery', dispatched: 'out_for_delivery', ontheway: 'out_for_delivery', delivering: 'out_for_delivery',
   delivered: 'delivered', completed: 'delivered', complete: 'delivered', fulfilled: 'delivered',
   cancelled: 'cancelled', canceled: 'cancelled', rejected: 'cancelled', failed: 'cancelled', returned: 'cancelled',
+  refunded: 'refunded', refundcompleted: 'refunded', refundprocessed: 'refunded',
 };
 
 function mapStatus(raw: unknown): OrderStatus {
@@ -76,7 +77,11 @@ function mapAddress(raw: unknown): string {
 function mapItem(raw: unknown): OrderItem {
   const productRaw = pick(raw, ['product']);
   const product = productRaw && typeof productRaw === 'object' ? productRaw : {};
-  const productId = String(pick(raw, ['productId', 'product']) ?? pick(product, ['_id', 'id']) ?? '');
+  const idRaw = pick(raw, ['productId']) ?? productRaw;
+  const productId = String(
+    (idRaw && typeof idRaw === 'object' ? pick(idRaw, ['_id', 'id']) : idRaw)
+    ?? pick(product, ['_id', 'id']) ?? '',
+  );
   const name = String(pick(raw, ['name', 'title']) ?? pick(product, ['title', 'name']) ?? 'Item');
   const nameTE = String(pick(raw, ['nameTE', 'titleTE']) ?? pick(product, ['titleTE', 'nameTE']) ?? name);
   const quantity = Number(pick(raw, ['quantity', 'qty', 'count']) ?? 1) || 1;

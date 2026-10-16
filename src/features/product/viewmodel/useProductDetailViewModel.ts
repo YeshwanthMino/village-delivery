@@ -8,11 +8,23 @@ import { useProductDetailQuery } from '../data/queries/useProductDetailQuery';
 import { ProductDetail } from '../data/productDetail.types';
 import { CartSnapshot } from '@/src/base/types/village.types';
 import { orderLimit } from '@/src/shared/utils/orderLimit';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 export function useProductDetailViewModel(selectedVariantIndex?: number | null) {
   const router = useGuardedRouter();
   const goBack = useBackAction(() => router.back('/(dashboard)/home'));
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, source, list_id, position, recommendation_id, model_version } = useLocalSearchParams<{
+    id?: string; source?: string; list_id?: string; position?: string;
+    recommendation_id?: string; model_version?: string;
+  }>();
+  const parsedPosition = position === undefined ? undefined : Number(position);
+  const context: AnalyticsProductContext = {
+    ...(source ? { source } : {}),
+    ...(list_id ? { list_id } : {}),
+    ...(Number.isInteger(parsedPosition) && parsedPosition! > 0 ? { position: parsedPosition } : {}),
+    ...(recommendation_id ? { recommendation_id } : {}),
+    ...(model_version ? { model_version } : {}),
+  };
 
   const query = useProductDetailQuery(id);
   const detail = query.data;
@@ -64,7 +76,7 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
         maxOrderQuantity: selectedVariant.maxOrderQuantity,
       };
       const maxQuantity = orderLimit(selectedVariant.stock, selectedVariant.maxOrderQuantity);
-      addToCart(`${detail.id}-v${activeVariantIndex}`, snapshot, maxQuantity);
+      addToCart(`${detail.id}-v${activeVariantIndex}`, snapshot, maxQuantity, context);
     } else {
       // Add base product (no variant)
       snapshot = {
@@ -80,7 +92,7 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
         images: detail.images,
       };
       const maxQuantity = detail.stock ?? 0;
-      addToCart(detail.id, snapshot, maxQuantity);
+      addToCart(detail.id, snapshot, maxQuantity, context);
     }
   };
 
@@ -95,6 +107,7 @@ export function useProductDetailViewModel(selectedVariantIndex?: number | null) 
 
   return {
     detail: detail as ProductDetail | undefined,
+    context,
     loading: query.isLoading,
     error: query.isError,
     refetch: query.refetch,

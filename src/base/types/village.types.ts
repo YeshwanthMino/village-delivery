@@ -145,7 +145,8 @@ export type OrderStatus =
   | 'confirmed'
   | 'out_for_delivery'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'refunded';
 
 export interface OrderItem {
   productId: string;

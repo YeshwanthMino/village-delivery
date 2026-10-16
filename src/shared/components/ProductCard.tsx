@@ -9,13 +9,15 @@ import { rupees } from '@/src/shared/utils/currency';
 import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { CompactStepper } from './CompactStepper';
 import { useTranslation, localizeWeight } from '@/src/core/utils/useTranslation';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 interface ProductCardProps {
   product: Product;
-  openVariants: (product: Product) => void;
+  openVariants: (product: Product, context?: AnalyticsProductContext) => void;
+  context?: AnalyticsProductContext;
 }
 
-const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
+const ProductCardComponent = ({ product, openVariants, context }: ProductCardProps) => {
   const cart = useVillageStore(state => state.cart);
   const favs = useVillageStore(state => state.favs);
   const addToCart = useVillageStore(state => state.addToCart);
@@ -146,7 +148,7 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
           {hasVariants ? (
             variantCount === 0 ? (
               <TouchableOpacity
-                onPress={() => openVariants(product)}
+                onPress={() => openVariants(product, context)}
                 className="border-2 border-green-600 rounded-lg h-11 flex-row items-center justify-center gap-1"
               >
                 <Text className="text-green-700 font-bold text-base" style={teFont}>{t('add')}</Text>
@@ -154,7 +156,7 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                onPress={() => openVariants(product)}
+                onPress={() => openVariants(product, context)}
                 className="bg-green-50 border-2 border-green-600 rounded-lg h-11 flex-row items-center justify-center gap-1"
               >
                 <Text className="text-green-700 font-bold text-base" style={teFont}>{variantCount} {t('added')}</Text>
@@ -164,7 +166,7 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
           ) : count === 0 ? (
             <TouchableOpacity
               disabled={!canAdd}
-              onPress={() => addToCart(product.id, productSnapshot(product, null), stock)}
+              onPress={() => addToCart(product.id, productSnapshot(product, null), stock, context)}
               className={`border-2 rounded-lg h-11 items-center justify-center ${canAdd ? 'border-green-600' : 'border-slate-300 opacity-50'}`}
             >
               <Text className={`font-bold text-base ${canAdd ? 'text-green-700' : 'text-slate-400'}`} style={teFont}>{t('add')}</Text>
@@ -173,7 +175,7 @@ const ProductCardComponent = ({ product, openVariants }: ProductCardProps) => {
             <CompactStepper
               count={count}
               maxQuantity={stock}
-              onAdd={() => addToCart(product.id, productSnapshot(product, null), stock)}
+              onAdd={() => addToCart(product.id, productSnapshot(product, null), stock, context)}
               onDec={() => decFromCart(product.id)}
             />
           )}

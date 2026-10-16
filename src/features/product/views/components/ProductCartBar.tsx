@@ -39,13 +39,8 @@ export const ProductCartBar = ({ count, inStock = true, maxQuantity, onAdd, onDe
         className="bg-white border-t border-slate-100 px-4 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
-        <View className="bg-slate-100 rounded-2xl h-14 items-center justify-center">
-          <View
-            className="border-2 border-red-600 rounded-md px-4 py-0.5"
-            style={{ transform: [{ rotate: '-3deg' }] }}
-          >
-            <Text className="text-red-600 font-extrabold text-lg tracking-wide">{t('sold_out')}</Text>
-          </View>
+        <View className="rounded-2xl h-14 items-center justify-center border border-slate-200 bg-slate-50">
+          <Text className="text-slate-400 font-bold text-base">{t('out_of_stock')}</Text>
         </View>
       </View>
     );

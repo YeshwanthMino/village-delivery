@@ -13,7 +13,10 @@ import { HomeProduct } from '../../../data/homeLayout.types';
 import { Product } from '@/src/base/types/village.types';
 import { rupees } from '@/src/shared/utils/currency';
 import { orderLimit } from '@/src/shared/utils/orderLimit';
+import { SoldOutStamp } from '@/src/shared/components/SoldOutStamp';
 import { interpolate } from '@/src/base/constants/translations';
+import { analytics } from '@/src/base/services/analytics';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 // Every CTA this card can render — plain "ADD", "ADD" + options count, the
 // variant stepper, and the plain stepper — shares this one fixed height.
@@ -55,15 +58,20 @@ function stripWrappingParens(label: string): string {
 interface Props {
   product: HomeProduct;
   width?: DimensionValue;
-  onOpenVariants?: (product: Product) => void;
+  onOpenVariants?: (product: Product, context?: AnalyticsProductContext) => void;
   /** Px to float the stock-limit snackbar above the bottom of the screen.
    *  Callers on a screen with a floating tab bar (e.g. the home tab, via
    *  ProductCarouselRow) should pass its height; screens with no tab bar
    *  (search, category details) should omit this to get the correct 0. */
   bottomOffset?: number;
+  source?: string;
+  listId?: string;
+  position?: number;
+  recommendationId?: string;
+  modelVersion?: string;
 }
 
-const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bottomOffset }: Props) => {
+const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bottomOffset, source, listId, position, recommendationId, modelVersion }: Props) => {
   const addToCart = useVillageStore((s) => s.addToCart);
   const decFromCart = useVillageStore((s) => s.decFromCart);
   // The plain (non-sheet) stepper's buttons mutate only this bare-id key, so it
@@ -74,7 +82,24 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
   const ownCount = useVillageStore((s) => s.cart[product.id] ?? 0);
   const { t, tDiscount, tVariantCartLabel, tOptionCount, locale } = useTranslation();
   const router = useGuardedRouter();
-  const openDetail = () => router.push({ pathname: '/product', params: { id: product.id } });
+  const context: AnalyticsProductContext = {
+    ...(source ? { source } : {}),
+    ...(listId ? { list_id: listId } : {}),
+    ...(position !== undefined ? { position } : {}),
+    ...(recommendationId ? { recommendation_id: recommendationId } : {}),
+    ...(modelVersion ? { model_version: modelVersion } : {}),
+  };
+  const openDetail = () => {
+    analytics.track('product_selected', { product_id: product.id, ...context });
+    router.push({ pathname: '/product', params: {
+      id: product.id,
+      ...(source ? { source } : {}),
+      ...(listId ? { list_id: listId } : {}),
+      ...(position !== undefined ? { position: String(position) } : {}),
+      ...(recommendationId ? { recommendation_id: recommendationId } : {}),
+      ...(modelVersion ? { model_version: modelVersion } : {}),
+    } });
+  };
 
   const teFont = locale === 'te' ? { fontFamily: 'NotoSansTelugu_700Bold' } : undefined;
   const displayTitle = locale === 'te' && product.teluguTitle
@@ -134,7 +159,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
         stock: product.stock,
         image: product.image,
         variants: product.variants,
-      });
+      }, context);
       return;
     }
     openDetail();
@@ -172,7 +197,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
       hasFreeItem: soleVariant?.hasFreeItem,
       hsn: soleVariant?.hsn,
       maxOrderQuantity: soleVariant?.maxOrderQuantity,
-    }, stock);
+    }, stock, context);
   };
 
   // A grid caller (CategoryDetailsScreen, SearchScreen) passes width="100%"
@@ -209,12 +234,7 @@ const DynamicProductCardComponent = ({ product, width = 150, onOpenVariants, bot
         ) : null}
         {!product.inStock ? (
           <View className="absolute inset-0 bg-white/60 items-center justify-center">
-            <View
-              className="border-2 border-red-600 rounded-md px-2 py-0.5 bg-white/70"
-              style={{ transform: [{ rotate: '-6deg' }] }}
-            >
-              <Text className="text-red-600 font-extrabold text-sm tracking-wide">{t('sold_out')}</Text>
-            </View>
+            <SoldOutStamp width={84} />
           </View>
         ) : null}
       </TouchableOpacity>

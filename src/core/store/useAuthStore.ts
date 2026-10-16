@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import { logger } from '@/src/base/services/logger';
 import { queryClient } from '@/src/base/query/queryClient';
 import { queryKeys } from '@/src/base/query/queryKeys';
+import { analytics } from '@/src/base/services/analytics';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -42,7 +43,7 @@ interface AuthActions {
     firstName: string,
     lastName: string,
   ) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (reason?: 'user' | 'session_expired') => Promise<void>;
 
   // Reset
   reset: () => void;
@@ -184,6 +185,7 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       const result = await appAuth.verifyLogin(requireStoreId(), phoneNumber, otp, get().deviceId);
       if (result.status === 'ok') {
         await finalizeAuth(result.tokens);
+        analytics.track('login_completed', { method: 'otp' });
         return 'ok';
       }
       set({ isLoading: false });
@@ -203,13 +205,14 @@ export const useAuthStore = create<AuthStore>((set, get) => {
         get().deviceId,
       );
       await finalizeAuth(tokens);
+      analytics.track('signup_completed', { method: 'otp' });
     } catch (error) {
       set({ isLoading: false, error: errMessage(error) });
       throw error;
     }
   },
 
-  logout: async () => {
+  logout: async (reason = 'user') => {
     // Disable account queries immediately, then discard their cache and saved
     // addresses. Profile and session-expiry both call this store action.
     set({ ...initialState, isLoading: true });
@@ -223,7 +226,9 @@ export const useAuthStore = create<AuthStore>((set, get) => {
       await StoredPrefs.clearCredentials();
       await StoredPrefs.setUsername(null);
 
+      analytics.track('logout_completed', { reason });
       set({ ...initialState });
+      analytics.reset();
     } catch (error) {
       logger.error('Logout failed:', error);
       set({
@@ -237,12 +242,30 @@ export const useAuthStore = create<AuthStore>((set, get) => {
   };
 });
 
+function analyticsUserId(user: UserObject | null): string | null {
+  const id = user?.uuid ?? user?.id;
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
+}
+
+// Covers fresh login, an offline cached profile and a later /me refresh. Only
+// the opaque backend ID and a non-sensitive membership flag leave this store.
+useAuthStore.subscribe((state, previous) => {
+  const userId = state.isAuthenticated ? analyticsUserId(state.user) : null;
+  const previousId = previous.isAuthenticated ? analyticsUserId(previous.user) : null;
+  if (userId !== previousId) analytics.identify(userId);
+  const isVip = state.isAuthenticated ? !!state.user?.isVip : false;
+  const previousVip = previous.isAuthenticated ? !!previous.user?.isVip : false;
+  if (isVip !== previousVip && userId) {
+    analytics.setUserProperties({ is_vip: isVip });
+  }
+});
+
 // When a token refresh fails (refresh token expired/invalid), the base-layer
 // apiClient cannot import this store without a circular dependency, so it calls
 // back through this registered handler to perform a real logout (resets state to
 // signed-out; screens reading isAuthenticated re-render accordingly).
 apiClient.setOnSessionExpired(() => {
-  void useAuthStore.getState().logout();
+  void useAuthStore.getState().logout('session_expired');
 });
 
 // Selectors

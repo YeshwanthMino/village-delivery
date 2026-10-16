@@ -10,6 +10,7 @@ import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { CompactStepper } from './CompactStepper';
 import { VillageBottomSheet } from './VillageBottomSheet';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 // Matches CompactStepper's h-11 (44px); width fits its two 48px buttons + count.
 const VARIANT_CTA_WIDTH = 112;
@@ -17,9 +18,10 @@ const VARIANT_CTA_WIDTH = 112;
 interface VariantBottomSheetProps {
   product: Product | null;
   onClose: () => void;
+  context?: AnalyticsProductContext;
 }
 
-export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps) => {
+export const VariantBottomSheet = ({ product, onClose, context }: VariantBottomSheetProps) => {
   const { t } = useTranslation();
   const cart = useVillageStore(state => state.cart);
   const addToCart = useVillageStore(state => state.addToCart);
@@ -103,7 +105,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                       </TouchableOpacity>
                     ) : count === 0 ? (
                       <TouchableOpacity
-                        onPress={() => addToCart(key, productSnapshot(product, i), limit)}
+                        onPress={() => addToCart(key, productSnapshot(product, i), limit, context)}
                         className="border-2 border-green-600 rounded-lg h-11 items-center justify-center"
                       >
                         <Text className="text-green-700 font-bold text-sm">{t('add')}</Text>
@@ -112,7 +114,7 @@ export const VariantBottomSheet = ({ product, onClose }: VariantBottomSheetProps
                       <CompactStepper
                         count={count}
                         maxQuantity={limit}
-                        onAdd={() => addToCart(key, productSnapshot(product, i), limit)}
+                        onAdd={() => addToCart(key, productSnapshot(product, i), limit, context)}
                         onDec={() => decFromCart(key)}
                       />
                     )}

@@ -10,16 +10,21 @@ import { CategoryGrid } from './CategoryGrid';
 import { HomeBannerCarousel } from './HomeBannerCarousel';
 import { ProductCarouselRow } from './ProductCarouselRow';
 import { getCategoryId, getSaleSlug } from '../../../data/bannerNavigation';
+import { analytics } from '@/src/base/services/analytics';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 interface Props {
   sections: HomeSection[];
-  onOpenVariants: (product: Product) => void;
+  onOpenVariants: (product: Product, context?: AnalyticsProductContext) => void;
+  source?: 'home' | 'categories';
+  registerImpressionCheck?: (check: () => void) => () => void;
 }
 
-export const HomeSections = ({ sections, onOpenVariants }: Props) => {
+export const HomeSections = ({ sections, onOpenVariants, source = 'home', registerImpressionCheck }: Props) => {
   const router = useGuardedRouter();
 
-  const goCategory = (item: CategoryItem, section: CategorySection) =>
+  const goCategory = (item: CategoryItem, section: CategorySection) => {
+    analytics.track('category_selected', { category_id: item.id, section_id: section.id });
     router.push({
       pathname: '/category-details',
       params: {
@@ -28,12 +33,14 @@ export const HomeSections = ({ sections, onOpenVariants }: Props) => {
         subcategories: JSON.stringify(section.items),
       },
     } as any);
+  };
 
   // Sale and Category banners have a native route. Other collections (and slides
   // with no usable docId/slug) stay a no-op rather than navigating nowhere.
   const goBanner = (slide: BannerSlide) => {
     const categoryId = getCategoryId(slide);
     if (categoryId) {
+      analytics.track('banner_selected', { banner_id: slide.id, target_type: 'category', target_id: categoryId });
       // Reuse the home category section that lists this category so the details
       // page gets its name and sibling rail; fall back to the bare id.
       const section = sections.find(
@@ -51,6 +58,11 @@ export const HomeSections = ({ sections, onOpenVariants }: Props) => {
       return;
     }
     const slug = getSaleSlug(slide);
+    analytics.track('banner_selected', {
+      banner_id: slide.id,
+      target_type: slug ? 'sale' : 'unknown',
+      ...(slug ? { target_id: slug } : {}),
+    });
     if (!slug) return;
     router.push({ pathname: '/sale-products', params: { slug } } as any);
   };
@@ -64,7 +76,7 @@ export const HomeSections = ({ sections, onOpenVariants }: Props) => {
         if (section.kind === 'category') {
           return <CategoryGrid key={section.id} section={section} onPressItem={goCategory} />;
         }
-        return <ProductCarouselRow key={section.id} section={section} onOpenVariants={onOpenVariants} />;
+        return <ProductCarouselRow key={section.id} section={section} onOpenVariants={onOpenVariants} source={source} registerImpressionCheck={registerImpressionCheck} />;
       })}
     </>
   );

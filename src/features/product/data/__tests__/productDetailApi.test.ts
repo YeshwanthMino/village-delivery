@@ -62,6 +62,12 @@ describe('mapProductDetail', () => {
     expect(d.similarProducts[0].id).toBe('s1');
   });
 
+  it('preserves recommendation request metadata when supplied', () => {
+    const detail = mapProductDetail({ ...RAW, recommendation: { requestId: 'rec-1', modelVersion: 'v3' } });
+    expect(detail.recommendationId).toBe('rec-1');
+    expect(detail.recommendationModelVersion).toBe('v3');
+  });
+
   it('defaults discountPct to 0 when there is no discount', () => {
     const d = mapProductDetail({ ...RAW, mrp: 20, listPrice: 20, dealPrice: 20 });
     expect(d.discountPct).toBe(0);

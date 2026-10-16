@@ -1,5 +1,7 @@
 import { Image } from 'expo-image';
 import { ArrowLeft } from 'lucide-react-native';
+import { useTranslation } from '@/src/core/utils/useTranslation';
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import React from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,13 +12,29 @@ import { VariantBottomSheet } from '@/src/shared/components/VariantBottomSheet';
 import { DynamicProductCard } from '../home/components/DynamicProductCard';
 import { useSaleProductListViewModel } from '../../viewmodel/sale/useSaleProductListViewModel';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
+import { analytics } from '@/src/base/services/analytics';
+import { useProductListImpressions } from '@/src/shared/hooks/useProductListImpressions';
+import type { HomeProduct } from '../../data/homeLayout.types';
 
 export const SaleProductListScreen = () => {
   const router = useGuardedRouter();
   const goBack = useBackAction(() => router.back('/(dashboard)/home'));
+  const { t } = useTranslation();
   const vm = useSaleProductListViewModel();
   const insets = useSafeAreaInsets();
   const sheet = useVariantSheet();
+  const listId = `sale:${vm.slug}`;
+  const impressions = useProductListImpressions<HomeProduct>(listId, 'sale');
+  const lastViewedSale = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!vm.slug || vm.loading || vm.error || lastViewedSale.current === vm.slug) return;
+    lastViewedSale.current = vm.slug;
+    analytics.track('product_list_viewed', {
+      list_id: `sale:${vm.slug}`,
+      item_count: vm.products.length,
+    });
+  }, [vm.slug, vm.loading, vm.error, vm.products.length]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['bottom', 'left', 'right']}>
@@ -41,14 +59,7 @@ export const SaleProductListScreen = () => {
           <ActivityIndicator color="#16a34a" />
         </View>
       ) : vm.error ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-slate-500 text-sm text-center mb-4">{"Couldn't load this sale."}</Text>
-          {vm.slug ? (
-            <TouchableOpacity onPress={() => vm.refetch()} className="bg-green-600 rounded-xl px-5 py-2.5">
-              <Text className="text-white font-bold text-sm">Retry</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <LoadErrorState description={t('sale_load_failed_desc')} onRetry={() => vm.refetch()} />
       ) : vm.products.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-3xl mb-2">🏷️</Text>
@@ -57,6 +68,8 @@ export const SaleProductListScreen = () => {
       ) : (
         <FlatList
           data={vm.products}
+          onViewableItemsChanged={impressions.onViewableItemsChanged}
+          viewabilityConfig={impressions.viewabilityConfig}
           keyExtractor={(p) => p.id}
           numColumns={2}
           showsVerticalScrollIndicator={false}
@@ -74,9 +87,9 @@ export const SaleProductListScreen = () => {
               </View>
             ) : null
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <View style={{ flex: 1, maxWidth: '50%' }}>
-              <DynamicProductCard product={item} width="100%" onOpenVariants={sheet.open} />
+              <DynamicProductCard product={item} width="100%" onOpenVariants={sheet.open} source="sale" listId={listId} position={index + 1} />
             </View>
           )}
         />
@@ -84,7 +97,7 @@ export const SaleProductListScreen = () => {
 
       {vm.cartCount > 0 && <CartSummaryCard onPress={() => router.push('/cart')} bottomOffset={0} />}
 
-      <VariantBottomSheet product={sheet.product} onClose={sheet.close} />
+      <VariantBottomSheet product={sheet.product} context={sheet.context} onClose={sheet.close} />
     </SafeAreaView>
   );
 };

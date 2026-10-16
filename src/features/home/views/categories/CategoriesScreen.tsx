@@ -1,22 +1,23 @@
 import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import { Search } from 'lucide-react-native';
+import { LoadErrorState } from '@/src/shared/components/LoadErrorState';
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartSummaryCard, VariantBottomSheet } from '@/src/shared/components';
 import { useVariantSheet } from '@/src/shared/hooks/useVariantSheet';
-import { useTranslation } from '@/src/core/utils/useTranslation';
 import { useCategoriesViewModel } from '../../viewmodel/categories/useCategoriesViewModel';
 import { useHomeLayoutViewModel } from '../../viewmodel/home/useHomeLayoutViewModel';
 import { HomeSections } from '../home/components/HomeSections';
 import { HomeSkeleton } from '../home/components/HomeSkeleton';
+import { useImpressionViewportRegistry } from '@/src/shared/hooks/useImpressionViewportRegistry';
 
 export const CategoriesScreen = () => {
   const router = useGuardedRouter();
-  const { t } = useTranslation();
   const vm = useCategoriesViewModel();
   const layout = useHomeLayoutViewModel('app-category-page-layout');
   const variantSheet = useVariantSheet();
+  const impressionViewport = useImpressionViewportRegistry();
   const insets = useSafeAreaInsets();
 
   const TAB_BAR_H = 64;
@@ -48,6 +49,7 @@ export const CategoriesScreen = () => {
 
       {/* ── Scrollable content ── */}
       <ScrollView
+        onScroll={impressionViewport.checkVisible}
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPad }}
@@ -62,21 +64,16 @@ export const CategoriesScreen = () => {
         {layout.loading && layout.sections.length === 0 ? (
           <HomeSkeleton />
         ) : layout.error && layout.sections.length === 0 ? (
-          <View style={s.errorBox}>
-            <Text style={s.errorText}>{t('location_error_title')}</Text>
-            <TouchableOpacity onPress={layout.refresh} style={s.retryBtn}>
-              <Text style={s.retryText}>{t('retry')}</Text>
-            </TouchableOpacity>
-          </View>
+          <LoadErrorState className="py-12 items-center px-8" onRetry={layout.refresh} />
         ) : (
-          <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} />
+          <HomeSections sections={layout.sections} onOpenVariants={variantSheet.open} source="categories" registerImpressionCheck={impressionViewport.registerCheck} />
         )}
       </ScrollView>
 
       {vm.cartCount > 0 && (
         <CartSummaryCard onPress={() => router.push('/cart')} />
       )}
-      <VariantBottomSheet product={variantSheet.product} onClose={variantSheet.close} />
+      <VariantBottomSheet product={variantSheet.product} context={variantSheet.context} onClose={variantSheet.close} />
     </SafeAreaView>
   );
 };
@@ -121,8 +118,4 @@ const s = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  errorBox: { paddingVertical: 64, alignItems: 'center', paddingHorizontal: 32 },
-  errorText: { color: '#64748b', fontSize: 16, textAlign: 'center', marginBottom: 16 },
-  retryBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
-  retryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

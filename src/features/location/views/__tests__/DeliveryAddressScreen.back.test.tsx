@@ -9,7 +9,7 @@ let mockCanGoBack = true;
 let mockParams: Record<string, string> = {};
 const address = { id: 'a1', addressLine1: '1 Main Street', villageName: 'Village', tag: 'home' };
 const mockSelectAddress = jest.fn();
-const mockState = { savedAddresses: [] as typeof address[], selectedAddressId: null, setSelectedAddress: mockSelectAddress, setSavedAddresses: jest.fn() };
+const mockState = { savedAddresses: [] as typeof address[], selectedAddressId: null, selectAddress: mockSelectAddress, setSavedAddresses: jest.fn() };
 const mockVm = {
   map: {
     region: { latitude: 12, longitude: 78, latitudeDelta: 0.01, longitudeDelta: 0.01 },
@@ -48,7 +48,7 @@ beforeEach(() => {
   mockParams = {}; mockCanGoBack = true;
   mockState.savedAddresses = [];
   mockVm.saving = false; mockVm.editingId = null;
-  mockSelectAddress.mockResolvedValue(undefined);
+  mockSelectAddress.mockResolvedValue(true);
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, callback) => {
     systemBack = callback;
     return { remove: jest.fn() };
@@ -105,12 +105,12 @@ it('keeps the form open while an address save is in flight', () => {
 });
 
 it('does not navigate again when a selection finishes after Back', async () => {
-  let finish!: () => void;
-  mockSelectAddress.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+  let finish!: (selected: boolean) => void;
+  mockSelectAddress.mockImplementation(() => new Promise<boolean>(resolve => { finish = resolve; }));
   mockState.savedAddresses = [address];
   render(<DeliveryAddressScreen />);
   await act(async () => { fireEvent.press(screen.getByText('1 Main Street, Village')); });
   act(() => { systemBack(); });
-  await act(async () => { finish(); });
+  await act(async () => { finish(true); });
   expect(mockBack).toHaveBeenCalledTimes(1);
 });

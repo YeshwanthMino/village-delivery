@@ -8,7 +8,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin } from 'lucide-react-native';
 import { useTranslation } from '@/src/core/utils/useTranslation';
-import { LocationPinGraphic } from './LocationPinGraphic';
+import { NotServiceableIllustration } from '@/src/shared/components/NotServiceableIllustration';
 
 interface Props {
   onUseAnotherPincode: () => void;
@@ -24,8 +24,8 @@ export const NotServiceableView = ({ onUseAnotherPincode }: Props) => {
         style={{ borderRadius: 24, paddingVertical: 32, paddingHorizontal: 20 }}
       >
         <View className="items-center">
-          <LocationPinGraphic />
-          <Text className="mt-3 text-slate-900 font-extrabold text-lg text-center leading-tight">
+          <NotServiceableIllustration />
+          <Text className="mt-2 text-slate-900 font-extrabold text-lg text-center leading-tight">
             {t('not_serviceable_title')}
           </Text>
           <Text

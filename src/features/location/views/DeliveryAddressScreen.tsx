@@ -25,6 +25,7 @@ import { PermissionDeniedSheet } from './components/PermissionDeniedSheet';
 import { ConfirmDialog } from '@/src/shared/components/ConfirmDialog';
 import { deleteAddress } from '../data/locationApi';
 import type { Address, AddressTag } from '../domain/models';
+import { analytics } from '@/src/base/services/analytics';
 
 const TAG_ICON: Record<AddressTag, React.ComponentType<{ size?: number; color?: string }>> = {
   home: Home,
@@ -50,7 +51,7 @@ export const DeliveryAddressScreen = () => {
 
   const savedAddresses = useLocationStore((s) => s.savedAddresses);
   const selectedAddressId = useLocationStore((s) => s.selectedAddressId);
-  const setSelectedAddress = useLocationStore((s) => s.setSelectedAddress);
+  const selectAddress = useLocationStore((s) => s.selectAddress);
   const setSavedAddresses = useLocationStore((s) => s.setSavedAddresses);
 
   // Land straight on the map when there is nothing to pick from (e.g. right
@@ -149,7 +150,10 @@ export const DeliveryAddressScreen = () => {
     const a = savedAddresses.find((x) => x.id === id);
     if (!a) return;
     const token = interaction.current;
-    await setSelectedAddress(a);
+    const selected = await selectAddress(a);
+    if (selected) {
+      analytics.track('address_selected', { tag: a.tag, source: 'address_book', village_id: a.villageId });
+    }
     if (token === interaction.current) leaveScreen();
   });
 
@@ -176,6 +180,7 @@ export const DeliveryAddressScreen = () => {
     try {
       await deleteAddress(a.id);
       setSavedAddresses(useLocationStore.getState().savedAddresses.filter((x) => x.id !== a.id));
+      analytics.track('address_deleted', { tag: a.tag });
     } catch {
       Alert.alert('Error', 'Could not delete address.');
     }
@@ -184,7 +189,9 @@ export const DeliveryAddressScreen = () => {
   const onSave = useSingleFlight(async () => {
     const token = interaction.current;
     const editing = !!vm.editingId;
-    if (await vm.save() && token === interaction.current) {
+    const saved = await vm.save();
+    if (saved) analytics.track('address_saved', { tag: vm.tag, operation: editing ? 'edit' : 'create' });
+    if (saved && token === interaction.current) {
       if (editing) { setMode('list'); setShowForm(false); vm.reset(); }
       else leaveScreen();
     }

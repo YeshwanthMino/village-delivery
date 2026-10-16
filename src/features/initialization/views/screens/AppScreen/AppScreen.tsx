@@ -3,6 +3,7 @@ import { loadStoreConfig } from '@/src/core/store/useStoreConfigStore';
 import { startStoreConfigSync } from '@/src/core/store/storeConfigSync';
 import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { analytics } from '@/src/base/services/analytics';
 import { useLocationLifecycle } from '@/src/features/location/lifecycle/useLocationLifecycle';
 import { useFonts } from 'expo-font';
 import { useRouter, useSegments } from 'expo-router';
@@ -14,7 +15,14 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(false);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
   const setLocale = useVillageStore((s) => s.setLocale);
+  const locale = useVillageStore((s) => s.locale);
   const hydrateLocation = useLocationStore((s) => s.hydrate);
+  const villageId = useLocationStore((s) => s.serviceableVillage?.id ?? null);
+  const storeId = useLocationStore((s) => s.serviceableVillage?.storeId ?? null);
+  const screenName = segments
+    .filter((segment) => segment !== '(dashboard)')
+    .map((segment) => /^[a-z-]+$/.test(segment) ? segment : 'unknown')
+    .join('_');
   useLocationLifecycle(segments[0] !== 'location' && segments[0] !== 'address');
 
   const [fontsLoaded] = useFonts({
@@ -64,6 +72,20 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
       router.replace('/(dashboard)/home');
     }
   }, [fontsLoaded, ready, segments, router]);
+
+  // Segment names are static route templates, so screen events never contain
+  // query strings, address text or product identifiers from a URL.
+  useEffect(() => {
+    if (fontsLoaded && ready && screenName) {
+      analytics.track('app_screen_view', { screen_name: screenName });
+    }
+  }, [fontsLoaded, ready, screenName]);
+
+  useEffect(() => {
+    if (ready) {
+      analytics.setUserProperties({ locale, village_id: villageId, store_id: storeId });
+    }
+  }, [ready, locale, villageId, storeId]);
 
   if (!fontsLoaded || !ready) return null;
 

@@ -73,6 +73,8 @@ export function mapProductDetail(p: any): ProductDetail {
     categoryTitle: str(p?.categoryId?.title) ?? str(p?.category),
     variants: fullProduct.variants,
     similarProducts: similarRaw.filter(isProductActive).map(mapProduct),
+    recommendationId: str(p?.recommendation?.requestId) ?? undefined,
+    recommendationModelVersion: str(p?.recommendation?.modelVersion) ?? undefined,
   };
 }
 
