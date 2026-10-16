@@ -4,7 +4,8 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { Product } from '@/src/base/types/village.types';
 import { useVillageStore } from '@/src/core/store';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
+import { productSnapshot } from '@/src/features/cart/domain/bill';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 
 interface MiniProductCardProps {
@@ -12,14 +13,14 @@ interface MiniProductCardProps {
   openVariants: (product: Product) => void;
 }
 
-export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps) => {
+const MiniProductCardComponent = ({ product, openVariants }: MiniProductCardProps) => {
   const addToCart = useVillageStore(state => state.addToCart);
   const { t, locale } = useTranslation();
   const hasVariants = !!product.variants?.length;
 
   const handleAdd = () => {
     if (hasVariants) openVariants(product);
-    else addToCart(product.id);
+    else addToCart(product.id, productSnapshot(product, null));
   };
 
   return (
@@ -59,3 +60,7 @@ export const MiniProductCard = ({ product, openVariants }: MiniProductCardProps)
     </View>
   );
 };
+
+// Rendered in horizontal rails. Without memo each one re-rendered on every parent
+// update and re-ran its NativeWind class resolution.
+export const MiniProductCard = React.memo(MiniProductCardComponent);

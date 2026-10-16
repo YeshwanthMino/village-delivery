@@ -65,6 +65,8 @@ const GRADIENT_COLORS: Record<string, string> = {
 };
 
 /** Convert a Tailwind gradient class name to its hex color value. */
-export function gradientColor(cls: string, fallback = '#f1f5f9'): string {
-  return GRADIENT_COLORS[cls] ?? fallback;
+// `cls` is optional because API products carry no gradient classes at all —
+// only the static catalog does. Callers should not have to guard each one.
+export function gradientColor(cls: string | undefined, fallback = '#f1f5f9'): string {
+  return (cls ? GRADIENT_COLORS[cls] : undefined) ?? fallback;
 }

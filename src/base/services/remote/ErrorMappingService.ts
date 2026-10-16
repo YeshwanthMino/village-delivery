@@ -1,3 +1,4 @@
+import { logger } from '@/src/base/services/logger';
 /**
  * ErrorMappingService - Centralized error mapping for all repositories
  * Converts API errors to user-friendly messages
@@ -20,7 +21,7 @@ export class ErrorMappingService {
    * @returns User-friendly error message
    */
   static mapError(error: any, context: ErrorContext = {}): string {
-    console.log('ErrorMappingService: Mapping error for', context);
+    logger.debug('ErrorMappingService: Mapping error for', context);
 
     // Handle Error instances first
     if (error instanceof Error) {

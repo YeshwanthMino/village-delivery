@@ -59,6 +59,7 @@ export interface NetworkError {
   timestamp?: string;
   errors?: ValidationError[];
   fullMessage?: string;
+  rawData?: any;
 }
 
 // Error DTO structure matching iOS

@@ -1,4 +1,5 @@
 import { IStorageService } from '../interfaces/IStorageService';
+import { logger } from '@/src/base/services/logger';
 
 /**
  * Web implementation of storage service using localStorage
@@ -9,7 +10,7 @@ export class WebStorageService implements IStorageService {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('[WebStorageService] Error getting item:', error);
+      logger.error('[WebStorageService] Error getting item:', error);
       return null;
     }
   }
@@ -18,7 +19,7 @@ export class WebStorageService implements IStorageService {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('[WebStorageService] Error setting item:', error);
+      logger.error('[WebStorageService] Error setting item:', error);
       throw error;
     }
   }
@@ -27,7 +28,7 @@ export class WebStorageService implements IStorageService {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error('[WebStorageService] Error removing item:', error);
+      logger.error('[WebStorageService] Error removing item:', error);
       throw error;
     }
   }
@@ -36,7 +37,7 @@ export class WebStorageService implements IStorageService {
     try {
       localStorage.clear();
     } catch (error) {
-      console.error('[WebStorageService] Error clearing storage:', error);
+      logger.error('[WebStorageService] Error clearing storage:', error);
       throw error;
     }
   }
@@ -45,7 +46,7 @@ export class WebStorageService implements IStorageService {
     try {
       return Object.keys(localStorage);
     } catch (error) {
-      console.error('[WebStorageService] Error getting all keys:', error);
+      logger.error('[WebStorageService] Error getting all keys:', error);
       return [];
     }
   }

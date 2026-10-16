@@ -13,6 +13,8 @@ export default function DashboardLayout() {
 
   return (
     <Tabs
+      initialRouteName="home"
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#28ae61',

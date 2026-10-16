@@ -1,17 +1,30 @@
 import { AuthTokens } from './apiTypes';
-import { WebService, AppConfig, StorageKeys } from '../../constants/AppConstants';
+import { WebService, AppConfig, StorageKeys, AppAuthRoutes, BranchExcludedRoutes } from '../../constants/AppConstants';
 import { IPlatformService, PlatformServiceFactory } from '../platform';
 import { IStorageService, StorageServiceFactory } from '../storage';
 import { IS_WEB } from '@/src/core/utils/platform';
 import { ErrorMapper } from './errorMapper';
+import { StoredPrefs } from './storage/StoredPrefs';
+import { logger } from '@/src/base/services/logger';
 
 interface FetchOptions extends RequestInit {
   withAuth?: boolean;
   _retry?: boolean;
+  /** Abort deadline in ms for this call. Defaults to AppConfig.timeout.
+   *  Must be destructured out of the options — `fetch` ignores unknown keys, so
+   *  a stray `timeout` here would silently do nothing. */
+  timeout?: number;
 }
 
 class ApiClient {
   private refreshTokenPromise: Promise<AuthTokens> | null = null;
+  // Invoked when a refresh fails (refresh token expired/invalid). Registered by
+  // useAuthStore so the base layer can trigger a real logout without importing
+  // the store (which would create a circular dependency).
+  private onSessionExpired: (() => void) | null = null;
+  // Supplies the active branch id for branch-scoped endpoints. Registered by
+  // useLocationStore (same reason as onSessionExpired: no store import here).
+  private branchIdProvider: (() => Promise<string | undefined>) | null = null;
   private storageService: IStorageService | null = null;
   private storageInitPromise: Promise<IStorageService> | null = null;
   private platformService: IPlatformService | null = null;
@@ -79,7 +92,7 @@ class ApiClient {
         'Village-Client-Device': `${deviceModel} (${osVersion})`,
       };
     } catch (error) {
-      console.warn('Failed to initialize platform headers:', error);
+      logger.warn('Failed to initialize platform headers:', error);
     }
   }
 
@@ -87,9 +100,45 @@ class ApiClient {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      // The village API's nginx 403s any User-Agent lacking "Mozilla", which
+      // blocks native fetch (CFNetwork/okhttp). Keep the token until the server
+      // relaxes that filter.
+      'User-Agent': `Mozilla/5.0 ${AppConfig.name}/${AppConfig.version}`,
       'Village-App-Version': `${AppConfig.name} (v${AppConfig.version})`,
       ...this.platformHeaders,
     };
+  }
+
+  // The village API is multi-tenant: every authed endpoint needs the active
+  // store's `x-store-id` header. Use the env default if set, otherwise read from
+  // persisted serviceable village. Callers that target a *specific* store (login,
+  // catalog probes) still pass their own `x-store-id`, which overrides this one.
+  private async getStoreId(): Promise<string | null> {
+    // Use env default first
+    const envStoreId = process.env.EXPO_PUBLIC_DEFAULT_STORE_ID;
+    if (envStoreId) return envStoreId;
+
+    // Fallback to persisted serviceable village
+    try {
+      const village = await StoredPrefs.getCustomData<{ storeId?: string }>(StorageKeys.SERVICEABLE_VILLAGE);
+      return village?.storeId ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  // All endpoints except BranchExcludedRoutes carry `x-branch-id`, with or
+  // without auth. The provider may wait on a pending branch lookup.
+  private async getBranchHeaders(url: string): Promise<Record<string, string>> {
+    if (!this.branchIdProvider) return {};
+    const path = url.split('?')[0];
+    if (BranchExcludedRoutes.some((re) => re.test(path))) return {};
+    try {
+      const branchId = await this.branchIdProvider();
+      return branchId ? { 'x-branch-id': branchId } : {};
+    } catch {
+      return {};
+    }
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -101,25 +150,38 @@ class ApiClient {
         return { Authorization: `${tokenType} ${token}` };
       }
     } catch (error) {
-      console.warn('Failed to get auth token:', error);
+      logger.warn('Failed to get auth token:', error);
     }
     return {};
   }
 
   private async request<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    const { withAuth = true, _retry = false, ...fetchOptions } = options;
+    const { withAuth = true, _retry = false, timeout = AppConfig.timeout, signal, ...fetchOptions } = options;
+    const cancellationError = () => Object.assign(new Error('Request cancelled'), { name: 'AbortError' });
+    if (signal?.aborted) throw cancellationError();
 
     const authHeaders = withAuth ? await this.getAuthHeaders() : {};
+    // Authed requests carry the active store's id by default; a per-call
+    // `x-store-id` (spread last) still wins for endpoints targeting another store.
+    const storeId = withAuth ? await this.getStoreId() : null;
+    const branchHeaders = await this.getBranchHeaders(url);
     const headers: Record<string, string> = {
       ...this.getBaseHeaders(),
       ...authHeaders,
+      ...(storeId ? { 'x-store-id': storeId } : {}),
+      ...branchHeaders,
       ...(fetchOptions.headers as Record<string, string> ?? {}),
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), AppConfig.timeout);
+    // Keep the timeout while also honoring a screen/query owner's cancellation.
+    const onAbort = () => controller.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) controller.abort();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
+      if (signal?.aborted) throw cancellationError();
       const response = await fetch(url, {
         ...fetchOptions,
         headers,
@@ -129,6 +191,10 @@ class ApiClient {
       if (response.status === 401 && withAuth && !_retry) {
         try {
           const tokens = await this.refreshAccessToken();
+          // Deliberately NOT awaited: a failure of the *retried* request must
+          // propagate to the outer catch (network/5xx handling), not this
+          // refresh-failure catch — awaiting here would misclassify a retry
+          // error as an expired session and wrongly log the user out.
           return this.request<T>(url, {
             ...options,
             _retry: true,
@@ -138,7 +204,14 @@ class ApiClient {
             },
           });
         } catch {
-          await this.clearTokens();
+          // Refresh failed → the session is dead. Hand off to the registered
+          // logout (resets the auth store); fall back to wiping tokens if no
+          // handler is registered. Then reject the original call.
+          if (this.onSessionExpired) {
+            this.onSessionExpired();
+          } else {
+            await this.clearTokens();
+          }
           throw await ErrorMapper.mapFetchResponse(response);
         }
       }
@@ -155,6 +228,7 @@ class ApiClient {
         throw ErrorMapper.createNetworkError('DECODE_FAILED');
       }
     } catch (error: any) {
+      if (signal?.aborted) throw cancellationError();
       if (error?.name === 'AbortError') {
         throw ErrorMapper.createNetworkError('REQUEST_TIMED_OUT');
       }
@@ -164,6 +238,7 @@ class ApiClient {
       throw ErrorMapper.createNetworkError('NO_INTERNET', error?.message);
     } finally {
       clearTimeout(timeoutId);
+      signal?.removeEventListener('abort', onAbort);
     }
   }
 
@@ -183,17 +258,24 @@ class ApiClient {
 
     if (!refreshToken) throw ErrorMapper.createNetworkError('AUTHENTICATION', 'No refresh token available');
 
+    // The customer-app refresh endpoint takes the refresh token via header (not
+    // a body) and must NOT carry the expired access token. withAuth:false keeps
+    // the 401 interceptor from recursing into itself.
+    const storeId = await this.getStoreId();
+    const headers: Record<string, string> = { 'X-Refresh-Token': refreshToken };
+    if (storeId) headers['X-Store-Id'] = storeId;
+
     const response = await this.post<any>(
-      `${WebService.villageService}v1/refresh-token`,
-      { refreshToken },
-      { withAuth: false }
+      `${WebService.villageBaseURL}${AppAuthRoutes.refresh}`,
+      undefined,
+      { withAuth: false, headers },
     );
 
     const tokenData = response?.data ?? response;
     const tokens: AuthTokens = {
       accessToken: tokenData.accessToken,
       refreshToken: tokenData.refreshToken,
-      tokenType: tokenData.tokenType,
+      tokenType: tokenData.tokenType ?? 'Bearer',
       expiresIn: tokenData.expiresIn,
       userId: tokenData.userId,
     };
@@ -223,11 +305,19 @@ class ApiClient {
     ]);
   }
 
+  setOnSessionExpired(cb: () => void): void {
+    this.onSessionExpired = cb;
+  }
+
+  setBranchIdProvider(cb: () => Promise<string | undefined>): void {
+    this.branchIdProvider = cb;
+  }
+
   async initializeUserId(): Promise<void> {
     try {
       await this.getStorageService();
     } catch (error) {
-      console.warn('Failed to initialize storage:', error);
+      logger.warn('Failed to initialize storage:', error);
     }
   }
 
@@ -247,6 +337,14 @@ class ApiClient {
     return this.request<T>(url, {
       ...options,
       method: 'PUT',
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  patch<T = any>(url: string, data?: any, options?: FetchOptions) {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PATCH',
       body: data !== undefined ? JSON.stringify(data) : undefined,
     });
   }

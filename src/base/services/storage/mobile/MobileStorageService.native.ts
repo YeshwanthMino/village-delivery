@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { IStorageService } from '../interfaces/IStorageService';
+import { logger } from '@/src/base/services/logger';
 
 /**
  * Mobile implementation of storage service using SecureStore
@@ -10,7 +11,7 @@ export class MobileStorageService implements IStorageService {
     try {
       return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error('[MobileStorageService] Error getting item:', error);
+      logger.error('[MobileStorageService] Error getting item:', error);
       return null;
     }
   }
@@ -19,7 +20,7 @@ export class MobileStorageService implements IStorageService {
     try {
       await SecureStore.setItemAsync(key, value);
     } catch (error) {
-      console.error('[MobileStorageService] Error setting item:', error);
+      logger.error('[MobileStorageService] Error setting item:', error);
       throw error;
     }
   }
@@ -28,7 +29,7 @@ export class MobileStorageService implements IStorageService {
     try {
       await SecureStore.deleteItemAsync(key);
     } catch (error) {
-      console.error('[MobileStorageService] Error removing item:', error);
+      logger.error('[MobileStorageService] Error removing item:', error);
       throw error;
     }
   }
@@ -39,7 +40,7 @@ export class MobileStorageService implements IStorageService {
       const keys = await this.getAllKeys();
       await Promise.all(keys.map(key => SecureStore.deleteItemAsync(key)));
     } catch (error) {
-      console.error('[MobileStorageService] Error clearing storage:', error);
+      logger.error('[MobileStorageService] Error clearing storage:', error);
       throw error;
     }
   }
@@ -51,7 +52,7 @@ export class MobileStorageService implements IStorageService {
       const keysData = await SecureStore.getItemAsync('__all_keys__');
       return keysData ? JSON.parse(keysData) : [];
     } catch (error) {
-      console.error('[MobileStorageService] Error getting all keys:', error);
+      logger.error('[MobileStorageService] Error getting all keys:', error);
       return [];
     }
   }

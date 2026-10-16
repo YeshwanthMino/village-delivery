@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useGuardedRouter } from '@/src/shared/hooks/useGuardedRouter';
 import * as Linking from 'expo-linking';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -20,7 +20,7 @@ const DEEPLINK_ROUTE_MAP: Record<string, string> = {
 };
 
 export default function LanguageScreen() {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const setLocale = useVillageStore((s) => s.setLocale);
   const [selected, setSelected] = useState<Locale>('te');
   const [loading, setLoading] = useState(false);

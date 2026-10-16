@@ -1,7 +1,11 @@
-import { useAuthStore } from '@/src/core/store';
+import { useAuthStore, useLocationStore } from '@/src/core/store';
+import { loadStoreConfig } from '@/src/core/store/useStoreConfigStore';
+import { startStoreConfigSync } from '@/src/core/store/storeConfigSync';
+import { useVillageStore } from '@/src/core/store/useVillageStore';
 import { StoredPrefs } from '@/src/base/services/remote/storage/StoredPrefs';
+import { analytics } from '@/src/base/services/analytics';
+import { useLocationLifecycle } from '@/src/features/location/lifecycle/useLocationLifecycle';
 import { useFonts } from 'expo-font';
-import * as Linking from 'expo-linking';
 import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
@@ -9,8 +13,17 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const segments = useSegments();
   const [ready, setReady] = useState(false);
-  const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const checkExistingAuth = useAuthStore((state) => state.checkExistingAuth);
+  const setLocale = useVillageStore((s) => s.setLocale);
+  const locale = useVillageStore((s) => s.locale);
+  const hydrateLocation = useLocationStore((s) => s.hydrate);
+  const villageId = useLocationStore((s) => s.serviceableVillage?.id ?? null);
+  const storeId = useLocationStore((s) => s.serviceableVillage?.storeId ?? null);
+  const screenName = segments
+    .filter((segment) => segment !== '(dashboard)')
+    .map((segment) => /^[a-z-]+$/.test(segment) ? segment : 'unknown')
+    .join('_');
+  useLocationLifecycle(segments[0] !== 'location' && segments[0] !== 'address');
 
   const [fontsLoaded] = useFonts({
     'EuclidCircularA-Regular': require('../../../../../../assets/fonts/fonts/EuclidCircularA-Regular.ttf'),
@@ -20,44 +33,59 @@ export const AppScreen = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
+    let disposed = false;
+    const stopStoreConfigSync = startStoreConfigSync();
     const init = async () => {
-      await checkExistingAuth();
+      // Store timings + cashback settings for the session. Deliberately not
+      // awaited: the app runs on bundled defaults until it lands, so a slow
+      // network must not hold the first paint behind it.
+      void loadStoreConfig();
+      await Promise.all([checkExistingAuth(), hydrateLocation()]);
+      // MVP: only English is shipped. On first launch default to English and
+      // mark onboarding complete so the language screen is never shown.
       const firstLaunch = await StoredPrefs.getIsFirstLaunch();
       if (firstLaunch) {
-        const initialUrl = await Linking.getInitialURL();
-        if (initialUrl?.startsWith('villagedelivery://')) {
-          await StoredPrefs.setDeferredDeepLink(initialUrl);
-        }
+        await setLocale('en');
+        await StoredPrefs.setIsFirstLaunch(false);
       }
-      setIsFirstLaunch(firstLaunch);
-      setReady(true);
+      if (!disposed) setReady(true);
     };
-    init();
-  }, [checkExistingAuth]);
+    void init();
+    return () => {
+      disposed = true;
+      stopStoreConfigSync();
+    };
+  }, [checkExistingAuth, hydrateLocation, setLocale]);
 
   useEffect(() => {
-    if (!fontsLoaded || !ready || isFirstLaunch === null) return;
+    if (!fontsLoaded || !ready) return;
 
-    const inOnboarding = segments[0] === 'onboarding';
+    const root = segments[0] as string | undefined;
 
-    if (isFirstLaunch && !inOnboarding) {
-      router.replace('/onboarding/language');
-      return;
+    // Keep known routes; bounce unknown roots to home.
+    const allowed = [
+      '(dashboard)', 'auth', 'search', 'location', 'address',
+      'category-details', 'cart', 'top-picks', 'order-detail',
+      'product', 'about', 'vip-membership', 'sale-products',
+    ];
+    if (!root || !allowed.includes(root)) {
+      router.replace('/(dashboard)/home');
     }
+  }, [fontsLoaded, ready, segments, router]);
 
-    if (!isFirstLaunch) {
-      const inDashboard = segments[0] === '(dashboard)';
-      const inAuth = segments[0] === 'auth';
-      const inSearch = segments[0] === 'search';
-      const inCategoryDetails = segments[0] === 'category-details';
-      const inCart = segments[0] === 'cart';
-      const inTopPicks = segments[0] === 'top-picks';
-      const inOrderDetail = segments[0] === 'order-detail';
-      if (!inDashboard && !inAuth && !inSearch && !inOnboarding && !inCategoryDetails && !inCart && !inTopPicks && !inOrderDetail) {
-        router.replace('/(dashboard)/home');
-      }
+  // Segment names are static route templates, so screen events never contain
+  // query strings, address text or product identifiers from a URL.
+  useEffect(() => {
+    if (fontsLoaded && ready && screenName) {
+      analytics.track('app_screen_view', { screen_name: screenName });
     }
-  }, [fontsLoaded, ready, isFirstLaunch, segments, router]);
+  }, [fontsLoaded, ready, screenName]);
+
+  useEffect(() => {
+    if (ready) {
+      analytics.setUserProperties({ locale, village_id: villageId, store_id: storeId });
+    }
+  }, [ready, locale, villageId, storeId]);
 
   if (!fontsLoaded || !ready) return null;
 

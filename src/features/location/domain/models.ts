@@ -1,0 +1,64 @@
+// src/features/location/domain/models.ts
+
+export type AddressTag = 'home' | 'work' | 'other';
+
+export type ServiceabilityStatus =
+  | 'idle'            // no location resolved yet
+  | 'locating'        // requesting permission / reading GPS
+  | 'checking'        // calling find-by-location
+  | 'serviceable'     // 2xx — app unlocked
+  | 'not_serviceable' // non-2xx / empty
+  | 'error';          // network / 5xx
+
+export interface LatLng {
+  latitude: number;
+  longitude: number;
+}
+
+export interface Village {
+  id: string;
+  name: string;
+  secondaryName?: string; // optional finer label (locality/mandal/district) from backend
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  storeId?: string; // x-store-id for the dynamic home page-layout API
+  branchId?: string; // branch serving this village; sent when creating an order
+}
+
+export interface Address {
+  id: string;
+  villageId: string;
+  villageName: string;
+  storeId?: string; // village's x-store-id, carried so selection can switch the active store without find-by-location
+  branchId?: string; // village's branch, carried alongside storeId
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  tag: AddressTag;
+  isDefault: boolean;
+}
+
+export interface ServiceabilityResult {
+  serviceable: boolean;
+  village: Village | null;
+}
+
+/** A previously-resolved serviceable location, persisted locally for quick re-select. */
+export interface RecentLocation {
+  // A store/branch can serve many villages, so identity for de-duping recents
+  // is the village, not the store — otherwise searching a second locality
+  // served by the same store would silently evict the first from the list.
+  villageId?: string;
+  storeId: string;
+  branchId?: string;
+  villageName: string;
+  // A saved address can identify its village without carrying coordinates.
+  latitude?: number;
+  longitude?: number;
+  label: string;
+  savedAt: number;
+}

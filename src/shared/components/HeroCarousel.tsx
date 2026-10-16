@@ -1,9 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { gradientColor } from '@/src/core/utils/gradientColors';
 import { HeroSlide } from '@/src/features/home/data/static/villageData';
 import { useTranslation } from '@/src/core/utils/useTranslation';
+import { loopBannerSlides, useBannerCarousel } from '@/src/shared/hooks/useBannerCarousel';
+import { BannerCarouselIndicator } from './BannerCarouselIndicator';
 
 interface HeroCarouselProps {
   slides: HeroSlide[];
@@ -19,22 +21,18 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
   const { t, locale } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   // Card width leaves RIGHT_PEEK + CARD_GAP px of space for adjacent card peek
-  const cardWidth = screenWidth - LEFT_PAD - RIGHT_PEEK - CARD_GAP;
+  const cardWidth = Math.max(1, screenWidth - LEFT_PAD - (slides.length > 1 ? RIGHT_PEEK + CARD_GAP : LEFT_PAD));
   const snapInterval = cardWidth + CARD_GAP;
+  const { scrollX, scrollRef, scrollHandlers } = useBannerCarousel({
+    count: slides.length,
+    snapInterval,
+    autoPlay: true,
+    delay: 4500,
+    slidesKey: JSON.stringify(slides),
+  });
+  const renderedSlides = loopBannerSlides(slides);
 
-  const [current, setCurrent] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const currentRef = useRef(0);
-
-  // Auto-rotate every 4.5s
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const next = (currentRef.current + 1) % slides.length;
-      scrollRef.current?.scrollTo({ x: next * snapInterval, animated: true });
-      currentRef.current = next;
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [slides.length, snapInterval]);
+  if (!slides.length) return null;
 
   return (
     <View style={{ paddingTop: 16 }}>
@@ -46,26 +44,24 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
         decelerationRate="fast"
         snapToInterval={snapInterval}
         snapToAlignment="start"
+        bounces={false}
+        scrollEnabled={slides.length > 1}
+        contentOffset={{ x: slides.length > 1 ? snapInterval : 0, y: 0 }}
         contentContainerStyle={{
           paddingLeft: LEFT_PAD,
           // Right padding = PEEK + GAP so the last card can fully snap to LEFT_PAD position
-          paddingRight: RIGHT_PEEK + CARD_GAP,
+          paddingRight: slides.length > 1 ? RIGHT_PEEK + CARD_GAP : LEFT_PAD,
         }}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / snapInterval);
-          const clamped = Math.max(0, Math.min(idx, slides.length - 1));
-          currentRef.current = clamped;
-          setCurrent(clamped);
-        }}
+        {...scrollHandlers}
       >
-        {slides.map((slide, i) => (
+        {renderedSlides.map((slide, i) => (
           <View
             key={i}
             style={[
               styles.card,
               {
                 width: cardWidth,
-                marginRight: i < slides.length - 1 ? CARD_GAP : 0,
+                marginRight: i < renderedSlides.length - 1 ? CARD_GAP : 0,
               },
             ]}
           >
@@ -96,21 +92,7 @@ export const HeroCarousel = ({ slides, onShopNow }: HeroCarouselProps) => {
         ))}
       </ScrollView>
 
-      {/* Dot indicators — centered on full screen width */}
-      <View style={styles.dotsRow}>
-        {slides.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              {
-                width: i === current ? 24 : 6,
-                backgroundColor: i === current ? '#16a34a' : '#cbd5e1',
-              },
-            ]}
-          />
-        ))}
-      </View>
+      <BannerCarouselIndicator count={slides.length} snapInterval={snapInterval} scrollX={scrollX} activeWidth={24} marginTop={12} />
     </View>
   );
 };
@@ -180,16 +162,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'EuclidCircularA-Bold',
     fontSize: 14,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: {
-    height: 6,
-    borderRadius: 999,
   },
 });

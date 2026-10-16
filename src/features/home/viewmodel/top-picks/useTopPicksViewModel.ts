@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Product, SortKey } from '@/src/base/types/village.types';
-import { useVillageStore } from '@/src/core/store';
+import { useVillageStore, selectCartCount } from '@/src/core/store';
 import { sortProducts } from '@/src/features/home/data/static/villageData';
 import { useProductsQuery } from '@/src/features/home/data/queries/useProductsQuery';
+import type { AnalyticsProductContext } from '@/src/base/services/analytics';
 
 export const useTopPicksViewModel = () => {
-  const cartCount = useVillageStore(state => state.cartCount());
+  const cartCount = useVillageStore(selectCartCount);
   const { data: allProducts = [] } = useProductsQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('popular');
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
+  const [variantContext, setVariantContext] = useState<AnalyticsProductContext | undefined>();
 
   const products = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -31,9 +33,10 @@ export const useTopPicksViewModel = () => {
     products,
     cartCount,
     variantProduct,
+    variantContext,
     sortSheetVisible,
-    openVariants: (product: Product) => setVariantProduct(product),
-    closeVariants: () => setVariantProduct(null),
+    openVariants: (product: Product, context?: AnalyticsProductContext) => { setVariantProduct(product); setVariantContext(context); },
+    closeVariants: () => { setVariantProduct(null); setVariantContext(undefined); },
     openSortSheet: () => setSortSheetVisible(true),
     closeSortSheet: () => setSortSheetVisible(false),
   };

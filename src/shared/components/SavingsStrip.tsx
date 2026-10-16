@@ -1,7 +1,7 @@
 import { Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { rupees } from '@/src/features/home/data/static/villageData';
+import { rupees } from '@/src/shared/utils/currency';
 import { useTranslation } from '@/src/core/utils/useTranslation';
 import { interpolate } from '@/src/base/constants/translations';
 
